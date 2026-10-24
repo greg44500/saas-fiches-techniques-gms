@@ -61,6 +61,14 @@ vi.mock('@/features/dossiers/api/dossiers-api', () => ({
 }));
 
 vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
+  useListTechnicalSheetRangesQuery: () => ({
+    data: {
+      ranges: [{ id: 'range-one', name: 'Snacking', status: 'ACTIVE' }],
+      pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
+    },
+    isError: false,
+    isFetching: false,
+  }),
   useDeleteTechnicalSheetMutation: () => [
     mocks.deleteMutation,
     { isLoading: false },
@@ -274,7 +282,7 @@ describe('TechnicalSheetsPage', () => {
     }));
     const group = screen.getByRole('group', { name: 'Actions de Tartine auvergnate' });
     const labels = within(group).getAllByRole('button').map((button) => button.textContent.trim());
-    expect(labels).toEqual(['Modifier', 'Prévisualiser', 'Optimiser', 'Supprimer']);
+    expect(labels).toEqual(['Modifier', 'Changer de gamme', 'Prévisualiser', 'Optimiser', 'Supprimer']);
   });
 
   it('regroupe Prévisualiser, Modifier et Supprimer sans proposer d’exports', async () => {

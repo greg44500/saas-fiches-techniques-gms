@@ -21,6 +21,10 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
   useGetTechnicalSheetMetadataQuery: mocks.metadata,
 }));
 
+vi.mock('@/features/technical-sheets/components/technical-sheet-range-picker', () => ({
+  TechnicalSheetRangePicker: () => <div>Gamme facultative</div>,
+}));
+
 import {
   TechnicalSheetCreateDialog,
 } from '@/features/technical-sheets/components/technical-sheet-create-dialog';
@@ -119,6 +123,7 @@ describe('TechnicalSheetCreateDialog', () => {
       workspaceId: 'workspace-1',
       dossierId: 'dossier-1',
       name: 'Purée de carottes',
+      rangeId: null,
       description: null,
       productionQuantity: '10',
       productionUnit: 'UNIT',
@@ -179,6 +184,7 @@ describe('TechnicalSheetCreateDialog', () => {
       workspaceId: 'workspace-1',
       dossierId: 'dossier-1',
       name: 'Soupe maison',
+      rangeId: null,
       description: null,
       productionQuantity: '20',
       productionUnit: 'UNIT',
