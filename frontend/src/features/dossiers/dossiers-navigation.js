@@ -2,6 +2,7 @@ import {
   Building2,
   Folders,
   Settings2,
+  Tags,
   Trash2,
   WandSparkles,
 } from 'lucide-react';
@@ -39,6 +40,13 @@ const dossiersWorkspaceNavigation = Object.freeze({
           permission: TECHNICAL_SHEET_PERMISSION.UPDATE,
           feature: TECHNICAL_SHEET_FEATURE.OPTIMIZER,
           path: 'technical-sheets/optimization',
+        }),
+        Object.freeze({
+          id: 'technical-sheet-ranges',
+          label: 'Gammes de Fiches',
+          Icon: Tags,
+          permission: TECHNICAL_SHEET_PERMISSION.READ,
+          path: 'technical-sheets/ranges',
         }),
         Object.freeze({
           id: 'technical-sheet-trash',
