@@ -222,7 +222,7 @@ function DossierWorkspacePage() {
         <div className="flex min-w-0 items-center gap-1">
           {hasContactDetails ? (
             <Tooltip>
-              <TooltipTrigger render={<span className="min-w-0 cursor-help" tabIndex={0} />}>
+              <TooltipTrigger render={<div className="min-w-0 cursor-help" tabIndex={0} />}>
                 <h1 className="max-w-[min(19rem,60vw)] truncate text-xl font-semibold tracking-tight">
                   {dossier.name}
                 </h1>
