@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { app } from '../../../app.js';
 import { Dossier } from '../../../modules/dossier/dossier.model.js';
 import { TechnicalSheet } from '../../../modules/technicalSheet/technicalSheet.model.js';
+import { TechnicalSheetRange } from '../../../modules/technicalSheet/technicalSheetRange.model.js';
 import {
     createTechnicalSheet,
 } from '../../../modules/technicalSheet/technicalSheet.service.js';
@@ -159,6 +160,43 @@ describe('M-004 Gammes — HTTP, permissions et isolation', () => {
                 expectedRevision: editable.revision, name: 'Traiteurr',
             }).expect(409);
         expect(response.body.status).not.toBe('success');
+    });
+
+    it('liste toutes les Gammes actives disponibles sans pagination de tableau', async () => {
+        const other = await createWorkspaceOwnerFixture();
+        const rows = Array.from({ length: 105 }, (_, index) => ({
+            workspace: owner.workspace._id,
+            name: 'Gamme ' + String(index).padStart(3, '0'),
+            normalizedName: 'gamme ' + String(index).padStart(3, '0'),
+            createdBy: owner.owner._id,
+            updatedBy: owner.owner._id,
+            statusChangedBy: owner.owner._id,
+        }));
+        await TechnicalSheetRange.insertMany(rows);
+
+        const archived = await request(app).post(rangesPath())
+            .set(bearer(owner.token)).send({ name: 'Gamme archivée' }).expect(201);
+        await request(app).post(rangesPath() + '/' + archived.body.data.range.id + '/archive')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: archived.body.data.range.revision })
+            .expect(200);
+        await TechnicalSheetRange.create({
+            workspace: other.workspace._id, name: 'Étrangère',
+            normalizedName: 'étrangère',
+            createdBy: other.owner._id, updatedBy: other.owner._id,
+            statusChangedBy: other.owner._id,
+        });
+
+        const result = await request(app).get(rangesPath() + '/options')
+            .set(bearer(owner.token)).expect(200);
+        expect(result.body.data.ranges).toHaveLength(105);
+        expect(result.body.data.ranges[0].name).toBe('Gamme 000');
+        expect(result.body.data.ranges).not.toContainEqual(
+            expect.objectContaining({ name: 'Gamme archivée' }),
+        );
+        expect(result.body.data.ranges).not.toContainEqual(
+            expect.objectContaining({ name: 'Étrangère' }),
+        );
     });
 
     it('classe une Fiche sans générer de brouillon supplémentaire ni nouveau quota', async () => {

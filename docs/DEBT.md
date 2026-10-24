@@ -941,3 +941,15 @@ différées ci-dessus restent ouvertes.
 Le service M-002 de fusion réaffecte tous les Produits de la source vers la cible dans une transaction et retire la source. MongoDB n'impose pas de clé étrangère sur `CanonicalProduct.category`. Il faut vérifier le cas où une création ou modification Produit concurrente a déjà lu l'ancienne catégorie source et finalise son écriture autour de la transaction. Prévoir un test d'intégration avec barrières de concurrence sous `rs0`, puis, si nécessaire, une coordination transactionnelle des écrivains de catégorie et une politique de retry idempotente avant gate finale. Ne pas considérer la fusion comme garantie contre cette anomalie en l'absence de ce contrôle.
 
 ---
+
+
+## Note de conception différée — habillage de champs outlined partagé (2026-10-24)
+
+Pendant M-004, les champs de création de Fiches réutilisent
+`ProductVariantField`, habillage de présentation déjà éprouvé côté
+Produits M-002, plutôt que de dupliquer son implémentation. Cette
+dépendance de présentation entre features est circonscrite à cette
+interface et mérite une extraction **Core générique versionnée**
+si plusieurs modules la partagent durablement. Ne pas la réaliser
+silencieusement sur la branche métier. L'ergonomie M-004 et ses tests
+restent prioritaires avant une éventuelle maintenance Core distincte.

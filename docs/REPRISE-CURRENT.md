@@ -1,6 +1,31 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 ## État courant — M-004 Gammes, 2026-10-24
 
+### Ajustement demandé — création de Fiche et champs outlined (2026-10-24)
+
+- La modale « Créer une gamme » utilise une infobulle d'information au
+  niveau du titre plutôt qu'un sous-titre visible.
+- Dans la modale « Créer une Fiche technique », la Gamme est désormais
+  choisie via une seule liste déroulante « Sans gamme » par défaut.
+  L'action « Créer une gamme », si permission accordée, est alignée avec
+  le libellé « Gamme (facultative) » et ouvre la même modale imbriquée.
+  Après création, la nouvelle Gamme est sélectionnée sans quitter le
+  formulaire de la Fiche. Aucun champ de recherche intermédiaire.
+- Le serveur expose toutes les Gammes actives du Workspace via
+  `GET /api/workspaces/:workspaceId/technical-sheets/ranges/options`,
+  autorisé par la permission de lecture M-004 ; les Gammes archivées
+  ne sont pas sélectionnables pour une nouvelle Fiche.
+- Les champs texte et les listes de la création de Fiche reprennent
+  l'habillage flottant/outlined déjà présent dans
+  `ProductVariantField` (Produit M-002), sans copie d'une primitive Core.
+  Les libellés remontent au focus ; exemples de saisie révélés au focus
+  des champs texte. Le contrôle TVA reste une sélection segmentée.
+- Le besoin futur de généraliser cet habillage à tout le SaaS est
+  distinct du présent lot produit et reste candidat à une évolution Core.
+
+Tests HTTP, RTL et E2E adaptés/ajoutés mais **non exécutés à ce stade**.
+Aucun changement de `main`, aucune PR ou fusion.
+
 ### Ajustement demandé en recette — modale et noms proches (2026-10-24)
 
 Le formulaire intégré à la page est remplacé par une modale

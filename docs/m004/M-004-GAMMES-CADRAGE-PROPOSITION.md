@@ -547,3 +547,35 @@ Produits existantes, sans modifier les composants génériques du Core.
   pour les noms voisins des catégories de Produits. Les suggestions
   n'ont pas pour effet de renommer ou de fusionner automatiquement
   des Gammes ; une validation humaine est requise pour un nom proche.
+
+## 20. Recette UX : création de Fiche sans interruption (2026-10-24)
+
+- Le sous-titre de la modale de création/renommage de Gamme n'est
+  plus visible en permanence : les explications sont dans une infobulle
+  accessible au clavier et au survol, auprès du titre.
+- La création de Fiche utilise **une seule liste des Gammes ACTIVE**
+  autorisées du Workspace ; aucun champ de recherche au-dessus.
+  « Sans gamme » est la valeur par défaut, et aucune Gamme n'est
+  obligatoire pour enregistrer une Fiche.
+- Le bouton « Créer une gamme » apparaît **sur la même ligne que**
+  « Gamme (facultative) » uniquement si la permission
+  `technical-sheet:range:manage` est effectivement accordée.
+  L'ouverture de cette modale métier ne fait pas perdre les champs
+  déjà renseignés. Une création réussie préselectionne la Gamme
+  dans le formulaire de la Fiche ; fermer ou annuler la modale
+  ne modifie pas la sélection précédente.
+- Les valeurs du sélecteur proviennent d'une API dédiée qui
+  présente **toutes les Gammes actives**, non limitées aux
+  premières 100 lignes d'un tableau paginé. Les Gammes archivées
+  ne peuvent être affectées à une nouvelle Fiche.
+- Les champs saisissables de la modale Fiche sont désormais
+  présentés avec des labels flottants « outlined » à animation
+  réduite accessible : le libellé se relève au focus ou lorsqu'il
+  existe une valeur, et le placeholder exemple apparaît au focus.
+  Le modèle visuel existant du Produit et des Articles est réutilisé
+  sans créer une primitive transversale Core dans le SaaS métier.
+  Les choix déjà préremplis restent lisibles avec leur libellé relevé.
+  Le taux de TVA conserve son contrôle segmenté métier.
+- Aucune modification des droits, quotas, transactions,
+  historiques validés, exports ou règle G1/G2. Tests RTL,
+  HTTP et E2E requis avant PR.
