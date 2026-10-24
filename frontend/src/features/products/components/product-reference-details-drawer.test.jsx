@@ -620,13 +620,22 @@ describe('ProductReferenceDetailsDrawer', () => {
     expect(within(workflow).getByRole('button', {
       name: 'Masquer le contrôle de Présentation Individuel',
     })).toBeInTheDocument();
-    // La validation finale de la Référence reste bloquée tant que
-    // sa Caractéristique provisoire n'est pas approuvée.
-    expect(within(workflow).getByRole('button', { name: 'Valider' }))
-      .toBeDisabled();
-    await user.click(within(workflow).getByRole('button', {
-      name: 'Approuver',
-    }));
+    // Contrat distinct et cardinalité stable des deux décisions métier.
+    const validateReference = within(workflow).getByRole('button', {
+      name: 'Valider', exact: true,
+    });
+    const approveDimension = within(workflow).getByRole('button', {
+      name: 'Approuver', exact: true,
+    });
+    expect(within(workflow).getAllByRole('button', {
+      name: 'Valider', exact: true,
+    })).toHaveLength(1);
+    expect(within(workflow).getAllByRole('button', {
+      name: 'Approuver', exact: true,
+    })).toHaveLength(1);
+    expect(validateReference).toBeDisabled();
+    expect(approveDimension).toBeEnabled();
+    await user.click(approveDimension);
     expect(mocks.reviewContribution).toHaveBeenCalledWith({
       contributionId: 'contribution-dimension',
       decision: 'APPROVE',

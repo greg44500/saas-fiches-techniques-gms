@@ -1,5 +1,14 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 
+## Revue finale du contrôle guidé M-002 — 2026-10-24, gate non validée
+
+Nouveau rapport local après le lot transversal précédent : **17/18 E2E ciblés réussis**. Le seul échec concernait l'attente de deux boutons « Valider » dans le contrôle guidé M-002. Relecture de `ProductReferenceReviewWorkflow`, de `ProductReferenceGovernanceReviewPanel`, de `ProductReferenceDetailsDrawer`, de la revue backend, des tests RTL et des étapes finales du scénario :
+- Une Contribution de Dimension provisoire se traite par « Approuver » ; la Référence reste sous « Valider », désactivé jusqu'à l'approbation des dépendances.
+- E2E aligné sur les deux libellés, leurs cardinalités et états ; contrôle DB explicite après la décision Dimension (`APPROVED/REVIEWED`) et invariance provisoire de la Référence ; vérification de l'approbation de la Référence après la décision finale.
+- Test RTL existant renforcé pour empêcher la régression sur les deux actions et leurs états.
+- Aucun code de production ou Core modifié ; tests de ce nouveau correctif **non exécutés**. Rejouer d'abord l'E2E ciblé puis le sous-ensemble complet, et enfin `npm run release:check`. Aucune PR/merge sans confirmation utilisateur.
+
+
 ## Stabilisation des E2E — 2026-10-24 (QA locale requise)
 
 Rapport utilisateur : 34 tests Playwright, 26 réussis et 8 en échec. Audit des 12 fichiers de scénarios, avec correctif groupé :
