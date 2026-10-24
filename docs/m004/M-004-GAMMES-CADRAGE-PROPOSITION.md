@@ -1,6 +1,6 @@
 # M-004 — Gammes de Fiches techniques — proposition de contrat fonctionnel
 
-**Statut : CONTRAT CONSOLIDÉ SOUMIS À APPROBATION — G1 ET G2 ARBITRÉS — AUCUNE AUTORISATION DE DÉVELOPPER**  
+**Statut : VALIDÉ PAR LE PROPRIÉTAIRE DU PRODUIT — G1 = B ET G2 = A — DÉVELOPPEMENT AUTORISÉ SUR BRANCHE**  
 **Date : 2026-10-24**  
 **Branche de préparation :** `feature/m004-gammes-fiches-techniques`  
 **Périmètre :** extension organisationnelle du module M-004 existant, sans évolution du Core.
@@ -9,9 +9,10 @@
 > **G1 = B** (suppression définitive d'une Gamme sans aucune Fiche liée) et
 > **G2 = A** (copie sans Gamme avec message explicite si l'ancienne Gamme
 > est archivée) ont été confirmés par le propriétaire du produit.
-> Les précisions d'application du contrat ci-dessous sont soumises à une
-> **approbation globale explicite avant tout développement métier**.
-> Aucun changement de schéma, d'API ou de code métier n'est autorisé à ce stade.
+> L'ensemble du contrat, y compris ses règles de concurrence, de suppression,
+> de RBAC et d'interface, a reçu une **approbation globale explicite** le
+> 2026-10-24. Les évolutions du lot sont autorisées sur la branche dédiée,
+> sous réserve des tests locaux et d'une PR unique validée par l'utilisateur.
 >
 > Sources faisant autorité : code et tests effectifs, puis
 > `docs/m004/M-004-FINAL-CONTRACT.md`,
@@ -469,20 +470,16 @@ test frontend de trial liée à la Core Gate #231 et sa documentation dans
 a été déclarée verte lors d'un `npm run release:check` local par
 l'utilisateur ; aucune gate GitHub de la future PR n'est encore attestée.
 
-## 17. Approbation globale attendue avant développement
+## 17. Approbation globale obtenue et conditions de livraison
 
 - **G1 : B — arbitré le 2026-10-24** : suppression définitive uniquement
   si aucune Fiche, quel que soit son Dossier ou son statut, n'est liée.
 - **G2 : A — arbitré le 2026-10-24** : copie depuis une Gamme archivée
   sans Gamme dans la destination, avec message explicite de réussite.
-- **Contrat global : À APPROUVER** : les règles d'application, le RBAC,
-  la suppression concurrente, les parcours et les tests ci-dessus doivent
-  être validés ou corrigés explicitement avant création des modèles,
-  des API, de l'interface métier et de la migration.
-- **Après accord global uniquement** : finaliser l'avenant canonique,
-  engager l'implémentation sur la branche existante, puis QA locale et
-  une unique PR du lot M-004.
-
-**Formulation d'approbation attendue :** « J'approuve le contrat global
-M-004 Gammes du document consolidé et autorise le développement sur
-la branche dédiée. »
+- **Contrat global : VALIDÉ le 2026-10-24** : règles d'application,
+  RBAC, suppression concurrente, parcours UX et tests approuvés.
+  L'implémentation est engagée dans la branche M-004, et doit être
+  considérée non livrée tant que les gates locales ne sont pas attestées.
+- **Livraison conditionnelle** : migration, vérification fonctionnelle
+  et sécurité, QA locale, `npm run release:check` puis PR unique.
+  Aucun merge sans accord explicite du propriétaire du produit.

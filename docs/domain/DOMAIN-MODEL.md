@@ -1,4 +1,30 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Modèle de domaine
+## Extension M-004 validée — Gammes de Fiches techniques
+
+```text
+Workspace
+ ├── TechnicalSheetRange (nom unique au Workspace, ACTIVE / ARCHIVED)
+ ├── Dossier A
+ │    └── TechnicalSheet (Workspace + Dossier, range facultatif)
+ └── Dossier B
+      └── TechnicalSheet (Workspace + Dossier, range facultatif)
+```
+
+La Gamme appartient au Workspace ; la Fiche demeure propriétaire de son
+classement courant et conserve son Dossier économique. Aucune collection
+dupliquant la composition des Gammes par Dossier. Aucune Gamme dans
+TechnicalSheetDraft, TechnicalSheetValidation ou les snapshots financiers.
+
+Une affectation vers une Gamme est autorisée uniquement si cette Gamme
+est ACTIVE dans le même Workspace et si la Fiche est ACTIVE dans un
+Dossier opérationnel et autorisé. Un archivage de Gamme maintient les
+associations déjà présentes. La suppression physique est refusée si
+une seule Fiche du Workspace la référence, même en corbeille, et doit
+être atomique face aux affectations concurrentes.
+
+Source : `docs/m004/M-004-GAMMES-CADRAGE-PROPOSITION.md`.
+
+---
 
 **Statut :** VALIDÉ — modèle conceptuel transversal approuvé avant M-001  
 **Dernière mise à jour :** 2026-10-14

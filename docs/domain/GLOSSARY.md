@@ -1,4 +1,20 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Glossaire métier
+## Gamme de Fiches techniques — M-004
+
+Référentiel de classement organisé au niveau Workspace, partagé par ses
+Dossiers sans partager les Fiches. Une Fiche technique a zéro ou une Gamme
+courante, facultative même après validation. « Sans gamme » signifie absence
+d'affectation. La Gamme peut être active ou archivée ; une Gamme archivée reste
+visible sur les Fiches qui l'utilisent mais ne peut recevoir de nouvelles
+affectations. Une Gamme n'est supprimable définitivement que si aucune Fiche
+du Workspace ne lui est encore associée, y compris archivée ou en corbeille.
+
+**À distinguer :** « Gamme alimentaire M-002 » (`foodRange`), qui décrit
+la typologie physique d'une Référence Produit et n'est pas ce classement.
+
+Contrat : `docs/m004/M-004-GAMMES-CADRAGE-PROPOSITION.md`.
+
+---
 
 **Statut :** VALIDÉ — vocabulaire transversal approuvé avant M-001  
 **Dernière mise à jour :** 2026-10-14

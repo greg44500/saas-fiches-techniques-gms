@@ -7,7 +7,7 @@
 
 ### CI-GMS-231 — Attente asynchrone du drawer Trial (2026-10-24)
 
-**Statut : EN COURS — test et gate à valider localement, puis sur la prochaine PR Produit.**
+**Statut : correction validée par la `release:check` locale selon l'utilisateur ; gate GitHub de la prochaine PR Produit non exécutée.**
 La Core Gate post-merge de la PR #49 (commit `ac0145b`, run
 [40098823819](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40098823819))
 a échoué sur 1 test frontend sur 1 374 : le test d'accord de trial Platform

@@ -1613,3 +1613,36 @@ des Références Produit dans le brouillon, pas d'un snapshot économique
 historique. Aucun changement des règles M-003, de la base de données
 ou du Core. Tests RTL, HTTP et E2E prévus dans le même lot, à exécuter
 localement avant PR.
+
+---
+
+## Addendum validé — Gammes de Fiches techniques (2026-10-24)
+
+**Statut : VALIDÉ POUR IMPLÉMENTATION** — extension du présent module, sans
+modification de ses invariants économiques ou de ses validations historiques.
+
+Contrat détaillé faisant autorité :
+`docs/m004/M-004-GAMMES-CADRAGE-PROPOSITION.md`.
+
+Les Gammes sont un référentiel de classement propre à chaque Workspace,
+indépendant des `foodRange` M-002. Chaque Fiche peut être associée à zéro
+ou une Gamme du même Workspace. Les Dossiers ne partagent aucune Fiche.
+
+- Gestion des Gammes par l'Owner et les rôles Workspace dotés de la permission
+  `technical-sheet:range:manage` ; classement par `technical-sheet:update`
+  dans un Dossier effectivement autorisé.
+- Les Gammes sont facultatives y compris sur une Fiche validée. Le classement
+  est courant et audité, sans toucher aux brouillons, snapshots et exports.
+- Archivage réversible, sans affectation nouvelle. Suppression irréversible
+  autorisée uniquement si aucune Fiche du Workspace, quel que soit son Dossier
+  ou son état (corbeille comprise), n'est encore associée.
+- Copie inter-Dossier : la Gamme ACTIVE est reprise ; une Gamme ARCHIVED
+  produit une copie « Sans gamme » avec message explicite, sans transfert
+  financier.
+- Tous les plans ont accès au classement ; aucun quota propre aux Gammes.
+- Tests de permissions, tenancy, concurrence, API, frontend et E2E requis
+  avant clôture du lot.
+
+Cette validation autorise le travail sur
+`feature/m004-gammes-fiches-techniques`, pas sa mise en production ou son
+merge avant les gates locales et l'accord utilisateur.

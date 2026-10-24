@@ -1,4 +1,25 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
+## État courant — M-004 Gammes, 2026-10-24
+
+Branche de développement : `feature/m004-gammes-fiches-techniques`, issue
+du merge de la PR Produit #49 (`ac0145bd`). Contrat global des Gammes
+explicitement approuvé le 2026-10-24 : G1 = B, G2 = A. Document canonique :
+`docs/m004/M-004-GAMMES-CADRAGE-PROPOSITION.md`. Le référentiel est
+Workspace-scoped ; les Fiches et prix restent Dossier-scoped.
+
+La correction du test Core Gate #231, limitée à l'attente asynchrone du
+dialogue Trial, a été validée localement via `npm run release:check`
+selon l'utilisateur **avant** le développement des Gammes.
+
+Implémentation des Gammes publiée sur branche, **non vérifiée par des
+tests réellement exécutés à ce stade**. Prérequis de clôture : migration
+`npm run migration:m004-ranges` sur la DB de développement adaptée,
+tests ciblés unitaires/HTTP/RTL/E2E, gate locale globale, QA visuelle,
+autorisation de PR et fusion explicites. `main` n'est pas modifié.
+Les rubriques historiques ci-dessous décrivent des étapes antérieures et
+ne représentent plus le statut courant.
+
+---
 
 ## Revue finale du contrôle guidé M-002 — 2026-10-24, gate non validée
 
