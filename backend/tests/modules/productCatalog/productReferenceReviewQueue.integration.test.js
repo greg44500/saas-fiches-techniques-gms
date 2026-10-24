@@ -73,6 +73,9 @@ describe('M-002 unified product review queue', () => {
             type: 'VARIETY',
             productId: reference.product._id,
             value: 'Variété à corriger',
+            // Sans forceCreate, une Variété sans conflit est AUTO_PUBLISHABLE.
+            // Ce scénario vérifie explicitement une identité PROVISIONAL.
+            forceCreate: true,
         });
         const characteristics = await submitReferenceContribution({
             workspaceId: ownerContext.workspace._id,
@@ -81,6 +84,17 @@ describe('M-002 unified product review queue', () => {
             productId: reference.product._id,
             characteristicKind: PRODUCT_CHARACTERISTIC_KIND.COLOR,
             value: 'Couleur à corriger',
+        });
+
+        expect(varieties).toMatchObject({
+            classification: 'PROVISIONAL',
+            provisionalReference: { id: expect.any(String) },
+            contribution: { id: expect.any(String) },
+        });
+        expect(characteristics).toMatchObject({
+            classification: 'PROVISIONAL',
+            provisionalReference: { id: expect.any(String) },
+            contribution: { id: expect.any(String) },
         });
 
         await updateProductVariety({
