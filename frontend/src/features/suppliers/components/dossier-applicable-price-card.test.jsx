@@ -269,7 +269,7 @@ describe('DossierApplicablePriceCard', () => {
     const trigger = screen.getByRole('button', {
       name: 'Rechercher un Article fournisseur',
     });
-    expect(screen.queryByPlaceholderText('Rechercher un Article fournisseur…'))
+    expect(screen.queryByPlaceholderText("Rechercher le prix d'un article"))
       .not.toBeInTheDocument();
     await user.click(trigger);
     const input = screen.getByRole('combobox', {

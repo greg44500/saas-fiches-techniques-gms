@@ -153,6 +153,7 @@ function DossierApplicablePriceCard({
           fallbackArticles={fallbackArticles}
           inputRef={searchInputRef}
           onSelect={chooseArticle}
+          placeholder="Rechercher le prix d'un article"
           selectedArticle={selectedArticle}
           serverSearch={can(SUPPLIER_PERMISSION.ARTICLE_READ)}
           workspaceId={workspaceId}
@@ -204,9 +205,9 @@ function DossierApplicablePriceCard({
               <p className="font-medium">
                 {applicable.price
                   ? formatPrice(applicable.price, {
-                      hideDefaultCurrency: true,
-                      productVariant: applicable.productVariant,
-                    })
+                    hideDefaultCurrency: true,
+                    productVariant: applicable.productVariant,
+                  })
                   : 'Aucun prix applicable'}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
