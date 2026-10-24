@@ -24,6 +24,7 @@ import {
 import {
     TechnicalSheetDraft,
 } from './technicalSheetDraft.model.js';
+import { lockActiveRangeForAssignment } from './technicalSheetRange.service.js';
 import {
     createTechnicalSheetEvent,
 } from './technicalSheetEvent.service.js';
@@ -108,6 +109,10 @@ const createTechnicalSheet = async ({
             );
         }
 
+        await lockActiveRangeForAssignment({
+            workspaceId, rangeId: data.rangeId ?? null, session,
+        });
+
         await enforcePlanLimit({
             workspaceId,
             metricKey:
@@ -122,6 +127,7 @@ const createTechnicalSheet = async ({
                 workspace: workspaceId,
                 dossier: dossierId,
                 name: data.name,
+                range: data.rangeId ?? null,
                 description:
                     data.description ?? null,
                 status:
@@ -189,6 +195,7 @@ const listTechnicalSheets = async ({
     limit = 20,
     search = null,
     status = null,
+    rangeId = null,
 }) => {
     const filter = mongoose.trusted({
         workspace: workspaceId,
@@ -197,6 +204,8 @@ const listTechnicalSheets = async ({
             $in: DEFAULT_LIST_STATUSES,
         }),
     });
+
+    if (rangeId) filter.range = rangeId === 'unassigned' ? null : rangeId;
 
     if (search) {
         filter.$or = mongoose.trusted([

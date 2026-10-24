@@ -44,6 +44,7 @@ const technicalSheetSchema = new Schema(
             maxlength: 160,
             required: true,
         },
+        range: { type: Schema.Types.ObjectId, ref: 'TechnicalSheetRange', default: null },
         description: {
             type: String,
             trim: true,
@@ -116,6 +117,10 @@ technicalSheetSchema.index(
 technicalSheetSchema.index(
     { workspace: 1, status: 1, updatedAt: -1 },
     { name: 'technical_sheet_workspace_status_updated_at' },
+);
+technicalSheetSchema.index(
+    { workspace: 1, dossier: 1, range: 1, status: 1, updatedAt: -1 },
+    { name: 'technical_sheet_workspace_dossier_range_status' },
 );
 technicalSheetSchema.index(
     { workspace: 1, dossier: 1, name: 1 },

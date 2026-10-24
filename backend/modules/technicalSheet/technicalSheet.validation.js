@@ -110,6 +110,7 @@ const technicalSheetListQuerySchema =
                 ),
             )
             .optional(),
+        rangeId: z.union([objectIdSchema, z.literal('unassigned')]).optional(),
     });
 
 const createTechnicalSheetSchema =
@@ -119,6 +120,7 @@ const createTechnicalSheetSchema =
             .trim()
             .min(1)
             .max(160),
+        rangeId: objectIdSchema.nullable().optional(),
         description: z
             .string()
             .trim()

@@ -16,6 +16,7 @@ const serializeTechnicalSheet = (sheet) => ({
     dossierId: sheet.dossier.toString(),
     name: sheet.name,
     description: sheet.description ?? null,
+    rangeId: sheet.range?.toString() ?? null,
     status: sheet.status,
     statusChangedAt: sheet.statusChangedAt,
     currentValidatedStateId:

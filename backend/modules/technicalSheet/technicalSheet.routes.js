@@ -1,4 +1,7 @@
 import { Router } from 'express';
+import { technicalSheetRangeRouter } from './technicalSheetRange.routes.js';
+import { assign } from './technicalSheetRange.controller.js';
+import { assignRangeSchema } from './technicalSheetRange.validation.js';
 
 import { authenticate } from '../../middlewares/authenticate.js';
 import {
@@ -101,6 +104,8 @@ const technicalSheetWorkspaceRouter =
     Router({ mergeParams: true });
 const workspaceBusinessSettingsRouter =
     Router({ mergeParams: true });
+
+technicalSheetWorkspaceRouter.use('/ranges', technicalSheetRangeRouter);
 
 const dossierReadChain = [
     authenticate,
@@ -235,6 +240,18 @@ technicalSheetDossierRouter.patch(
     loadAuthorizedDossierContext,
     enforceTechnicalSheetDossierOperational,
     update,
+);
+
+technicalSheetDossierRouter.patch(
+    '/:technicalSheetId/range',
+    authenticate,
+    validateRequest({ params: technicalSheetParamsSchema, body: assignRangeSchema }),
+    loadWorkspaceContext,
+    authorizePermission(TECHNICAL_SHEET_PERMISSION.UPDATE),
+    enforceWorkspaceAccessMode(),
+    loadAuthorizedDossierContext,
+    enforceTechnicalSheetDossierOperational,
+    assign,
 );
 
 technicalSheetDossierRouter.get(

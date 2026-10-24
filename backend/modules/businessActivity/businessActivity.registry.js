@@ -31,6 +31,12 @@ const BUSINESS_ACTIVITY_ACTION_REGISTRY = Object.freeze({
         value: 'PRODUCT_CATALOG_REACTIVATED',
         label: 'Produit réactivé dans le catalogue',
     }),
+    TECHNICAL_SHEET_RANGE_CREATED: Object.freeze({ value: 'TECHNICAL_SHEET_RANGE_CREATED', label: 'Gamme de Fiches créée' }),
+    TECHNICAL_SHEET_RANGE_RENAMED: Object.freeze({ value: 'TECHNICAL_SHEET_RANGE_RENAMED', label: 'Gamme de Fiches renommée' }),
+    TECHNICAL_SHEET_RANGE_ARCHIVED: Object.freeze({ value: 'TECHNICAL_SHEET_RANGE_ARCHIVED', label: 'Gamme de Fiches archivée' }),
+    TECHNICAL_SHEET_RANGE_REACTIVATED: Object.freeze({ value: 'TECHNICAL_SHEET_RANGE_REACTIVATED', label: 'Gamme de Fiches réactivée' }),
+    TECHNICAL_SHEET_RANGE_DELETED: Object.freeze({ value: 'TECHNICAL_SHEET_RANGE_DELETED', label: 'Gamme de Fiches supprimée' }),
+    TECHNICAL_SHEET_RANGE_CHANGED: Object.freeze({ value: 'TECHNICAL_SHEET_RANGE_CHANGED', label: 'Classement de Fiche modifié' }),
     TECHNICAL_SHEET_CREATED: Object.freeze({
         value: 'TECHNICAL_SHEET_CREATED',
         label: 'Fiche technique créée',
@@ -124,6 +130,7 @@ const BUSINESS_ACTIVITY_ENTITY_TYPE = Object.freeze({
     PRODUCT_VARIANT: 'PRODUCT_VARIANT',
     WORKSPACE_PRODUCT: 'WORKSPACE_PRODUCT',
     TECHNICAL_SHEET: 'TECHNICAL_SHEET',
+    TECHNICAL_SHEET_RANGE: 'TECHNICAL_SHEET_RANGE',
     WORKSPACE_BUSINESS_SETTINGS: 'WORKSPACE_BUSINESS_SETTINGS',
 });
 

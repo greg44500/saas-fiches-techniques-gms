@@ -35,6 +35,8 @@ import {
 import {
     TechnicalSheetValidation,
 } from './technicalSheetValidation.model.js';
+import { lockActiveRangeForAssignment } from './technicalSheetRange.service.js';
+import { TechnicalSheetRange } from './technicalSheetRange.model.js';
 import {
     prepareTechnicalSheetComposition,
 } from './technicalSheetComposition.service.js';
@@ -282,6 +284,22 @@ const copyTechnicalSheet = async ({
                 session,
             });
 
+        let copiedRangeId = null;
+        let rangeNotCopiedReason = null;
+        if (source.range) {
+            const range = await TechnicalSheetRange.findOne(
+                mongoose.trusted({ _id: source.range, workspace: workspaceId }),
+            ).session(session);
+            if (range?.status === 'ACTIVE') {
+                await lockActiveRangeForAssignment({
+                    workspaceId, rangeId: range._id, session,
+                });
+                copiedRangeId = range._id;
+            } else {
+                rangeNotCopiedReason = 'ARCHIVED';
+            }
+        }
+
         const [copy] =
             await TechnicalSheet.create(
                 [{
@@ -289,6 +307,7 @@ const copyTechnicalSheet = async ({
                     dossier:
                         targetDossierId,
                     name: source.name,
+                    range: copiedRangeId,
                     description:
                         source.description
                         ?? null,
@@ -384,11 +403,13 @@ const copyTechnicalSheet = async ({
                     source._id.toString(),
                 sourceDossierId:
                     source.dossier.toString(),
+                rangeNotCopiedReason,
             },
             session,
         });
 
         return {
+            rangeNotCopiedReason,
             sheet:
                 serializeTechnicalSheet(
                     copy,
