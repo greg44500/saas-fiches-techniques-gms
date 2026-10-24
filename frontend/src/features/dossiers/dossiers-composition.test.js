@@ -68,6 +68,18 @@ describe('dossiers frontend composition', () => {
     ]);
   });
 
+  it('expose les Gammes au niveau Workspace et non dans Dossiers', () => {
+    const topLevel = workspaceNavigation.find(({ id }) => id === 'technical-sheet-ranges');
+    expect(topLevel).toMatchObject({
+      type: 'item',
+      label: 'Gammes de produits finis',
+      path: 'technical-sheets/ranges',
+      permission: TECHNICAL_SHEET_PERMISSION.READ,
+    });
+    expect(workspaceNavigation.find(({ id }) => id === 'dossiers')
+      .items.some(({ id }) => id === 'technical-sheet-ranges')).toBe(false);
+  });
+
   it('compose Compte Client, Corbeille et Réglages selon leurs permissions', () => {
     const navigation = filterWorkspaceNavigation(
       workspaceNavigation,

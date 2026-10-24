@@ -57,12 +57,13 @@ describe('workspace navigation composition', () => {
       .slice(separatorIndex + 1)
       .map(({ id }) => id);
 
-    expect(APPLICATION_WORKSPACE_NAVIGATION_MODULES).toHaveLength(3);
+    expect(APPLICATION_WORKSPACE_NAVIGATION_MODULES).toHaveLength(4);
     expect(beforeAdministration[0]).toBe('dashboard');
     expect(beforeAdministration.slice(1)).toEqual([
       'dossiers',
       'products',
       'suppliers',
+      'technical-sheet-ranges',
     ]);
     expect(workspaceNavigation.some(({ id }) => id === 'files')).toBe(false);
 

@@ -1,6 +1,7 @@
 import { dossiersWorkspaceNavigation } from '@/features/dossiers/dossiers-navigation';
 import { productsWorkspaceNavigation } from '@/features/products/products-navigation';
 import { suppliersWorkspaceNavigation } from '@/features/suppliers/suppliers-navigation';
+import { technicalSheetRangesWorkspaceNavigation } from '@/features/technical-sheets/technical-sheet-ranges-navigation';
 import {
   composeWorkspaceNavigation,
 } from '@/features/workspace/navigation/compose-workspace-navigation';
@@ -17,6 +18,7 @@ const APPLICATION_WORKSPACE_NAVIGATION_MODULES = Object.freeze([
   dossiersWorkspaceNavigation,
   productsWorkspaceNavigation,
   suppliersWorkspaceNavigation,
+  technicalSheetRangesWorkspaceNavigation,
 ]);
 
 const workspaceNavigation = Object.freeze(
