@@ -5,6 +5,7 @@ import {
     createRange,
     deleteRange,
     listRanges,
+    listActiveRangeOptions,
     reactivateRange,
     renameRange,
 } from './technicalSheetRange.service.js';
@@ -14,6 +15,11 @@ const list = async (req, res) => {
         workspaceId: req.workspace._id, ...req.validated.query,
     });
     res.status(200).json({ status: 'success', data: result });
+};
+
+const options = async (req, res) => {
+    const ranges = await listActiveRangeOptions({ workspaceId: req.workspace._id });
+    res.status(200).json({ status: 'success', data: { ranges } });
 };
 
 const suggestions = async (req, res) => {
@@ -84,4 +90,4 @@ const assign = async (req, res) => {
     res.status(200).json({ status: 'success', data: { sheet } });
 };
 
-export { archive, assign, create, list, reactivate, remove, rename, suggestions };
+export { archive, assign, create, list, options, reactivate, remove, rename, suggestions };

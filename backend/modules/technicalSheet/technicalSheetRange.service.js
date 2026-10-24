@@ -71,6 +71,16 @@ const listRanges = async ({ workspaceId, page = 1, limit = 50, status, search })
     };
 };
 
+const listActiveRangeOptions = async ({ workspaceId }) => {
+    const ranges = await TechnicalSheetRange.find(
+        mongoose.trusted({ workspace: workspaceId, status: 'ACTIVE' }),
+    ).select('_id name').sort({ name: 1, _id: 1 }).lean();
+    return ranges.map((range) => ({
+        id: range._id.toString(),
+        name: range.name,
+    }));
+};
+
 const createRange = ({ workspaceId, actorId, name, reviewedCandidateIds = [] }) =>
     handleDuplicateName(() => mongoose.connection.transaction(async (session) => {
         await assertRangeNameReviewed({
@@ -221,6 +231,7 @@ export {
     createRange,
     deleteRange,
     listRanges,
+    listActiveRangeOptions,
     lockActiveRangeForAssignment,
     normalizeRangeName,
     reactivateRange,

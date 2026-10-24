@@ -72,6 +72,16 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
       ],
     }),
 
+    listTechnicalSheetRangeOptions: builder.query({
+      query: ({ workspaceId }) => ({
+        url: '/workspaces/' + workspaceId + '/technical-sheets/ranges/options',
+      }),
+      transformResponse: (response) => response.data.ranges,
+      providesTags: (_result, _error, { workspaceId }) => [
+        { type: 'TechnicalSheetRanges', id: workspaceId },
+      ],
+    }),
+
     getTechnicalSheetRangeSuggestions: builder.query({
       query: ({ workspaceId, name, excludeRangeId }) => ({
         url: '/workspaces/' + workspaceId + '/technical-sheets/ranges/suggestions',
@@ -980,6 +990,7 @@ export const {
   useCreateTechnicalSheetRangeMutation,
   useDeleteTechnicalSheetRangeMutation,
   useGetTechnicalSheetRangeSuggestionsQuery,
+  useListTechnicalSheetRangeOptionsQuery,
   useListTechnicalSheetRangesQuery,
   useUpdateTechnicalSheetRangeMutation,
   useApplyTechnicalSheetOptimizationMutation,
