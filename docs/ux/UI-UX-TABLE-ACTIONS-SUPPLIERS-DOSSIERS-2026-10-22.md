@@ -243,3 +243,12 @@ que de la modale tarifaire avant toute PR.
 - Dans l'en-tête, la recherche de prix se place immédiatement après le contrôle de marge cible (ou après le statut si le contrôle est absent). **Au repos, seule une loupe est rendue** : ni champ ni placeholder partiellement visible. Au clic, la recherche se déploie avec une transition de largeur réversible (300 ms, réduction des animations selon préférences système) puis reçoit le focus.
 - Les suggestions M-003 continuent de s'afficher dans leur Portal. Un clic sur une suggestion ne replie pas la recherche. Un clic extérieur la replie sans effacer l'Article sélectionné ; la recherche rouverte retrouve la sélection et son résultat. Échap conserve le comportement tarifaire validé (fermeture du résultat sans perte de l'Article).
 - Permissions, API et calculs inchangés. Tests RTL Dossier/prix ajustés ; tests locaux, lint, build, gate et QA Windows à effectuer avant toute PR ou fusion.
+
+ 
+## Ajustement de l'animation inverse — recherche de prix Dossier (2026-10-24)
+
+- Diagnostic QA : le champ fournisseur était supprimé du DOM dès le repli, ce qui cassait visuellement la transition inverse malgré `transition-[width] duration-300`.
+- Correction ciblée au Produit : champ conservé monté lors des deux transitions, largeur du conteneur animée symétriquement en 300 ms, champ masqué au repos (`opacity`, `aria-hidden`, `inert`) et loupe seule interactive.
+- Les informations tarifaires contextuelles restent hors du conteneur à débordement masqué. L'autocomplétion partagée accepte seulement une classe visuelle facultative pour neutraliser la double bordure dans la barre, sans changer le comportement des autres usages.
+- Échap redonne le focus à la loupe lorsque la recherche se replie ; un clic extérieur conserve le focus de sa destination. Respect de `prefers-reduced-motion`.
+- Tests RTL du repli et de l'accessibilité actualisés. Validation visuelle de l'ouverture **et de la fermeture**, tests locaux Windows, lint/build et gate encore à obtenir avant PR/merge.
