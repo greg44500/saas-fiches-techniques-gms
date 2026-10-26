@@ -94,7 +94,7 @@ describe('M-006 — bibliothèques de fabrication', () => {
             .send({ expectedRevision: 1 }).expect(200);
         expect(reactivated.body.data.template.status).toBe('ACTIVE');
         expect(await ProcessLibraryRevision.countDocuments({ template: id }))
-            .toBe(1);
+            .toBe(3);
     });
 
     it('isole les modèles locaux par Dossier et permet la publication autorisée', async () => {
@@ -151,6 +151,27 @@ describe('M-006 — bibliothèques de fabrication', () => {
             .send({ definition: step() }).expect(201);
         await request(app).post(path).set(bearer(owner.token))
             .send({ definition: step('CUISSON AU FOUR') }).expect(409);
+    });
+
+    it('conserve les snapshots lorsque le statut évolue', async () => {
+        const path = workspacePath() + '/steps';
+        const created = await request(app).post(path)
+            .set(bearer(owner.token))
+            .send({ definition: step() }).expect(201);
+        const id = created.body.data.template.id;
+        await request(app).post(path + '/' + id + '/archive')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 0 }).expect(200);
+        await request(app).post(path + '/' + id + '/reactivate')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 1 }).expect(200);
+        const history = await request(app).get(path + '/' + id + '/revisions')
+            .set(bearer(owner.token)).expect(200);
+        expect(history.body.data.revisions.map((r) => r.revision))
+            .toEqual([2, 1, 0]);
+        expect(history.body.data.revisions.every(
+            (r) => r.definition.title === 'Cuisson au four',
+        )).toBe(true);
     });
 
     it('refuse la lecture cross-Workspace', async () => {
