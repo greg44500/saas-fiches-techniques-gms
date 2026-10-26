@@ -33,9 +33,20 @@ function ProcessSheetsPage() {
     search: search.trim() || undefined,
   });
   const dossier = useGetDossierByIdQuery({ workspaceId: workspace.id, dossierId });
-  const canCreate = can(PROCESS_SHEET_PERMISSION.CREATE)
-    && can(TECHNICAL_SHEET_PERMISSION.READ)
-    && dossier.data?.status === 'ACTIVE';
+  const canCreateProcess = can(PROCESS_SHEET_PERMISSION.CREATE);
+  const canReadTechnicalSheets = can(TECHNICAL_SHEET_PERMISSION.READ);
+  const creationBlockedReason = !canCreateProcess
+    ? 'Votre rôle ne dispose pas du droit de créer des Fiches process.'
+    : !canReadTechnicalSheets
+      ? 'La lecture des Fiches techniques est nécessaire pour créer un process.'
+      : dossier.isLoading || (!dossier.data && !dossier.isError)
+        ? 'Vérification du Dossier en cours…'
+        : dossier.isError || !dossier.data
+          ? 'Le Dossier est indisponible. La création est momentanément bloquée.'
+          : dossier.data.status !== 'ACTIVE'
+            ? 'Le Dossier doit être actif pour créer une Fiche process.'
+            : null;
+  const canCreate = creationBlockedReason === null;
 
   const columns = [
     {
@@ -101,12 +112,22 @@ function ProcessSheetsPage() {
             content="Procédures de fabrication associées aux Fiches techniques du Dossier. Chaque Fiche technique peut avoir au maximum une Fiche process."
           />
         </div>
-        {canCreate && (
-          <Button onClick={() => setCreateOpen(true)} size="sm" type="button">
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            disabled={!canCreate}
+            onClick={() => setCreateOpen(true)}
+            size="sm"
+            type="button"
+          >
             <Plus aria-hidden="true" className="size-4" />
             Créer une Fiche process
           </Button>
-        )}
+          {creationBlockedReason && (
+            <p className="max-w-sm text-right text-xs text-muted-foreground" role="status">
+              {creationBlockedReason}
+            </p>
+          )}
+        </div>
       </header>
 
       <section className="overflow-hidden rounded-xl border border-border bg-card" aria-label="Liste des Fiches process">
@@ -145,7 +166,9 @@ function ProcessSheetsPage() {
                   title="Aucune Fiche process"
                   description={search.trim()
                     ? 'Aucune Fiche process ne correspond à votre recherche.'
-                    : 'Créez une Fiche process à partir d’une Fiche technique validée.'}
+                    : canCreate
+                      ? 'Créez une Fiche process à partir d’une Fiche technique validée.'
+                      : 'Aucune Fiche process enregistrée dans ce Dossier.'}
                 />
               )}
               getRowKey={(process) => process.id}
