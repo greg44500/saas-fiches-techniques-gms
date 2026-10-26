@@ -1,5 +1,8 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+**Lot 5 développé sur `feature/m006-fiches-process` (2026-10-26) :** éditeur de brouillon phases et étapes avec instructions, ingrédients du snapshot M-004 lié au process (lignes répétées distinctes), durées actif/repos/traitement, équipement/vigilance, contrôles qualité/sanitaire, justifications de non-affectation. API `PUT /:processSheetId/draft` strictement validée, transaction et audit, concurrence optimiste, permission `process-sheet:edit` et migration distincte `migration:m006-process-editor-permission`. Vue détail désormais éditable avec sauvegarde et retour 409 explicite, et indicateur de composition M-004 décalée. Tests unitaires/HTTP/RTL ajoutés **non exécutés ici**, QA locale requise avant PR. Le module M-006 complet n'est pas livré : validation officielle, bibliothèque dans l'éditeur, copie du contenu, impression et suppression autonome restent à réaliser. Voir `docs/m006/M-006-TECHNICAL-DESIGN.md`.
+
+
 **UX modale du 2026-10-26 :** à la demande du propriétaire, simplification à deux champs Outlined, labels flottants et exemples visibles uniquement au focus ; retrait complet de la recherche séparée des Fiches validées. Sélecteur éligible M-004 avec pagination n'apparaissant qu'au-delà de 100 éléments et (i) existants. Réutilisation du pattern déjà adopté pour M-004 ; tests RTL enrichis, vérification locale encore attendue. Aucun changement au backend ni aux règles de création strictes.
 
 

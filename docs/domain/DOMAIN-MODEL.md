@@ -1665,3 +1665,8 @@ Les quantités et prix complémentaires sont des projections backend
 négociés et Prix facturés restent strictement Dossier ; les Articles
 privés restent Workspace, les références globales restent partagées.
 Core v1.2.1 non modifié par la PR #44.
+
+
+### M-006 — Brouillon d'édition et origine des ingrédients (lot 5)
+
+Le `ProcessSheetDraft` contient la liste ordonnée `phases[]` avec `steps[]`, les clés `ingredientLineKeys` et les justifications `unassignedReasons[]`, tous **scopés au ProcessSheet et à sa validation M-004 source**. Les affectations ne créent ni nouvelles lignes M-004, ni relations persistantes dans les modèles de bibliothèque. L'enregistrement incrémente sa `revision` et la `revision` parent dans une transaction auditée ; la présence d'une révision M-004 ultérieure n'altère ni les clés historiques ni les phases. La validation officielle M-006 demeure une transition ultérieure distincte.

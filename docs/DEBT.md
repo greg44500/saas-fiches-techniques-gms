@@ -968,3 +968,8 @@ interface et mérite une extraction **Core générique versionnée**
 si plusieurs modules la partagent durablement. Ne pas la réaliser
 silencieusement sur la branche métier. L'ergonomie M-004 et ses tests
 restent prioritaires avant une éventuelle maintenance Core distincte.
+
+
+### GMS-M006-EDITOR-NEXT — Finalisation du process après éditeur brouillon (2026-10-26)
+
+L'éditeur de brouillon existe (phases/étapes, ingrédients, durées, contrôles et sauvegarde avec expectedRevision). Restent : application/adoption contrôlée des révisions de bibliothèques Dossier/Workspace et création rapide de modèle local, validation officielle et historique immuable, cohérence des non-affectés et des compositions M-004 évolutives, gestion des temps simultanés, copie guidée inter-Dossier après validation du parent, impression, suppression autonome définitive avec confirmation. Ne pas réutiliser la validation M-004 à la place de M-006. QA et migration de la permission EDIT restent à exécuter localement.
