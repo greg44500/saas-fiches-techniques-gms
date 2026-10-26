@@ -186,12 +186,14 @@ function ProcessSheetDraftEditor({
   const [conflict, setConflict] = useState(false);
   const [saveDraft, saving] = useSaveProcessSheetDraftMutation();
 
+  // Do not overwrite an unsaved local edit when RTK Query refetches.
+  // A newly saved revision is not replaced by a still-stale cached revision.
   useEffect(() => {
-    if (!dirty) {
+    if (!dirty && (initialDraft?.revision ?? 0) > revision) {
       setForm(normalize(initialDraft));
-      setRevision(initialDraft?.revision ?? 0);
+      setRevision(initialDraft.revision);
     }
-  }, [initialDraft, dirty]);
+  }, [initialDraft, dirty, revision]);
 
   const ingredients = sourceIngredients?.lines ?? [];
   const assigned = new Set(form.phases.flatMap((p) => [
