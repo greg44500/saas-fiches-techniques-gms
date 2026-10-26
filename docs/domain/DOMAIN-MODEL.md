@@ -1388,7 +1388,7 @@ Concepts métier visés, **non encore implémentés** :
 
 **Limites V1 :** pas d'illustrations ni photographie, champ image, stockage dédié ou galerie ; pas de journal de production ni certification HACCP automatique ; pas de partage inter-Workspace. Les illustrations feront l'objet d'un cadrage distinct.
 
-**Statut :** recommandations fonctionnelles 21–35 validées ; identité technique des ingrédients, API, transactions, dates et permissions détaillées à concevoir ; contrat final et implémentation en attente d'autorisation. Autorité : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`.
+**Statut :** contrat final validé et développement autorisé le 2026-10-26 ; premier lot backend Bibliothèque de fabrication engagé, agrégat Fiche process et intégrations M-004 encore non réalisés. Identité technique des ingrédients, transactions, API des Fiches process et permissions détaillées restant à concevoir. Autorité : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`.
 
 ---
 
