@@ -137,6 +137,15 @@ const mountApplicationRoutes = (
  * import { catalogRouter } from '../modules/catalog/catalog.routes.js';
  *
  * const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
+
+ *     Object.freeze({
+ *         key: 'catalog',
+ *         mountPath: '/api/workspaces/:workspaceId/catalog',
+ *         router: catalogRouter,
+ *     }),
+ * ]);
+ */
+const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
     Object.freeze({
         key: 'process-library-workspace',
         mountPath: '/api/workspaces/:workspaceId/process-library',
@@ -147,15 +156,6 @@ const mountApplicationRoutes = (
         mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/process-library',
         router: processLibraryDossierRouter,
     }),
-
- *     Object.freeze({
- *         key: 'catalog',
- *         mountPath: '/api/workspaces/:workspaceId/catalog',
- *         router: catalogRouter,
- *     }),
- * ]);
- */
-const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
     Object.freeze({
         key: 'dossiers',
         mountPath: '/api/workspaces/:workspaceId/dossiers',
