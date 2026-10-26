@@ -5,12 +5,17 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { app } from '../../../app.js';
 import { Dossier } from '../../../modules/dossier/dossier.model.js';
+import { grantDossierAccess } from '../../../modules/dossier/dossierAccess.service.js';
+import {
+    PROCESS_LIBRARY_PERMISSION,
+} from '../../../modules/process/processLibrary.registry.js';
 import {
     ProcessLibraryRevision,
     ProcessLibraryTemplate,
 } from '../../../modules/process/processLibrary.model.js';
 import {
     bearer,
+    createWorkspaceMemberFixture,
     createWorkspaceOwnerFixture,
 } from '../../helpers/dossierTest.fixtures.js';
 
@@ -172,6 +177,46 @@ describe('M-006 — bibliothèques de fabrication', () => {
         expect(history.body.data.revisions.every(
             (r) => r.definition.title === 'Cuisson au four',
         )).toBe(true);
+    });
+
+    it('applique RBAC et accès Dossier aux modèles locaux', async () => {
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: owner.workspace._id,
+            actorId: owner.owner._id,
+            permissions: [
+                PROCESS_LIBRARY_PERMISSION.READ,
+                PROCESS_LIBRARY_PERMISSION.MANAGE_LOCAL,
+            ],
+        });
+        const otherDossier = await Dossier.create({
+            workspace: owner.workspace._id,
+            name: 'Magasin sans affectation',
+            statusChangedBy: owner.owner._id,
+            createdBy: owner.owner._id,
+            updatedBy: owner.owner._id,
+        });
+        await grantDossierAccess({
+            workspaceId: owner.workspace._id,
+            dossierId: dossier._id,
+            membershipId: member.membership._id,
+            actorId: owner.owner._id,
+        });
+
+        const localPath = dossierPath() + '/steps';
+        const created = await request(app).post(localPath)
+            .set(bearer(member.token))
+            .send({ definition: step('Découpe') }).expect(201);
+        await request(app).get(localPath)
+            .set(bearer(member.token)).expect(200);
+        await request(app).get(dossierPath(otherDossier._id) + '/steps')
+            .set(bearer(member.token)).expect(404);
+        await request(app).post(
+            localPath + '/' + created.body.data.template.id + '/publish',
+        ).set(bearer(member.token))
+            .send({ expectedRevision: 0 }).expect(403);
+        await request(app).post(workspacePath() + '/steps')
+            .set(bearer(member.token))
+            .send({ definition: step('Global interdit') }).expect(403);
     });
 
     it('refuse la lecture cross-Workspace', async () => {
