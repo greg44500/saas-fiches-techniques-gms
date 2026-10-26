@@ -87,13 +87,14 @@ const updateProcessSheetDraft = async ({
     }, { new: true, session, runValidators: true });
     if (!draft) throw conflict();
 
-    await ProcessSheet.updateOne(mongoose.trusted({
+    const parentWrite = await ProcessSheet.updateOne(mongoose.trusted({
         _id: process._id, workspace: workspaceId, dossier: dossierId,
         status: TECHNICAL_SHEET_STATUS.ACTIVE,
     }), {
         $inc: { revision: 1 },
         $set: { updatedBy: actorId },
     }, { session });
+    if (parentWrite.matchedCount !== 1) throw conflict();
     await createBusinessActivityEvent({
         workspaceId, dossierId, actorId,
         action: BUSINESS_ACTIVITY_ACTION.PROCESS_SHEET_DRAFT_SAVED,
