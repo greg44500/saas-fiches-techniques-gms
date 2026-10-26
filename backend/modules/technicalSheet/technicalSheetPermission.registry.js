@@ -14,6 +14,7 @@ const TECHNICAL_SHEET_PERMISSION = Object.freeze({
     COPY: 'technical-sheet:copy',
     EXPORT: 'technical-sheet:export',
     SETTINGS_MANAGE: 'technical-sheet:settings:manage',
+    RANGE_MANAGE: 'technical-sheet:range:manage',
 });
 
 const TECHNICAL_SHEET_PERMISSIONS = Object.freeze(

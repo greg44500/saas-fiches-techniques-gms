@@ -21,6 +21,18 @@ vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
   useGetTechnicalSheetMetadataQuery: mocks.metadata,
 }));
 
+vi.mock('@/features/technical-sheets/components/technical-sheet-range-picker', () => ({
+  TechnicalSheetRangePicker: ({ onChange, value }) => (
+    <div>
+      <span>Gamme facultative</span>
+      <span>Gamme courante : {value ?? 'Sans gamme'}</span>
+      <button type="button" onClick={() => onChange('range-new')}>
+        Simuler une nouvelle gamme créée dans la modale
+      </button>
+    </div>
+  ),
+}));
+
 import {
   TechnicalSheetCreateDialog,
 } from '@/features/technical-sheets/components/technical-sheet-create-dialog';
@@ -119,6 +131,7 @@ describe('TechnicalSheetCreateDialog', () => {
       workspaceId: 'workspace-1',
       dossierId: 'dossier-1',
       name: 'Purée de carottes',
+      rangeId: null,
       description: null,
       productionQuantity: '10',
       productionUnit: 'UNIT',
@@ -179,6 +192,7 @@ describe('TechnicalSheetCreateDialog', () => {
       workspaceId: 'workspace-1',
       dossierId: 'dossier-1',
       name: 'Soupe maison',
+      rangeId: null,
       description: null,
       productionQuantity: '20',
       productionUnit: 'UNIT',
@@ -221,6 +235,62 @@ describe('TechnicalSheetCreateDialog', () => {
         saleBasis: 'PORTION',
       }),
     );
+  });
+
+  it('conserve les saisies et affecte une Gamme créée dans la modale imbriquée', async () => {
+    const user = userEvent.setup();
+    render(
+      <TechnicalSheetCreateDialog
+        defaultTargetMarginBasisPoints={3000}
+        dossierId="dossier-1"
+        onClose={vi.fn()}
+        onCreated={vi.fn()}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+    await user.type(screen.getByLabelText('Nom'), 'Tarte aux pommes');
+    await user.type(screen.getByLabelText('Quantité produite'), '10');
+    await user.click(screen.getByRole('button', {
+      name: 'Simuler une nouvelle gamme créée dans la modale',
+    }));
+    expect(screen.getByLabelText('Nom')).toHaveValue('Tarte aux pommes');
+    expect(screen.getByText('Gamme courante : range-new')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Créer', exact: true }));
+    expect(mocks.createSheet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Tarte aux pommes',
+        rangeId: 'range-new',
+        productionQuantity: '10',
+      }),
+    );
+  });
+
+  it('réutilise les libellés flottants et révèle les exemples au focus', async () => {
+    const user = userEvent.setup();
+    render(
+      <TechnicalSheetCreateDialog
+        defaultTargetMarginBasisPoints={3000}
+        dossierId="dossier-1"
+        onClose={vi.fn()}
+        onCreated={vi.fn()}
+        open
+        workspaceId="workspace-1"
+      />,
+    );
+    const name = screen.getByLabelText('Nom');
+    const quantity = screen.getByLabelText('Quantité produite');
+    expect(name.closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'empty');
+    expect(name).toHaveClass('placeholder:text-transparent', 'focus:placeholder:text-muted-foreground');
+    expect(quantity).toHaveAttribute('placeholder', 'Ex. 10');
+    await user.click(name);
+    expect(name).toHaveFocus();
+    expect(name.closest('[data-slot="field"]').querySelector('label').parentElement)
+      .toHaveClass('group-focus-within:top-2');
+    await user.type(name, 'Blanquette de veau');
+    expect(name.closest('[data-slot="field"]'))
+      .toHaveAttribute('data-label-state', 'filled');
   });
 
   it('place l’explication de capacité dans une infobulle', async () => {

@@ -1,5 +1,37 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
+## Complément UX M-003 joint au lot Gammes M-004 — 2026-10-26
+
+- Travail uniquement sur `feature/m004-gammes-fiches-techniques`, intégré
+  à la future PR des Gammes après tests et approbation.
+- Dossier / Fournisseurs et prix : remplacer le premier onglet « Références »
+  par la consultation des Articles fournisseur avec filtre Tous / Favoris
+  et action favori en ligne, sans toucher aux autres onglets ni aux
+  invariants M-003.
+- Cadrage détaillé : `docs/ux/M-003-DOSSIER-ARTICLES-UX-2026-10-26.md`.
+  Recette UI, tests ciblés, E2E et gate `release:check` à confirmer.
+
+
+## Lot courant — Gammes M-004 (2026-10-24)
+
+- PR #49 UI/UX fusionnée dans `main` au commit `ac0145bd`.
+- Gate post-merge #231 initialement en échec intermittent sur le test
+  d'ouverture du dialogue Trial. Correction du test uniquement sur
+  `feature/m004-gammes-fiches-techniques`, gate locale `release:check`
+  verte selon confirmation utilisateur avant démarrage des Gammes.
+- Contrat Gammes explicitement validé le 2026-10-24, G1 = B (suppression
+  uniquement si aucune Fiche liée, tous états et Dossiers inclus) et
+  G2 = A (copie sans Gamme avec message si source archivée).
+- Branche : `feature/m004-gammes-fiches-techniques`. Développement
+  backend + tests, frontend + tests, E2E, migration, QA locale.
+- **Non livré** : les tests et la gate du code Gammes doivent être exécutés
+  et confirmés localement ; PR unique et merge soumis à l'accord utilisateur.
+- Pas de changement Core, de capability, de quota ou de snapshots.
+
+Source validée : `docs/m004/M-004-GAMMES-CADRAGE-PROPOSITION.md`.
+
+---
+
 **Statut :** M-001 à M-005 intégrés ; M-003 complété par PR #44 ; Core Gate post-merge validée à la tentative 2
 **Dernière mise à jour :** 2026-10-23
 

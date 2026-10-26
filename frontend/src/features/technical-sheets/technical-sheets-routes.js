@@ -31,6 +31,15 @@ const dossierTechnicalSheetFrontendRoutes = Object.freeze([
 const technicalSheetsFrontendRouteModule = Object.freeze({
   workspaceRoutes: Object.freeze([
     Object.freeze({
+      path: 'technical-sheets/ranges',
+      lazy: async () => {
+        const { TechnicalSheetRangesPage } = await import(
+          '@/features/technical-sheets/pages/technical-sheet-ranges-page'
+        );
+        return { Component: TechnicalSheetRangesPage };
+      },
+    }),
+    Object.freeze({
       path: 'technical-sheets/optimization',
       lazy: async () => {
         const { TechnicalSheetOptimizerLauncherPage } = await import(

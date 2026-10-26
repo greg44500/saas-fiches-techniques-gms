@@ -1,10 +1,11 @@
-import { Eye, Pencil, Trash2, WandSparkles } from 'lucide-react';
+import { Eye, Pencil, Tags, Trash2, WandSparkles } from 'lucide-react';
 
 import { TableRowActionsMenu } from '@/components/data-display/table-row-actions-menu';
 
 function TechnicalSheetRowActions({
   sheet,
   canModify,
+  canAssign = false,
   canOptimize,
   canDelete,
   hasValidatedState,
@@ -14,6 +15,7 @@ function TechnicalSheetRowActions({
   onPreview,
   onOptimize,
   onModify,
+  onAssign,
   onDelete,
 }) {
   const actions = [
@@ -23,6 +25,12 @@ function TechnicalSheetRowActions({
       label: 'Modifier',
       disabled: isStartingDraft,
       onClick: onModify,
+    }] : []),
+    ...(canAssign ? [{
+      key: 'range',
+      Icon: Tags,
+      label: 'Changer de gamme',
+      onClick: onAssign,
     }] : []),
     ...(hasValidatedState ? [{
       key: 'preview',

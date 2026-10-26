@@ -24,6 +24,7 @@ import {
 import {
     TechnicalSheetDraft,
 } from './technicalSheetDraft.model.js';
+import { lockActiveRangeForAssignment } from './technicalSheetRange.service.js';
 import {
     createTechnicalSheetEvent,
 } from './technicalSheetEvent.service.js';
@@ -108,6 +109,10 @@ const createTechnicalSheet = async ({
             );
         }
 
+        await lockActiveRangeForAssignment({
+            workspaceId, rangeId: data.rangeId ?? null, session,
+        });
+
         await enforcePlanLimit({
             workspaceId,
             metricKey:
@@ -122,6 +127,7 @@ const createTechnicalSheet = async ({
                 workspace: workspaceId,
                 dossier: dossierId,
                 name: data.name,
+                range: data.rangeId ?? null,
                 description:
                     data.description ?? null,
                 status:
@@ -169,6 +175,7 @@ const createTechnicalSheet = async ({
             technicalSheetId: sheet._id,
             metadata: {
                 draftId: draft._id.toString(),
+                rangeId: data.rangeId ?? null,
             },
             session,
         });
@@ -189,6 +196,7 @@ const listTechnicalSheets = async ({
     limit = 20,
     search = null,
     status = null,
+    rangeId = null,
 }) => {
     const filter = mongoose.trusted({
         workspace: workspaceId,
@@ -197,6 +205,8 @@ const listTechnicalSheets = async ({
             $in: DEFAULT_LIST_STATUSES,
         }),
     });
+
+    if (rangeId) filter.range = rangeId === 'unassigned' ? null : rangeId;
 
     if (search) {
         filter.$or = mongoose.trusted([
@@ -228,7 +238,8 @@ const listTechnicalSheets = async ({
             TechnicalSheet.find(filter)
                 .sort({ updatedAt: -1, _id: -1 })
                 .skip(skip)
-                .limit(limit),
+                .limit(limit)
+                .populate({ path: 'range', select: '_id name status' }),
             TechnicalSheet.countDocuments(filter),
         ]);
 
@@ -296,7 +307,7 @@ const getTechnicalSheet = async ({
 
     const [sheet, draft] =
         await Promise.all([
-            TechnicalSheet.findOne(filter),
+            TechnicalSheet.findOne(filter).populate({ path: 'range', select: '_id name status' }),
             TechnicalSheetDraft.findOne(
                 mongoose.trusted({
                     technicalSheet: technicalSheetId,

@@ -2,7 +2,6 @@ import {
   Archive,
   ArrowUpRight,
   Check,
-  CircleMinus,
   Euro,
   Pencil,
   Plus,
@@ -13,8 +12,8 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 
 import { DataTable } from '@/components/data-display/data-table';
+import { DataPagination } from '@/components/data-display/data-pagination';
 import { useTableViewport } from '@/hooks/use-table-viewport';
-import { SupplierArticleSearchAutocomplete } from '@/features/suppliers/components/supplier-article-search-autocomplete';
 import { TableRowActionsMenu } from '@/components/data-display/table-row-actions-menu';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
@@ -22,6 +21,14 @@ import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  DossierSupplierArticleToolbar,
+} from '@/features/suppliers/components/dossier-supplier-article-toolbar';
 import {
   Tabs,
   TabsList,
@@ -32,6 +39,7 @@ import {
   useArchiveNegotiatedPriceMutation,
   useDecideInvoicedPriceMutation,
   useListDossierSupplierReferencesQuery,
+  useListSupplierArticlesQuery,
   useListDossierIndicativePricesQuery,
   useListInvoicedPricesQuery,
   useListWorkspaceIndicativePricesQuery,
@@ -90,8 +98,12 @@ function DossierSupplierPricingPage() {
   const { dossierId } = useParams();
   const { can, workspace } = useWorkspaceContext();
   const { toast } = useToast();
+  const canReadArticles = can(SUPPLIER_PERMISSION.ARTICLE_READ);
+  const canReadFavorites = can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ);
+  const canManageFavorites = canReadFavorites
+    && can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE);
   const [section, setSection] = useState(() => {
-    if (can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ)) return 'references';
+    if (canReadArticles || canReadFavorites) return 'references';
     if (can(SUPPLIER_PERMISSION.CATALOG_READ)) return 'catalogs';
     if (can(SUPPLIER_PERMISSION.NEGOTIATED_PRICE_READ)) return 'negotiated';
     if (can(SUPPLIER_PERMISSION.INVOICED_PRICE_READ)) return 'invoiced';
@@ -99,13 +111,31 @@ function DossierSupplierPricingPage() {
     return null;
   });
   const [priceDialog, setPriceDialog] = useState(null);
-  const [articleToAdd, setArticleToAdd] = useState(null);
+  const [articleFilter, setArticleFilter] = useState('all');
+  const [articleSearch, setArticleSearch] = useState('');
+  const [articlePage, setArticlePage] = useState(1);
+  const [articlePageSize, setArticlePageSize] = useState(10);
+  const [pendingFavoriteId, setPendingFavoriteId] = useState(null);
   const [indicativeDialogOpen, setIndicativeDialogOpen] = useState(false);
   const [indicativeVariant, setIndicativeVariant] = useState(null);
 
   const referencesQuery = useListDossierSupplierReferencesQuery(
     { workspaceId: workspace.id, dossierId },
-    { skip: !can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ) },
+    { skip: !canReadFavorites },
+  );
+  const articlesCountQuery = useListSupplierArticlesQuery(
+    { workspaceId: workspace.id, status: 'ACTIVE', limit: 1 },
+    { skip: !canReadArticles },
+  );
+  const articlesQuery = useListSupplierArticlesQuery(
+    {
+      workspaceId: workspace.id,
+      status: 'ACTIVE',
+      search: articleSearch.trim() || undefined,
+      page: articlePage,
+      limit: articlePageSize,
+    },
+    { skip: !canReadArticles || section !== 'references' || articleFilter !== 'all' },
   );
   const catalogsQuery = useListSupplierCatalogsQuery(
     {
@@ -199,11 +229,6 @@ function DossierSupplierPricingPage() {
     ?? catalogsQuery.data?.catalogs?.length
     ?? 0
   );
-  const viewport = useTableViewport({
-    reservedBottom: 24,
-    dependency: [section, references.length, catalogCount, negotiatedPrices.length,
-      invoicedPrices.length, indicativePrices.length].join(':'),
-  });
   const negotiatedCount = negotiatedPrices.length;
   const invoicedCount = invoicedPrices.length;
   const indicativeCount = indicativePrices.length;
@@ -212,51 +237,79 @@ function DossierSupplierPricingPage() {
     () => references.map(({ supplierArticle }) => normalizeArticle(supplierArticle)),
     [references],
   );
-  const referenceIds = useMemo(
-    () => references.map(({ supplierArticle }) => supplierArticle.id),
+  const favoriteIds = useMemo(
+    () => new Set(references.map(({ supplierArticle }) => supplierArticle.id)),
     [references],
   );
+  const favoriteArticles = useMemo(
+    () => references.map(({ supplierArticle }) => ({
+      ...normalizeArticle(supplierArticle),
+      supplierDesignation: supplierArticle.supplierDesignation,
+    })),
+    [references],
+  );
+  const favoriteMatches = favoriteArticles.filter((article) => (
+    [
+      article.supplierReference,
+      article.supplierDesignation,
+      article.supplierName,
+      article.productVariantName,
+    ].some((value) => (value ?? '').toLocaleLowerCase('fr')
+      .includes(articleSearch.trim().toLocaleLowerCase('fr')))
+  ));
+  const showAllArticles = canReadArticles && articleFilter === 'all';
+  const articleRows = showAllArticles
+    ? (articlesQuery.data?.articles ?? [])
+    : favoriteMatches.slice(
+      (articlePage - 1) * articlePageSize,
+      articlePage * articlePageSize,
+    );
+  const articlePagination = showAllArticles
+    ? articlesQuery.data?.pagination
+    : {
+      page: articlePage,
+      limit: articlePageSize,
+      total: favoriteMatches.length,
+      totalPages: Math.ceil(favoriteMatches.length / articlePageSize),
+    };
+  const articleCount = articlesCountQuery.data?.pagination?.total ?? '…';
+  const viewport = useTableViewport({
+    reservedBottom: 24,
+    dependency: [section, articleFilter, articlePage, articlePageSize,
+      articleRows.length, catalogCount, negotiatedPrices.length,
+      invoicedPrices.length, indicativePrices.length].join(':'),
+  });
 
-  async function addFavorite() {
-    if (!articleToAdd) return;
-
+  async function toggleFavorite(article) {
+    const isFavorite = favoriteIds.has(article.id);
+    setPendingFavoriteId(article.id);
     try {
-      await addReference({
-        workspaceId: workspace.id,
-        dossierId,
-        articleId: articleToAdd.id,
-      }).unwrap();
-      setArticleToAdd(null);
+      if (isFavorite) {
+        await removeReference({
+          workspaceId: workspace.id,
+          dossierId,
+          articleId: article.id,
+        }).unwrap();
+      } else {
+        await addReference({
+          workspaceId: workspace.id,
+          dossierId,
+          articleId: article.id,
+        }).unwrap();
+      }
+      if (articleFilter === 'favorites') setArticlePage(1);
       toast({
-        title: 'Référence ajoutée au Dossier',
+        title: isFavorite ? 'Article retiré des favoris' : 'Article ajouté aux favoris',
         variant: 'success',
       });
     } catch (error) {
       toast({
-        title: 'Ajout impossible',
+        title: isFavorite ? 'Retrait impossible' : 'Ajout impossible',
         description: getApiErrorMessage(error),
         variant: 'destructive',
       });
-    }
-  }
-
-  async function removeFavorite(articleId) {
-    try {
-      await removeReference({
-        workspaceId: workspace.id,
-        dossierId,
-        articleId,
-      }).unwrap();
-      toast({
-        title: 'Référence retirée du Dossier',
-        variant: 'success',
-      });
-    } catch (error) {
-      toast({
-        title: 'Retrait impossible',
-        description: getApiErrorMessage(error),
-        variant: 'destructive',
-      });
+    } finally {
+      setPendingFavoriteId(null);
     }
   }
 
@@ -303,17 +356,18 @@ function DossierSupplierPricingPage() {
     }
   }
 
-  const referenceColumns = [
+  const articleColumns = [
     {
       id: 'article',
-      header: 'Référence',
-      cell: (reference) => (
+      header: 'Article fournisseur',
+      cell: (article) => (
         <div>
           <p className="font-medium">
-            {reference.supplierArticle.supplierReference}
+            {article.supplierDesignation || article.productVariant?.name
+              || article.productVariantName || 'Sans désignation'}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {reference.supplierArticle.productVariantName}
+            Réf. fournisseur : {article.supplierReference}
           </p>
         </div>
       ),
@@ -321,27 +375,57 @@ function DossierSupplierPricingPage() {
     {
       id: 'supplier',
       header: 'Fournisseur',
-      cell: (reference) => reference.supplierArticle.supplierName,
+      cell: (article) => article.supplier?.name
+        ?? article.supplierName ?? '—',
     },
     {
-      id: 'actions',
-      header: 'Actions',
-      cell: (reference) => (
-        can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE) ? (
-          <Button
-            aria-label={'Retirer du Dossier : ' + reference.supplierArticle.supplierReference}
-            className="gap-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive focus-visible:text-destructive"
-            disabled={removeReferenceState.isLoading}
-            onClick={() => removeFavorite(reference.supplierArticle.id)}
-            size="sm"
-            type="button"
-            variant="ghost"
-          >
-            <CircleMinus aria-hidden="true" className="size-4 shrink-0" />
-            Retirer du Dossier
-          </Button>
-        ) : null
-      )
+      id: 'product',
+      header: 'Produit associé',
+      cell: (article) => (
+        article.associationStatus === 'PENDING'
+        || (!article.productVariant && !article.productVariantName)
+          ? <StatusBadge tone="warning">Non associé</StatusBadge>
+          : article.productVariant?.name ?? article.productVariantName
+      ),
+    },
+    {
+      id: 'favorite',
+      header: 'Favori',
+      cell: (article) => {
+        if (!canReadFavorites) return '—';
+        const isFavorite = favoriteIds.has(article.id);
+        if (!canManageFavorites) return isFavorite ? 'Favori' : '—';
+
+        return (
+          <Tooltip>
+            <TooltipTrigger render={(
+              <Button
+                aria-label={(isFavorite ? 'Retirer des favoris : ' : 'Ajouter aux favoris : ')
+                  + article.supplierReference}
+                className="gap-2"
+                disabled={pendingFavoriteId !== null
+                  || addReferenceState.isLoading || removeReferenceState.isLoading}
+                onClick={() => toggleFavorite(article)}
+                size="sm"
+                type="button"
+                variant={isFavorite ? 'secondary' : 'outline'}
+              >
+                <Star
+                  aria-hidden="true"
+                  className="size-4 shrink-0"
+                  fill={isFavorite ? 'currentColor' : 'none'}
+                />
+                {isFavorite ? 'Favori' : 'Ajouter'}
+              </Button>
+            )} />
+            <TooltipContent>
+              {isFavorite
+                ? 'Retirer cet article des favoris du Dossier.'
+                : 'Ajouter cet article aux favoris du Dossier.'}
+            </TooltipContent>
+          </Tooltip>
+        );
+      },
     },
   ];
 
@@ -609,9 +693,11 @@ function DossierSupplierPricingPage() {
       {section && (
         <Tabs onValueChange={setSection} value={section}>
           <TabsList aria-label="Données Fournisseurs du Dossier" variant="section">
-          {can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ) && (
+          {(canReadArticles || canReadFavorites) && (
             <TabsTrigger value="references" variant="section">
-              Références ({references.length})
+              {canReadArticles
+                ? `Articles fournisseur (${articleCount})`
+                : `Articles favoris (${references.length})`}
             </TabsTrigger>
           )}
           {can(SUPPLIER_PERMISSION.CATALOG_READ) && (
@@ -640,60 +726,86 @@ function DossierSupplierPricingPage() {
 
       {section === 'references' && (
         <section className="overflow-hidden rounded-xl border border-border bg-card">
-          {can(SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE)
-          && can(SUPPLIER_PERMISSION.ARTICLE_READ) && (
-            <div className="flex flex-col gap-2 border-b border-border p-4 sm:flex-row">
-              <SupplierArticleSearchAutocomplete
-                ariaLabel="Référence à ajouter au Dossier"
-                excludedIds={referenceIds}
-                onSelect={setArticleToAdd}
-                selectedArticle={articleToAdd}
-                workspaceId={workspace.id}
-              />
-              <Button
-                disabled={!articleToAdd || addReferenceState.isLoading}
-                onClick={addFavorite}
-                type="button"
-              >
-                <Star aria-hidden="true" className="size-4" />
-                Ajouter
-              </Button>
-            </div>
-          )}
-
-          {referencesQuery.isError ? (
+          <DossierSupplierArticleToolbar
+            favoriteCount={references.length}
+            onFilterChange={(value) => {
+              setArticleFilter(value);
+              setArticlePage(1);
+              viewport.resetScroll();
+            }}
+            onSearchChange={(value) => {
+              setArticleSearch(value);
+              setArticlePage(1);
+              viewport.resetScroll();
+            }}
+            search={articleSearch}
+            selectedFilter={articleFilter}
+            showFavoriteFilter={canReadArticles && canReadFavorites}
+          />
+          {(canReadFavorites && referencesQuery.isError)
+            || (showAllArticles && articlesQuery.isError) ? (
             <div className="p-4">
               <ErrorState
-                description="Les références du Dossier n’ont pas pu être chargées."
-                onRetry={referencesQuery.refetch}
-                title="Références indisponibles"
+                description="Les Articles fournisseur ne peuvent pas être affichés pour ce Dossier."
+                onRetry={() => {
+                  if (canReadFavorites) referencesQuery.refetch();
+                  if (showAllArticles) articlesQuery.refetch();
+                }}
+                title="Articles indisponibles"
               />
             </div>
+          ) : (showAllArticles && articlesQuery.isLoading)
+            || (canReadFavorites && referencesQuery.isLoading) ? (
+            <p className="p-5 text-sm text-muted-foreground" role="status">
+              Chargement des Articles fournisseur…
+            </p>
           ) : (
-            <div
-              aria-label="Lignes des références fournisseurs"
-              className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
-              ref={viewport.ref}
-              role="region"
-              style={{ height: viewport.height }}
-              tabIndex={0}
-            >
-              <DataTable
-                rowClassName="transition-colors hover:bg-muted/50"
-                caption="Références fournisseur favorites du Dossier"
-                columns={referenceColumns}
-                data={references}
-                emptyContent={(
-                  <EmptyState
-                    className="p-0"
-                    description="Aucune référence fournisseur favorite n’est enregistrée pour ce Dossier."
-                    title="Aucune référence"
-                  />
-                )}
-                getRowKey={(reference) => reference.id}
-                headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
-              />
-            </div>
+            <>
+              <div
+                aria-label="Lignes des Articles fournisseur du Dossier"
+                className="min-h-0 overflow-auto overscroll-contain [&>div]:overflow-visible"
+                ref={viewport.ref}
+                role="region"
+                style={{ height: viewport.height }}
+                tabIndex={0}
+              >
+                <DataTable
+                  caption="Articles fournisseur accessibles au Dossier"
+                  columns={articleColumns}
+                  data={articleRows}
+                  emptyContent={(
+                    <EmptyState
+                      className="p-0"
+                      description={showAllArticles
+                        ? 'Aucun Article fournisseur ne correspond à cette recherche.'
+                        : 'Aucun Article favori ne correspond à cette recherche.'}
+                      title="Aucun Article"
+                    />
+                  )}
+                  getRowKey={(article) => article.id}
+                  headerClassName="sticky top-0 z-10 bg-muted text-muted-foreground"
+                  rowClassName="transition-colors hover:bg-muted/50"
+                />
+              </div>
+              <div className="border-t border-border px-4 pb-4">
+                <DataPagination
+                  ariaLabel="Pagination des Articles fournisseur du Dossier"
+                  disabled={Boolean(articlesQuery.isFetching && showAllArticles)}
+                  onPageChange={(nextPage) => {
+                    setArticlePage(nextPage);
+                    viewport.resetScroll();
+                  }}
+                  onPageSizeChange={(nextSize) => {
+                    setArticlePageSize(nextSize);
+                    setArticlePage(1);
+                    viewport.resetScroll();
+                  }}
+                  page={articlePage}
+                  pageSize={articlePageSize}
+                  pagination={articlePagination}
+                />
+              </div>
+            </>
           )}
         </section>
       )}

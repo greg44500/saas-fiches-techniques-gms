@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   previewProps: null,
   startDraftMutation: vi.fn(),
   workspaceContext: vi.fn(),
+  rangeOptionsArgs: vi.fn(),
 }));
 
 vi.mock('react-router', async () => {
@@ -61,6 +62,17 @@ vi.mock('@/features/dossiers/api/dossiers-api', () => ({
 }));
 
 vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
+  useListTechnicalSheetRangeOptionsQuery: (args) => {
+    mocks.rangeOptionsArgs(args);
+    return {
+      data: [
+        { id: 'range-one', name: 'Snacking', status: 'ACTIVE' },
+        { id: 'range-two', name: 'Traiteur', status: 'ARCHIVED' },
+      ],
+      isError: false,
+      isLoading: false,
+    };
+  },
   useDeleteTechnicalSheetMutation: () => [
     mocks.deleteMutation,
     { isLoading: false },
@@ -260,6 +272,40 @@ describe('TechnicalSheetsPage', () => {
       .toBeInTheDocument();
   });
 
+  it('regroupe la recherche et le filtre des Gammes sans raccourci de gestion', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(screen.queryByRole('textbox', {
+      name: 'Rechercher une gamme pour le filtre',
+    })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {
+      name: 'Gérer les gammes',
+    })).not.toBeInTheDocument();
+    expect(mocks.rangeOptionsArgs).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      includeArchived: true,
+    });
+
+    const search = screen.getByRole('textbox', {
+      name: 'Rechercher une Fiche technique',
+    });
+    const filter = screen.getByRole('combobox', {
+      name: 'Filtrer les Fiches par gamme',
+    });
+    const toolbar = search.parentElement.parentElement;
+    expect(toolbar).toHaveClass('sm:flex-row');
+    expect(toolbar).toContainElement(filter);
+
+    await user.click(filter);
+    expect(screen.getByRole('option', {
+      name: 'Snacking',
+    })).toBeInTheDocument();
+    expect(screen.getByRole('option', {
+      name: 'Traiteur (archivée)',
+    })).toBeInTheDocument();
+  });
+
   it('ordonne les actions Modifier, Prévisualiser, Optimiser, Supprimer', async () => {
     const user = userEvent.setup();
     mocks.workspaceContext.mockReturnValue({
@@ -274,7 +320,7 @@ describe('TechnicalSheetsPage', () => {
     }));
     const group = screen.getByRole('group', { name: 'Actions de Tartine auvergnate' });
     const labels = within(group).getAllByRole('button').map((button) => button.textContent.trim());
-    expect(labels).toEqual(['Modifier', 'Prévisualiser', 'Optimiser', 'Supprimer']);
+    expect(labels).toEqual(['Modifier', 'Changer de gamme', 'Prévisualiser', 'Optimiser', 'Supprimer']);
   });
 
   it('regroupe Prévisualiser, Modifier et Supprimer sans proposer d’exports', async () => {

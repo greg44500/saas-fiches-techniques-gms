@@ -54,6 +54,11 @@ import {
     copyTechnicalSheet,
 } from '../../../modules/technicalSheet/technicalSheetCopy.service.js';
 import {
+    archiveRange,
+    assignTechnicalSheetRange,
+    createRange,
+} from '../../../modules/technicalSheet/technicalSheetRange.service.js';
+import {
     exportCurrentValidatedTechnicalSheet,
     getTechnicalSheetExportUsage,
 } from '../../../modules/technicalSheet/technicalSheetExport.service.js';
@@ -285,6 +290,84 @@ const createValuedDraft = async ({
 };
 
 describe('M-004 services Fiches techniques', () => {
+
+    it('conserve la Gamme ACTIVE à la copie, mais crée Sans gamme avec motif G2 après archivage', async () => {
+        const range = await createRange({
+            workspaceId: owner.workspace._id,
+            actorId: owner.owner._id,
+            name: 'Snacking',
+        });
+
+        const { created, valued } = await createValuedDraft();
+
+        const associated = await assignTechnicalSheetRange({
+            workspaceId: owner.workspace._id,
+            dossierId: dossier._id,
+            technicalSheetId: created.sheet.id,
+            actorId: owner.owner._id,
+            expectedRevision: created.sheet.revision,
+            rangeId: range.id,
+        });
+
+        await validateTechnicalSheet({
+            workspaceId: owner.workspace._id,
+            dossierId: dossier._id,
+            technicalSheetId: created.sheet.id,
+            actorId: owner.owner._id,
+            expectedSheetRevision: associated.revision,
+            expectedDraftRevision: valued.draft.revision,
+            atDate,
+        });
+
+        const target = await Dossier.create({
+            workspace: owner.workspace._id,
+            name: 'Dossier cible gammes',
+            technicalSheetSettings: { defaultTargetMarginBasisPoints: 3000 },
+            statusChangedBy: owner.owner._id,
+            createdBy: owner.owner._id,
+            updatedBy: owner.owner._id,
+        });
+
+        const copy = () => copyTechnicalSheet({
+            workspaceId: owner.workspace._id,
+            sourceDossierId: dossier._id,
+            technicalSheetId: created.sheet.id,
+            targetDossierId: target._id,
+            actorId: owner.owner._id,
+            membershipId: owner.membership._id,
+            isOwner: true,
+        });
+
+        const activeCopy = await copy();
+        expect(activeCopy.sheet.rangeId).toBe(range.id);
+        expect(activeCopy.rangeNotCopiedReason).toBeNull();
+
+        await archiveRange({
+            workspaceId: owner.workspace._id,
+            rangeId: range.id,
+            actorId: owner.owner._id,
+            expectedRevision: range.revision,
+        });
+
+        const archivedCopy = await copy();
+        expect(archivedCopy.sheet.rangeId).toBeNull();
+        expect(archivedCopy.rangeNotCopiedReason).toBe('ARCHIVED');
+
+        const source = await listTechnicalSheets({
+            workspaceId: owner.workspace._id,
+            dossierId: dossier._id,
+            rangeId: range.id,
+        });
+        const destination = await listTechnicalSheets({
+            workspaceId: owner.workspace._id,
+            dossierId: target._id,
+        });
+        expect(source.sheets).toHaveLength(1);
+        expect(destination.sheets).toHaveLength(2);
+        expect(destination.sheets.map((sheet) => sheet.rangeId))
+            .toEqual(expect.arrayContaining([range.id, null]));
+    });
+
     it('refuse une création sans paramètres de production', async () => {
         await expect(
             createTechnicalSheet({

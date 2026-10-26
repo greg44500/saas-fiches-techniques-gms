@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { TechnicalSheetRangePicker } from '@/features/technical-sheets/components/technical-sheet-range-picker';
+import { ProductVariantField } from '@/features/products/components/product-variant-field';
 import {
   useCreateTechnicalSheetMutation,
   useGetTechnicalSheetMetadataQuery,
@@ -35,6 +37,7 @@ import {
 
 function TechnicalSheetCreateDialog({
   defaultTargetMarginBasisPoints,
+  canManageRanges = false,
   dossierId,
   onClose,
   onCreated,
@@ -43,6 +46,7 @@ function TechnicalSheetCreateDialog({
 }) {
   const cancelRef = useRef(null);
   const [name, setName] = useState('');
+  const [rangeId, setRangeId] = useState(null);
   const [description, setDescription] = useState('');
   const [productionQuantity, setProductionQuantity] = useState('');
   const [productionUnit, setProductionUnit] = useState('');
@@ -74,6 +78,7 @@ function TechnicalSheetCreateDialog({
   useEffect(() => {
     if (!open) return;
     setName('');
+    setRangeId(null);
     setDescription('');
     setProductionQuantity('');
     setProductionUnit('');
@@ -169,6 +174,7 @@ function TechnicalSheetCreateDialog({
         workspaceId,
         dossierId,
         name: normalizedName,
+        rangeId,
         description: description.trim() || null,
         productionQuantity: normalizedQuantity,
         productionUnit,
@@ -216,11 +222,14 @@ function TechnicalSheetCreateDialog({
           </DialogHeader>
 
           <div className="mt-5 space-y-4">
-            <Field>
-              <FieldLabel htmlFor="technical-sheet-name">
-                Nom
-              </FieldLabel>
+            <ProductVariantField
+              filled={Boolean(name.trim())}
+              floating
+              id="technical-sheet-name"
+              label="Nom"
+            >
               <Input
+                className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground"
                 disabled={createState.isLoading}
                 id="technical-sheet-name"
                 maxLength={160}
@@ -228,14 +237,25 @@ function TechnicalSheetCreateDialog({
                 placeholder="Ex. Bœuf bourguignon"
                 value={name}
               />
-            </Field>
+            </ProductVariantField>
+
+            <TechnicalSheetRangePicker
+              canCreate={canManageRanges}
+              disabled={createState.isLoading}
+              onChange={setRangeId}
+              value={rangeId}
+              workspaceId={workspaceId}
+            />
 
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="technical-sheet-production-quantity">
-                  Quantité produite
-                </FieldLabel>
+              <ProductVariantField
+                filled={Boolean(productionQuantity.trim())}
+                floating
+                id="technical-sheet-production-quantity"
+                label="Quantité produite"
+              >
                 <Input
+                  className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground"
                   disabled={createState.isLoading}
                   id="technical-sheet-production-quantity"
                   inputMode="decimal"
@@ -243,17 +263,25 @@ function TechnicalSheetCreateDialog({
                   placeholder="Ex. 10"
                   value={productionQuantity}
                 />
-              </Field>
+              </ProductVariantField>
 
-              <Field>
-                <FieldLabel>Unité de production</FieldLabel>
+              <ProductVariantField
+                filled={Boolean(productionUnit)}
+                floating
+                id="technical-sheet-production-unit"
+                label="Unité de production"
+              >
                 <Select
                   disabled={createState.isLoading || metadataQuery.isLoading}
                   items={unitItems}
                   onValueChange={setProductionUnit}
                   value={productionUnit}
                 >
-                  <SelectTrigger aria-label="Unité de production">
+                  <SelectTrigger
+                    aria-label="Unité de production"
+                    className="h-12 pt-3"
+                    id="technical-sheet-production-unit"
+                  >
                     <SelectValue placeholder="Choisir une unité" />
                   </SelectTrigger>
                   <SelectContent>
@@ -264,13 +292,16 @@ function TechnicalSheetCreateDialog({
                     ))}
                   </SelectContent>
                 </Select>
-              </Field>
+              </ProductVariantField>
 
-              <Field>
-                <FieldLabel htmlFor="technical-sheet-portions-per-piece">
-                  Portions / pièce
-                </FieldLabel>
+              <ProductVariantField
+                filled={Boolean(portionsPerProductionUnit.trim())}
+                floating
+                id="technical-sheet-portions-per-piece"
+                label="Portions / pièce"
+              >
                 <Input
+                  className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground"
                   disabled={createState.isLoading}
                   id="technical-sheet-portions-per-piece"
                   inputMode="decimal"
@@ -278,17 +309,25 @@ function TechnicalSheetCreateDialog({
                   placeholder="Ex. 8"
                   value={portionsPerProductionUnit}
                 />
-              </Field>
+              </ProductVariantField>
 
-              <Field>
-                <FieldLabel>Base de vente</FieldLabel>
+              <ProductVariantField
+                filled={Boolean(saleBasis)}
+                floating
+                id="technical-sheet-sale-basis"
+                label="Base de vente"
+              >
                 <Select
                   disabled={createState.isLoading || metadataQuery.isLoading}
                   items={saleBasisItems}
                   onValueChange={setSaleBasis}
                   value={saleBasis}
                 >
-                  <SelectTrigger aria-label="Base de vente">
+                  <SelectTrigger
+                    aria-label="Base de vente"
+                    className="h-12 pt-3"
+                    id="technical-sheet-sale-basis"
+                  >
                     <SelectValue placeholder="Choisir une base" />
                   </SelectTrigger>
                   <SelectContent>
@@ -299,7 +338,7 @@ function TechnicalSheetCreateDialog({
                     ))}
                   </SelectContent>
                 </Select>
-              </Field>
+              </ProductVariantField>
 
               <Field>
                 <FieldLabel>TVA</FieldLabel>
@@ -312,13 +351,15 @@ function TechnicalSheetCreateDialog({
                 />
               </Field>
 
-              <Field>
-                <FieldLabel htmlFor="technical-sheet-target-margin">
-                  Marge cible (%)
-                </FieldLabel>
+              <ProductVariantField
+                filled={hasDossierTargetMargin || Boolean(targetMargin.trim())}
+                floating
+                id="technical-sheet-target-margin"
+                label="Marge cible (%)"
+              >
                 {hasDossierTargetMargin ? (
                   <div
-                    className="flex h-10 items-center gap-2 rounded-md border border-border bg-muted/20 px-3 text-sm"
+                    className="flex h-12 items-center gap-2 rounded-md border border-border bg-muted/20 px-3 pt-3 text-sm"
                     id="technical-sheet-target-margin"
                   >
                     <span className="font-semibold tabular-nums">
@@ -331,6 +372,7 @@ function TechnicalSheetCreateDialog({
                 ) : (
                   <>
                     <Input
+                      className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground"
                       disabled={createState.isLoading}
                       id="technical-sheet-target-margin"
                       inputMode="decimal"
@@ -343,14 +385,17 @@ function TechnicalSheetCreateDialog({
                     </p>
                   </>
                 )}
-              </Field>
+              </ProductVariantField>
             </div>
 
-            <Field>
-              <FieldLabel htmlFor="technical-sheet-description">
-                Description
-              </FieldLabel>
+            <ProductVariantField
+              filled={Boolean(description.trim())}
+              floating
+              id="technical-sheet-description"
+              label="Description"
+            >
               <Textarea
+                className="min-h-24 pt-5 placeholder:text-transparent focus:placeholder:text-muted-foreground"
                 disabled={createState.isLoading}
                 id="technical-sheet-description"
                 maxLength={2000}
@@ -358,7 +403,7 @@ function TechnicalSheetCreateDialog({
                 placeholder="Informations utiles sur la préparation…"
                 value={description}
               />
-            </Field>
+            </ProductVariantField>
 
             {errorMessage && (
               <p className="text-sm text-destructive" role="alert">

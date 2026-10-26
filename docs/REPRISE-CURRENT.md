@@ -1,5 +1,195 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 
+## Stabilisation finale E2E Gammes — notifications (2026-10-26)
+
+- Exécution locale rapportée par l'utilisateur : 37 tests Playwright,
+  36 réussis, 1 échec dans `technical-sheet-ranges-m004.spec.js` après
+  suppression refusée d'une Gamme encore utilisée.
+- Cause démontrée par le log : la même description d'erreur existe dans
+  une notification visible et dans la région d'annonce ARIA ; le sélecteur
+  global `page.getByText(/encore associée .../)` échoue en strict mode.
+  Le serveur retourne bien le refus métier attendu ; aucun défaut de
+  suppression MongoDB n'est établi.
+- Le scénario utilise désormais l'utilitaire E2E partagé
+  `expectVisibleToast` qui cible `[data-slot="toast"]`. Il vérifie
+  aussi le titre « Suppression impossible », le maintien du dialogue
+  puis l'état archivé et l'affectation de la Fiche.
+- Le test React de gestion des Gammes couvre en complément la réponse
+  d'erreur serveur, le feedback destructif et la conservation du dialogue.
+  Audit des 13 fichiers E2E : pas d'autre assertion portant directement
+  sur une description de toast non scoped ayant ce symptôme.
+- **Les tests du nouveau HEAD restent à exécuter**, y compris
+  `npm run release:check` et la Core Gate PR. Pas de PR ni de merge
+  sans validation de l'utilisateur.
+
+
+
+## Stabilisation pré-PR — release:verify / manifeste des Gammes (2026-10-26)
+
+- La gate locale `npm run release:check` signalée par l'utilisateur
+  s'arrête à `release:verify` : `migration:m004-ranges` et son
+  runner M-004 existent bien, mais manquent dans l'inventaire de
+  `docs/releases/migration-manifest.json`.
+- Audit du HEAD : 29 scripts `migration:*` et 29 runners contre
+  28 entrées du manifeste ; un seul écart (Gammes), aucun doublon,
+  aucun autre script ou runner orphelin.
+- Une entrée `m004-ranges` a été ajoutée avec dépendance à
+  `m004-technical-sheets` ; notes opérationnelles de migration
+  complétées dans le contrat Gammes.
+- Cette correction ne modifie ni le runner, ni MongoDB, ni le
+  vérificateur Core ni les migrations existantes.
+- `release:verify`, lint, tests backend/frontend, build, E2E et
+  `release:check` **restent à exécuter sur le nouveau HEAD**.
+  Pas de PR/merge tant que la gate réelle n'est pas validée.
+
+
+
+## Finition UX M-003 : filtre animé, favoris et recherche compacte — 2026-10-26
+
+- Le filtre « Tous les articles / Favoris » reprend le curseur coulissant
+  200 ms (avec réduction des animations) des modes de recherche Produits
+  M-004. Le composant reste propre au produit : pas de changement de
+  primitive générique du Core.
+- Les actions Ajouter/Retirer des favoris exposent une infobulle au survol
+  et au focus clavier via la primitive Tooltip existante.
+- La recherche d'Articles du Dossier est initialement réduite à une
+  loupe ; clic puis expansion 300 ms avec champ conservé pendant
+  l'animation, comme la recherche de prix de l'en-tête du Dossier.
+  Recherche réactive côté serveur conservée ; la saisie maintient
+  l'expansion lors d'un clic extérieur. Échap efface la requête puis
+  rétracte le champ et rétablit le focus sur la loupe.
+- Tests du composant, RTL de page et E2E M-003 adaptés ; non exécutés
+  localement sur ce nouveau HEAD. Contrôles frontend, QA et
+  `npm run release:check` à effectuer avant PR.
+
+## UX M-003 dans la branche Gammes M-004 — 2026-10-26 (recette à exécuter)
+
+- Décision utilisateur : conserver la branche `feature/m004-gammes-fiches-techniques`
+  pour la correction UX et la future PR des Gammes. Aucune branche
+  ni PR additionnelle dédiée à ce complément.
+- Dans « Dossier → Fournisseurs et prix », le premier onglet consulte les
+  Articles fournisseur actifs visibles du Workspace, avec compteur,
+  recherche et pagination serveur ; « Tous les articles / Favoris »
+  change la liste sans créer un catalogue magasin.
+- Le choix de favori devient une action sur chaque ligne. La liste des
+  favoris est toujours la relation existante Dossier/Article, sans
+  duplication de Produit ou prix ; les Articles non associés restent
+  consultables et ne deviennent pas valorisables par simple affichage.
+- Permissions : lecture catalogue via `supplier:article:read`, lecture
+  favoris via `supplier:dossier-reference:read`, mutation via
+  `supplier:dossier-reference:manage`. Les utilisateurs sans lecture
+  d'Articles conservent leur ancienne lecture des favoris ; aucune
+  permission n'est accordée implicitement.
+- Aucun changement d'API, de MongoDB, de résolution de prix, de Core ou
+  des quatre autres onglets. Tests RTL et scénario Playwright M-003
+  ajoutés/actualisés, **non exécutés localement pour ce commit**.
+  Gate `npm run release:check` et recette Windows à réaliser avant PR.
+
+
+
+## Finition UX — filtre des Gammes dans les Fiches (2026-10-26)
+
+- Dans le tableau des Fiches d'un Dossier : une seule recherche par
+  nom/description, placée à côté du filtre Gamme sur écrans assez larges ;
+  sur petit écran, les deux contrôles se superposent sans débordement.
+- Suppression du champ distinct « Chercher une gamme » et du raccourci
+  « Gérer les gammes » dans l'en-tête du Dossier. L'administration
+  reste accessible au premier niveau de navigation du Workspace.
+- Le filtre utilise le catalogue complet des Gammes actives et archivées
+  du Workspace via `/ranges/options?includeArchived=true`, sans la
+  limite de pagination du tableau de gestion. Le comportement par défaut
+  de `/ranges/options` reste actif uniquement pour les affectations
+  et les créations de Fiche.
+- Tests RTL, HTTP et Playwright adaptés. **Aucun résultat d'exécution
+  locale ni gate globale n'est encore disponible pour cette révision.**
+  Pas de PR ou de fusion sans validation.
+
+## État courant — M-004 Gammes, 2026-10-24
+
+### Ajustement demandé — création de Fiche et champs outlined (2026-10-24)
+
+- La modale « Créer une gamme » utilise une infobulle d'information au
+  niveau du titre plutôt qu'un sous-titre visible.
+- Dans la modale « Créer une Fiche technique », la Gamme est désormais
+  choisie via une seule liste déroulante « Sans gamme » par défaut.
+  L'action « Créer une gamme », si permission accordée, est alignée avec
+  le libellé « Gamme (facultative) » et ouvre la même modale imbriquée.
+  Après création, la nouvelle Gamme est sélectionnée sans quitter le
+  formulaire de la Fiche. Aucun champ de recherche intermédiaire.
+- Le serveur expose toutes les Gammes actives du Workspace via
+  `GET /api/workspaces/:workspaceId/technical-sheets/ranges/options`,
+  autorisé par la permission de lecture M-004 ; les Gammes archivées
+  ne sont pas sélectionnables pour une nouvelle Fiche.
+- Les champs texte et les listes de la création de Fiche reprennent
+  l'habillage flottant/outlined déjà présent dans
+  `ProductVariantField` (Produit M-002), sans copie d'une primitive Core.
+  Les libellés remontent au focus ; exemples de saisie révélés au focus
+  des champs texte. Le contrôle TVA reste une sélection segmentée.
+- Le besoin futur de généraliser cet habillage à tout le SaaS est
+  distinct du présent lot produit et reste candidat à une évolution Core.
+
+Tests HTTP, RTL et E2E adaptés/ajoutés mais **non exécutés à ce stade**.
+Aucun changement de `main`, aucune PR ou fusion.
+
+### Ajustement demandé en recette — modale et noms proches (2026-10-24)
+
+Le formulaire intégré à la page est remplacé par une modale
+commune à création, renommage et création rapide depuis un Dossier.
+Le contrôle des noms proches reprend les critères métier des catégories
+Produit, avec suggestions Workspace-scoped, avertissements de doublons
+exacts/voisins, confirmation explicite des noms différents et refus
+serveur lorsque les propositions changent. Contrat complété en
+section 19 du cadrage validé.
+
+**Non vérifié à ce stade** : tests ciblés backend/RTL/Playwright et
+`npm run release:check` de la nouvelle révision. Pas de PR ni merge.
+
+### Reprise QA interface Gammes — 2026-10-24
+
+Après revue des captures utilisateurs : positionnement initial sous
+« Dossiers » inadapté à un référentiel global. La navigation du Produit
+place désormais « Gammes de produits finis » au même niveau que Produits
+et Fournisseurs. L'écran utilise le titre « Gamme de produits finis »,
+une aide accessible via l'icône (i) sans jargon technique, la recherche
+prédictive et animée avec les primitives Autocomplete existantes et
+un filtre de statut réduit sur la même ligne. Un bouton explicite
+« Créer une gamme » ouvre l'édition si le rôle dispose de
+`technical-sheet:range:manage`. Lecture seule sinon ; aucun contournement
+RBAC. Le bouton « Créer une Fiche technique » reste dans chaque Dossier,
+car une Fiche dépend toujours d'un magasin.
+
+**Vigilance pour la QA Windows** : si l'Owner voit la liste mais pas
+« Créer une gamme », vérifier l'exécution de
+`npm run migration:m004-ranges` sur la base de développement puis
+rafraîchir la session et les permissions effectives. Ne pas accorder
+manuellement des droits à tous les membres.
+
+Tests modifiés : composition navigation, page Gammes, prédiction Autocomplete
+et E2E. Ces tests n'ont **pas** encore été exécutés sur ce HEAD ;
+aucune PR, aucun merge.
+
+---
+
+Branche de développement : `feature/m004-gammes-fiches-techniques`, issue
+du merge de la PR Produit #49 (`ac0145bd`). Contrat global des Gammes
+explicitement approuvé le 2026-10-24 : G1 = B, G2 = A. Document canonique :
+`docs/m004/M-004-GAMMES-CADRAGE-PROPOSITION.md`. Le référentiel est
+Workspace-scoped ; les Fiches et prix restent Dossier-scoped.
+
+La correction du test Core Gate #231, limitée à l'attente asynchrone du
+dialogue Trial, a été validée localement via `npm run release:check`
+selon l'utilisateur **avant** le développement des Gammes.
+
+Implémentation des Gammes publiée sur branche, **non vérifiée par des
+tests réellement exécutés à ce stade**. Prérequis de clôture : migration
+`npm run migration:m004-ranges` sur la DB de développement adaptée,
+tests ciblés unitaires/HTTP/RTL/E2E, gate locale globale, QA visuelle,
+autorisation de PR et fusion explicites. `main` n'est pas modifié.
+Les rubriques historiques ci-dessous décrivent des étapes antérieures et
+ne représentent plus le statut courant.
+
+---
+
 ## Revue finale du contrôle guidé M-002 — 2026-10-24, gate non validée
 
 Nouveau rapport local après le lot transversal précédent : **17/18 E2E ciblés réussis**. Le seul échec concernait l'attente de deux boutons « Valider » dans le contrôle guidé M-002. Relecture de `ProductReferenceReviewWorkflow`, de `ProductReferenceGovernanceReviewPanel`, de `ProductReferenceDetailsDrawer`, de la revue backend, des tests RTL et des étapes finales du scénario :

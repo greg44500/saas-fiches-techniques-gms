@@ -1,0 +1,95 @@
+import { expect, test } from '@playwright/test';
+
+import { loginWithIdentity } from '../support/auth.js';
+import { provisionTechnicalSheetWorkspace } from '../support/technical-sheet-fixtures.js';
+import { expectVisibleToast } from '../support/toast.js';
+
+test('M-004 Gammes : un référentiel Workspace classe les Fiches du Dossier sans dupliquer les données', async ({ page }) => {
+  const context = await provisionTechnicalSheetWorkspace();
+  await loginWithIdentity(page, context.identity);
+
+  await page.goto(context.dossierATechnicalSheetsUrl);
+  await expect(page.getByRole('button', { name: 'Gérer les gammes' })).toHaveCount(0);
+  await page.goto('/workspaces/' + context.workspaceId + '/technical-sheets/ranges');
+  await expect(page.getByRole('heading', { name: 'Gamme de produits finis' }))
+    .toBeVisible();
+
+  await page.getByRole('button', { name: 'Créer une gamme' }).click();
+  await page.getByRole('dialog', { name: 'Créer une gamme' })
+    .getByRole('textbox', { name: 'Nom de la gamme' }).fill('Snacking');
+  await page.getByRole('button', { name: 'Créer la gamme' }).click();
+  await expect(page.getByText('Snacking', { exact: true })).toBeVisible();
+
+  await page.goto(context.dossierATechnicalSheetsUrl);
+  await page.getByRole('button', { name: 'Créer', exact: true }).click();
+  const form = page.getByRole('dialog');
+  await form.getByLabel('Nom').fill('Fiche Gammes E2E');
+  await form.getByLabel('Quantité produite').fill('10');
+  await form.getByRole('button', { name: 'Créer', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Fiche Gammes E2E' })).toBeVisible();
+
+  await page.goto(context.dossierATechnicalSheetsUrl);
+  await page.getByRole('button', { name: 'Actions de Fiche Gammes E2E' }).click();
+  await page.getByRole('button', { name: 'Changer de gamme' }).click();
+
+  const rangeDialog = page.getByRole('dialog');
+  await rangeDialog.getByRole('combobox', { name: 'Gamme (facultative)' }).click();
+  await page.getByRole('option', { name: 'Snacking', exact: true }).click();
+  await rangeDialog.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('row', { name: /Fiche Gammes E2E/ })).toContainText('Snacking');
+
+  await page.goto('/workspaces/' + context.workspaceId + '/technical-sheets/ranges');
+  await page.getByRole('button', { name: 'Actions de Snacking' }).click();
+  await page.getByRole('button', { name: 'Archiver' }).click();
+  await expect(page.getByText('Archivée', { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Actions de Snacking' }).click();
+  await page.getByRole('button', { name: 'Supprimer définitivement' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Supprimer définitivement' }).click();
+  const refusalToast = await expectVisibleToast(
+    page,
+    'Cette Gamme est encore associée à des Fiches techniques.',
+  );
+  await expect(refusalToast).toContainText('Suppression impossible');
+
+  // La transaction a refusé la suppression : conserver le dialogue et les données.
+  const deleteDialog = page.getByRole('dialog', { name: /Supprimer « Snacking »/ });
+  await expect(deleteDialog).toBeVisible();
+  await deleteDialog.getByRole('button', { name: 'Annuler' }).click();
+  await expect(page.getByRole('row', { name: /Snacking/ })).toContainText('Archivée');
+
+  await page.goto(context.dossierATechnicalSheetsUrl);
+  await expect(page.getByRole('row', { name: /Fiche Gammes E2E/ }))
+    .toContainText('Snacking (archivée)');
+});
+
+test('M-004 : créer une Gamme pendant la saisie de la Fiche conserve le formulaire', async ({ page }) => {
+  const context = await provisionTechnicalSheetWorkspace();
+  await loginWithIdentity(page, context.identity);
+
+  await page.goto(context.dossierATechnicalSheetsUrl);
+  await page.getByRole('button', { name: 'Créer', exact: true }).click();
+
+  const sheetDialog = page.getByRole('dialog', { name: 'Créer une Fiche technique' });
+  await sheetDialog.getByRole('textbox', { name: 'Nom' }).fill('Bœuf braisé');
+  await sheetDialog.getByRole('textbox', { name: 'Quantité produite' }).fill('10');
+  await expect(sheetDialog.getByRole('combobox', { name: 'Gamme (facultative)' }))
+    .toContainText('Sans gamme');
+
+  await sheetDialog.getByRole('button', { name: 'Créer une gamme' }).click();
+  const rangeDialog = page.getByRole('dialog', { name: 'Créer une gamme' });
+  await rangeDialog.getByRole('textbox', { name: 'Nom de la gamme' }).fill('Plats cuisinés');
+  await expect(rangeDialog.getByRole('button', { name: 'Créer la gamme' })).toBeEnabled();
+  await rangeDialog.getByRole('button', { name: 'Créer la gamme' }).click();
+  await expect(rangeDialog).toBeHidden();
+
+  await expect(sheetDialog.getByRole('textbox', { name: 'Nom' }))
+    .toHaveValue('Bœuf braisé');
+  await expect(sheetDialog.getByRole('textbox', { name: 'Quantité produite' }))
+    .toHaveValue('10');
+  await expect(sheetDialog.getByRole('combobox', { name: 'Gamme (facultative)' }))
+    .toContainText('Plats cuisinés');
+
+  await sheetDialog.getByRole('button', { name: 'Créer', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Bœuf braisé' })).toBeVisible();
+});

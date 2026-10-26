@@ -29,6 +29,7 @@ import {
   useGetDossierTechnicalSheetSettingsQuery,
   useGetTechnicalSheetCapacityQuery,
   useGetTechnicalSheetMetadataQuery,
+  useListTechnicalSheetRangeOptionsQuery,
   useListTechnicalSheetsQuery,
   useStartTechnicalSheetDraftMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
@@ -38,6 +39,10 @@ import {
 import {
   TechnicalSheetRowActions,
 } from '@/features/technical-sheets/components/technical-sheet-row-actions';
+import { TechnicalSheetRangeAssignmentDialog } from '@/features/technical-sheets/components/technical-sheet-range-assignment-dialog';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import {
   TechnicalSheetPreviewDialog,
 } from '@/features/technical-sheets/components/technical-sheet-preview-dialog';
@@ -75,6 +80,8 @@ function TechnicalSheetsPage() {
     workspace,
   } = useWorkspaceContext();
   const [search, setSearch] = useState('');
+  const [rangeFilter, setRangeFilter] = useState('all');
+  const [sheetToClassify, setSheetToClassify] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [optimizerPickerOpen, setOptimizerPickerOpen] = useState(false);
   const [optimizerOpeningSheetId, setOptimizerOpeningSheetId] = useState(null);
@@ -99,6 +106,11 @@ function TechnicalSheetsPage() {
     page,
     limit: pageSize,
     search: search.trim() || undefined,
+    rangeId: rangeFilter === 'all' ? undefined : rangeFilter,
+  });
+  const rangesQuery = useListTechnicalSheetRangeOptionsQuery({
+    workspaceId: workspace.id,
+    includeArchived: true,
   });
   const viewport = useTableViewport({
     dependency: listQuery.data?.sheets?.length,
@@ -345,6 +357,16 @@ function TechnicalSheetsPage() {
       ),
     },
     {
+      id: 'range',
+      header: 'Gamme',
+      cell: (sheet) => (
+        <span>
+          {sheet.range?.name ?? 'Sans gamme'}
+          {sheet.range?.status === 'ARCHIVED' ? ' (archivée)' : ''}
+        </span>
+      ),
+    },
+    {
       id: 'editorialState',
       header: 'État',
       cell: (sheet) => {
@@ -406,6 +428,8 @@ function TechnicalSheetsPage() {
           <TechnicalSheetRowActions
             sheet={sheet}
             canModify={canModify}
+            canAssign={canModify && operational && sheet.status === 'ACTIVE'}
+            onAssign={() => setSheetToClassify(sheet)}
             canOptimize={canOptimize && sheet.status === 'ACTIVE'}
             canDelete={canDelete && sheet.status === 'ACTIVE'}
             hasValidatedState={hasValidatedState}
@@ -502,25 +526,63 @@ function TechnicalSheetsPage() {
 
       <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
         <div className="border-b border-border p-4">
-          <div className="relative max-w-xl">
-            <Search
-              aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground"
-            />
-            <Input
-              aria-label="Rechercher une Fiche technique"
-              className="pl-9"
-              onChange={(event) => {
-                setSearch(
-                  event.target.value,
-                );
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:max-w-xl sm:flex-1">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground"
+              />
+              <Input
+                aria-label="Rechercher une Fiche technique"
+                className="pl-9"
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                  viewport.resetScroll();
+                }}
+                placeholder="Rechercher par nom ou description…"
+                value={search}
+              />
+            </div>
+            <Select
+              disabled={rangesQuery.isLoading || rangesQuery.isError}
+              items={[
+                { value: 'all', label: 'Toutes les gammes' },
+                { value: 'unassigned', label: 'Sans gamme' },
+                ...(rangesQuery.data ?? []).map((range) => ({
+                  value: range.id,
+                  label: range.name + (range.status === 'ARCHIVED' ? ' (archivée)' : ''),
+                })),
+              ]}
+              onValueChange={(next) => {
+                setRangeFilter(next);
                 setPage(1);
                 viewport.resetScroll();
               }}
-              placeholder="Rechercher par nom ou description…"
-              value={search}
-            />
+              value={rangeFilter}
+            >
+              <SelectTrigger
+                aria-label="Filtrer les Fiches par gamme"
+                className="w-full sm:w-64"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les gammes</SelectItem>
+                <SelectItem value="unassigned">Sans gamme</SelectItem>
+                {(rangesQuery.data ?? []).map((range) => (
+                  <SelectItem key={range.id} value={range.id}>
+                    {range.name}{range.status === 'ARCHIVED' ? ' (archivée)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          {rangesQuery.isError && (
+            <p role="alert" className="mt-2 text-sm text-destructive">
+              Impossible de charger le filtre des Gammes.
+            </p>
+          )}
         </div>
 
         <div
@@ -539,8 +601,8 @@ function TechnicalSheetsPage() {
               <EmptyState
                 className="p-0"
                 description={
-                  search.trim()
-                    ? 'Aucune Fiche ne correspond à cette recherche.'
+                  search.trim() || rangeFilter !== 'all'
+                    ? 'Aucune Fiche ne correspond aux filtres sélectionnés.'
                     : 'Créez la première Fiche technique de ce Dossier.'
                 }
                 title="Aucune Fiche technique"
@@ -583,7 +645,22 @@ function TechnicalSheetsPage() {
         />
       )}
 
+      {sheetToClassify && (
+        <TechnicalSheetRangeAssignmentDialog
+          canManage={can(TECHNICAL_SHEET_PERMISSION.RANGE_MANAGE)}
+          dossierId={dossierId}
+          onClose={() => setSheetToClassify(null)}
+          onUpdated={() => {
+            setSheetToClassify(null);
+            toast({ title: 'Gamme de la Fiche mise à jour', variant: 'success' });
+          }}
+          sheet={sheetToClassify}
+          workspaceId={workspace.id}
+        />
+      )}
+
       <TechnicalSheetCreateDialog
+        canManageRanges={can(TECHNICAL_SHEET_PERMISSION.RANGE_MANAGE)}
         defaultTargetMarginBasisPoints={
           defaultTargetMarginBasisPoints
         }

@@ -1,4 +1,22 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Cadrage produit
+## Complément M-004 validé — Gammes de Fiches techniques (2026-10-24)
+
+Le Workspace administre un référentiel de Gammes organisationnelles de
+Fiches techniques (ex. Snacking, Traiteur, Pâtisserie). Les Fiches classées
+restent propres à chaque Dossier : les prix et historiques économiques ne
+sont jamais partagés par le classement. Une Fiche peut rester « Sans gamme »,
+y compris après validation. Aucun quota ou entitlement spécifique aux
+Gammes n'est créé. Administration via permission Workspace dédiée,
+reclassement via droit d'édition de la Fiche et accès Dossier M-001.
+
+Archivage de Gamme conservant les liens ; suppression physique uniquement
+sans Fiche liée dans aucun Dossier ni état ; copie inter-Dossier conservant
+une Gamme ACTIVE, sinon « Sans gamme » avec explication.
+Aucun impact sur les exports PDF/CSV/XLSX ou sur la « Gamme alimentaire »
+M-002. Contrat complet :
+`docs/m004/M-004-GAMMES-CADRAGE-PROPOSITION.md`.
+
+---
 
 **Statut :** VALIDÉ — fondations transversales approuvées avant M-001  
 **Synchronisation avec le code livré :** 2026-10-14 (cadrage historique conservé)  

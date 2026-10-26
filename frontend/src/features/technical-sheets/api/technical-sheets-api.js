@@ -2,6 +2,7 @@ import { baseApi } from '@/services/api/base-api';
 
 const TECHNICAL_SHEET_API_TAG_TYPES = Object.freeze([
   'TechnicalSheetList',
+  'TechnicalSheetRanges',
   'TechnicalSheet',
   'TechnicalSheetDraft',
   'TechnicalSheetHistory',
@@ -59,6 +60,108 @@ const technicalSheetsApiBase = baseApi.enhanceEndpoints({
 
 const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
   endpoints: (builder) => ({
+
+    listTechnicalSheetRanges: builder.query({
+      query: ({ workspaceId, page = 1, limit = 50, status, search }) => ({
+        url: '/workspaces/' + workspaceId + '/technical-sheets/ranges',
+        params: compactParams({ page, limit, status, search }),
+      }),
+      transformResponse: (response) => response.data,
+      providesTags: (_result, _error, { workspaceId }) => [
+        { type: 'TechnicalSheetRanges', id: workspaceId },
+      ],
+    }),
+
+    listTechnicalSheetRangeOptions: builder.query({
+      query: ({ workspaceId, includeArchived = false }) => ({
+        url: '/workspaces/' + workspaceId + '/technical-sheets/ranges/options',
+        params: includeArchived ? { includeArchived: 'true' } : undefined,
+      }),
+      transformResponse: (response) => response.data.ranges,
+      providesTags: (_result, _error, { workspaceId }) => [
+        { type: 'TechnicalSheetRanges', id: workspaceId },
+      ],
+    }),
+
+    getTechnicalSheetRangeSuggestions: builder.query({
+      query: ({ workspaceId, name, excludeRangeId }) => ({
+        url: '/workspaces/' + workspaceId + '/technical-sheets/ranges/suggestions',
+        params: compactParams({ name, excludeRangeId }),
+      }),
+      transformResponse: (response) => response.data.suggestions,
+      providesTags: (_result, _error, { workspaceId }) => [
+        { type: 'TechnicalSheetRanges', id: workspaceId },
+      ],
+    }),
+
+    createTechnicalSheetRange: builder.mutation({
+      query: ({ workspaceId, name, reviewedCandidateIds = [] }) => ({
+        url: '/workspaces/' + workspaceId + '/technical-sheets/ranges',
+        method: 'POST',
+        body: { name, reviewedCandidateIds },
+      }),
+      transformResponse: (response) => response.data.range,
+      invalidatesTags: (_result, _error, { workspaceId }) => [
+        { type: 'TechnicalSheetRanges', id: workspaceId },
+      ],
+    }),
+
+    updateTechnicalSheetRange: builder.mutation({
+      query: ({ workspaceId, rangeId, expectedRevision, name, reviewedCandidateIds = [] }) => ({
+        url: '/workspaces/' + workspaceId + '/technical-sheets/ranges/' + rangeId,
+        method: 'PATCH',
+        body: { expectedRevision, name, reviewedCandidateIds },
+      }),
+      transformResponse: (response) => response.data.range,
+      invalidatesTags: (_result, _error, { workspaceId }) => [
+        { type: 'TechnicalSheetRanges', id: workspaceId },
+        { type: 'TechnicalSheetList' },
+        { type: 'TechnicalSheet' },
+      ],
+    }),
+
+    changeTechnicalSheetRangeStatus: builder.mutation({
+      query: ({ workspaceId, rangeId, expectedRevision, action }) => ({
+        url: '/workspaces/' + workspaceId + '/technical-sheets/ranges/'
+          + rangeId + '/' + action,
+        method: 'POST',
+        body: { expectedRevision },
+      }),
+      transformResponse: (response) => response.data.range,
+      invalidatesTags: (_result, _error, { workspaceId }) => [
+        { type: 'TechnicalSheetRanges', id: workspaceId },
+        { type: 'TechnicalSheetList' },
+        { type: 'TechnicalSheet' },
+      ],
+    }),
+
+    deleteTechnicalSheetRange: builder.mutation({
+      query: ({ workspaceId, rangeId, expectedRevision }) => ({
+        url: '/workspaces/' + workspaceId + '/technical-sheets/ranges/' + rangeId,
+        method: 'DELETE',
+        body: { expectedRevision, confirmation: 'DELETE' },
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: (_result, _error, { workspaceId }) => [
+        { type: 'TechnicalSheetRanges', id: workspaceId },
+      ],
+    }),
+
+    assignTechnicalSheetRange: builder.mutation({
+      query: ({ workspaceId, dossierId, technicalSheetId, expectedRevision, rangeId }) => ({
+        url: '/workspaces/' + workspaceId
+          + '/dossiers/' + dossierId
+          + '/technical-sheets/' + technicalSheetId + '/range',
+        method: 'PATCH',
+        body: { expectedRevision, rangeId },
+      }),
+      transformResponse: (response) => response.data.sheet,
+      invalidatesTags: (_result, _error, { workspaceId, dossierId, technicalSheetId }) => [
+        { type: 'TechnicalSheetList', id: dossierScopeId(workspaceId, dossierId) },
+        { type: 'TechnicalSheet', id: technicalSheetScopeId(workspaceId, dossierId, technicalSheetId) },
+      ],
+    }),
+
     getTechnicalSheetMetadata: builder.query({
       query: ({ workspaceId, dossierId }) => ({
         url:
@@ -83,6 +186,7 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
         limit = 20,
         search,
         status,
+        rangeId,
       }) => ({
         url:
           '/workspaces/' + workspaceId
@@ -93,6 +197,7 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
           limit,
           search,
           status,
+          rangeId,
         }),
       }),
       transformResponse: (response) => response.data,
@@ -881,6 +986,14 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
 });
 
 export const {
+  useAssignTechnicalSheetRangeMutation,
+  useChangeTechnicalSheetRangeStatusMutation,
+  useCreateTechnicalSheetRangeMutation,
+  useDeleteTechnicalSheetRangeMutation,
+  useGetTechnicalSheetRangeSuggestionsQuery,
+  useListTechnicalSheetRangeOptionsQuery,
+  useListTechnicalSheetRangesQuery,
+  useUpdateTechnicalSheetRangeMutation,
   useApplyTechnicalSheetOptimizationMutation,
   useArchiveTechnicalSheetMutation,
   useCopyTechnicalSheetMutation,

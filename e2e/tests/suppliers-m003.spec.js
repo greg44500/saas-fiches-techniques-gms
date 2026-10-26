@@ -727,3 +727,51 @@ test('M-003 associe immédiatement une Référence provisoire créée après un 
   })).toBeVisible();
   await editDialog.getByRole('button', { name: 'Annuler' }).click();
 });
+
+test('M-003 : les Articles fournisseur du Dossier sont visibles sans être favoris', async ({ page }) => {
+  const context = await provisionSupplierPricingWorkspace();
+  await loginWithIdentity(page, context.identity);
+
+  await page.goto(context.dossierAPricingUrl);
+  await expect(page.getByRole('tab', { name: /^Articles fournisseur \(/ })).toBeVisible();
+  await expect(page.getByRole('searchbox', {
+    name: 'Rechercher un Article fournisseur',
+  })).toHaveCount(0);
+  await page.getByRole('button', {
+    name: "Ouvrir la recherche d'Articles fournisseur",
+  }).click();
+  const search = page.getByRole('searchbox', {
+    name: 'Rechercher un Article fournisseur',
+  });
+  await expect(search).toBeFocused();
+  await search.fill(context.articleReference);
+
+  const rows = page.getByRole('region', {
+    name: 'Lignes des Articles fournisseur du Dossier',
+  });
+  const article = rows.getByRole('row', {
+    name: new RegExp(escapeRegex(context.articleReference)),
+  });
+
+  await expect(article).toBeVisible();
+  await expect(article.getByRole('button', {
+    name: 'Ajouter aux favoris : ' + context.articleReference,
+  })).toBeVisible();
+
+  await article.getByRole('button', {
+    name: 'Ajouter aux favoris : ' + context.articleReference,
+  }).click();
+  await expect(page.getByRole('button', { name: 'Favoris (1)' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Favoris (1)' }).click();
+  await expect(article.getByRole('button', {
+    name: 'Retirer des favoris : ' + context.articleReference,
+  })).toBeVisible();
+
+  await page.goto(context.dossierBPricingUrl);
+  await expect(page.getByRole('button', { name: 'Favoris (0)' })).toBeVisible();
+  await page.getByRole('button', { name: 'Favoris (0)' }).click();
+  await expect(rows.getByRole('row', {
+    name: new RegExp(escapeRegex(context.articleReference)),
+  })).toHaveCount(0);
+});

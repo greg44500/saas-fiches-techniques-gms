@@ -4,6 +4,28 @@
 **Dernière mise à jour :** 2026-10-16  
 **Périmètre :** application GMS, avec dettes historiques du Core conservées distinctement
 
+
+### CI-GMS-231 — Attente asynchrone du drawer Trial (2026-10-24)
+
+**Statut : correction validée par la `release:check` locale selon l'utilisateur ; gate GitHub de la prochaine PR Produit non exécutée.**
+La Core Gate post-merge de la PR #49 (commit `ac0145b`, run
+[40098823819](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40098823819))
+a échoué sur 1 test frontend sur 1 374 : le test d'accord de trial Platform
+recherchait immédiatement le dialogue alors que `EntityDetailsDrawer` ouvre son
+`Sheet` après un `requestAnimationFrame`. La gate de PR #49 était verte et le
+code du test identique entre Core et Produit ; l'intermittence est fortement
+suspectée, sans preuve de reproduction systématique.
+
+**Exception Produit volontaire et limitée au test** : attente via
+`screen.findByRole('dialog', { name: 'Accorder un trial' })`, sans changement de
+production, d'API, d'animation ni de primitive Core. À vérifier en répétitions
+ciblées puis via `npm run release:check` et la Core Gate de la prochaine PR.
+Écart temporaire avec le test hérité du Core à réévaluer lors d'une maintenance
+Core groupée ultérieure ; ne pas lancer de cycle de synchronisation Core
+isolé pour ce seul cas.
+
+---
+
 ### Audit BRIDOR 43279 reçu le 2026-10-22 — racine identifiée, QA à confirmer
 
 Constat en base de développement : une preuve humaine valide de 36 pièces (conditionnement Article `0,120 KG × 36`) ne correspondait pas littéralement à la signature du tarif historique (`120 G × 36`) alors que leur contenu physique est identique. Tarif historique de 6,50 € / colis ; repli global de 0,20 € / pièce ; brouillon encore stocké `NO_PRICE`. Correctif sans migration : comparaison physique exacte des signatures conservées ; contrôle inchangé des réels changements de contenu/Produit. Tests unitaires et HTTP ajoutés, à exécuter localement. Vérifier après pull et audit que le Tarif fournisseur redevient applicable, puis cliquer « Actualiser les coûts » sur la Fiche brouillon. **Ne pas modifier le tarif ou les snapshots en base ; ne pas renouveler la preuve des 36 pièces.**
@@ -919,3 +941,15 @@ différées ci-dessus restent ouvertes.
 Le service M-002 de fusion réaffecte tous les Produits de la source vers la cible dans une transaction et retire la source. MongoDB n'impose pas de clé étrangère sur `CanonicalProduct.category`. Il faut vérifier le cas où une création ou modification Produit concurrente a déjà lu l'ancienne catégorie source et finalise son écriture autour de la transaction. Prévoir un test d'intégration avec barrières de concurrence sous `rs0`, puis, si nécessaire, une coordination transactionnelle des écrivains de catégorie et une politique de retry idempotente avant gate finale. Ne pas considérer la fusion comme garantie contre cette anomalie en l'absence de ce contrôle.
 
 ---
+
+
+## Note de conception différée — habillage de champs outlined partagé (2026-10-24)
+
+Pendant M-004, les champs de création de Fiches réutilisent
+`ProductVariantField`, habillage de présentation déjà éprouvé côté
+Produits M-002, plutôt que de dupliquer son implémentation. Cette
+dépendance de présentation entre features est circonscrite à cette
+interface et mérite une extraction **Core générique versionnée**
+si plusieurs modules la partagent durablement. Ne pas la réaliser
+silencieusement sur la branche métier. L'ergonomie M-004 et ses tests
+restent prioritaires avant une éventuelle maintenance Core distincte.
