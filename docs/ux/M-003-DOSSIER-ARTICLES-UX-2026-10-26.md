@@ -52,6 +52,10 @@ puis ajouter un Article pour le voir dans le Dossier. Le terme
   Produits des Fiches M-004.
 - Tooltip des actions favorites, au survol et au focus clavier :
   confirmation explicite de l'ajout ou du retrait.
+- Barre de recherche placée immédiatement à droite du filtre, sans
+  alignement forcé à l'extrémité opposée du bandeau. Elle s'étend vers
+  la droite au clic ; sur les petits écrans les contrôles passent à
+  la ligne lorsque la place manque, sans débordement horizontal.
 - Barre de recherche fermée sur une loupe seule ; expansion animée
   300 ms, champ de saisie conservé monté pendant la transition.
   Focus transmis à la saisie à l'ouverture ; recherche serveur

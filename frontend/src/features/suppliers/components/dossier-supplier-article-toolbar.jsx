@@ -64,7 +64,10 @@ function DossierSupplierArticleToolbar({
   }
 
   return (
-    <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center">
+    <div
+      className="flex flex-wrap items-center gap-3 border-b border-border p-4"
+      data-slot="dossier-article-toolbar"
+    >
       {showFavoriteFilter && (
         <div
           aria-label="Filtrer les Articles fournisseur"
@@ -98,7 +101,7 @@ function DossierSupplierArticleToolbar({
       )}
       <div
         className={[
-          'relative h-10 shrink-0 rounded-md border border-input bg-background shadow-xs sm:ml-auto',
+          'relative h-10 shrink-0 rounded-md border border-input bg-background shadow-xs',
           'transition-[width] duration-300 ease-out motion-reduce:transition-none',
           'focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20',
           expanded ? 'w-[min(22rem,calc(100vw-3rem))]' : 'w-10',

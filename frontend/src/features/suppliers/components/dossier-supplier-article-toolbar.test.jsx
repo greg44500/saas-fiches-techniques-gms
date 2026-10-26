@@ -48,6 +48,28 @@ describe('DossierSupplierArticleToolbar', () => {
       .toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('place la loupe immédiatement après le filtre et déploie le champ vers la droite', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<ToolbarHarness />);
+    const toolbar = container.querySelector('[data-slot="dossier-article-toolbar"]');
+    const filter = screen.getByRole('group', {
+      name: 'Filtrer les Articles fournisseur',
+    });
+    const search = container.querySelector('[data-slot="dossier-article-search"]');
+
+    expect(toolbar).toHaveClass('flex-wrap', 'items-center', 'gap-3');
+    expect(filter.nextElementSibling).toBe(search);
+    expect(search).not.toHaveClass('sm:ml-auto');
+    expect(search).toHaveClass('w-10');
+
+    await user.click(screen.getByRole('button', {
+      name: "Ouvrir la recherche d'Articles fournisseur",
+    }));
+    expect(search).toHaveClass('transition-[width]', 'duration-300');
+    expect(search).toHaveClass('w-[min(22rem,calc(100vw-3rem))]');
+    expect(filter.nextElementSibling).toBe(search);
+  });
+
   it('déploie la recherche en douceur et conserve la saisie au clic extérieur', async () => {
     const user = userEvent.setup();
     const { container } = render(<ToolbarHarness />);
