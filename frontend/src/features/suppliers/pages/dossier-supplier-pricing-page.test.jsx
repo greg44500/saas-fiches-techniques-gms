@@ -598,6 +598,6 @@ describe('DossierSupplierPricingPage', () => {
     expect(screen.getByText('Ail entier')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Ajouter aux favoris|Retirer des favoris/ }))
       .not.toBeInTheDocument();
-    expect(screen.getByText('Favori', { exact: true })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Favori' })).toBeInTheDocument();
   });
 });
