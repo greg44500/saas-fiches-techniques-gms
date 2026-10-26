@@ -1,13 +1,13 @@
 # M-006 — Fiches process — Proposition de contrat fonctionnel
 
-**Statut : EN CADRAGE — NON VALIDÉ POUR IMPLÉMENTATION**  
+**Statut : RECOMMANDATIONS 21–35 APPROUVÉES — CONTRAT CONSOLIDÉ EN ATTENTE DE VALIDATION FINALE POUR IMPLÉMENTATION**  
 **Date : 2026-10-26**  
 **Branche de travail :** feature/m006-fiches-process  
 **Dépôt :** greg44500/saas-fiches-techniques-gms  
 **Base contrôlée au démarrage :** main@190962a68086b151b50b82d05cf133f915c5c0ea, branche identique lors du contrôle préalable  
 **Core intégré :** v1.2.1@35758f7a3067911244f94b81e7cc3ddd22882eaa (core-origin.json)
 
-> **Discipline :** ce document rassemble les décisions exprimées par le propriétaire du produit et des propositions de conception à confirmer. Il ne remplace pas M-004 et n'autorise aucun modèle Mongoose, endpoint ou écran métier avant validation du contrat final.
+> **Discipline :** ce document consolide les décisions exprimées par le propriétaire du produit, y compris l'approbation des recommandations 21 à 35 du 2026-10-26. Les détails de conception explicitement mentionnés restent à résoudre avant implémentation. Il ne remplace pas M-004 et n'autorise aucun modèle Mongoose, endpoint ou écran métier avant validation du contrat final.
 >
 > Terminologie : « fiche process » est un document de fabrication lié à une Fiche technique M-004 ; « bibliothèque » est le référentiel de phases et d'étapes réutilisables.
 
@@ -39,7 +39,8 @@ Usages retenus : rédaction sur ordinateur dans le Dossier, consultation sur ord
 - modifications automatiques des calculs, prix, fournisseurs ou quantités M-004 ;
 - partage public ou inter-Workspace de bibliothèques (non validé) ;
 - génération d'infographies, assistant IA, OCR, automatisations, exports avancés ;
-- déclaration automatique de conformité réglementaire/HACCP.
+- déclaration automatique de conformité réglementaire/HACCP ;
+- **illustrations, photographies, galerie, champs image/photo et stockage ou gestion documentaire associés** : cadrage et réalisation reportés à un lot ultérieur, y compris toute intégration graphique aux impressions.
 
 ## 3. Identité, ownership et relation avec M-004 — DÉCISIONS VALIDÉES
 
@@ -69,7 +70,7 @@ La liste ne doit pas confondre « aucune Fiche process validée » et « aucune 
 
 Autre entrée validée : depuis la Fiche technique, afficher « Créer la Fiche process » si éligible et « Ouvrir la Fiche process » lorsqu'elle existe, sous réserve des permissions. Les mêmes contrôles serveur s'appliquent.
 
-**Point de cohérence à confirmer lors du contrat final :** le moment précis où la création est autorisée lorsque la Fiche technique ACTIVE ne dispose encore que d'un brouillon. Proposition : permettre de commencer un brouillon process, mais exiger une composition M-004 validée pour valider officiellement le process.
+**Décision approuvée (21, 26) :** si la Fiche technique ACTIVE ne dispose encore que d'un brouillon, autoriser la préparation d'un brouillon process à partir des ingrédients M-004 en cours. La validation officielle M-006 exige une composition M-004 validée et cohérente avec les ingrédients/associations du process ; aucun brouillon M-004 seul n'autorise la validation M-006.
 
 ## 5. Récupération et affectation des ingrédients — DÉCISIONS VALIDÉES
 
@@ -90,8 +91,8 @@ Autre entrée validée : depuis la Fiche technique, afficher « Créer la Fiche 
 - Les **modèles de phases** regroupant des étapes sont eux aussi réutilisables.
 - Il existe une bibliothèque commune au Workspace, et des modèles locaux à un Dossier. La publication d'un élément local vers le Workspace est une opération explicite et soumise aux autorisations.
 - Les éléments de bibliothèque sont **paramétrables à l'utilisation** : instructions spécifiques, ingrédients, temps, températures et équipements peuvent varier selon la recette et le Dossier.
-- Création rapide d'une étape dans l'éditeur proposée, avec enregistrement local et publication ultérieure possible.
-- Réorganisation des phases et des étapes proposée dans l'éditeur, sans perturber les versions officielles.
+- **Création rapide validée (25) :** une étape créée depuis l'éditeur est initialement un modèle local au Dossier ; sa publication ultérieure vers la bibliothèque Workspace est explicite et autorisée.
+- Réorganisation des phases et des étapes retenue dans l'éditeur de brouillon, sans perturber les versions officielles.
 
 ### Mise à jour contrôlée — DÉCISION VALIDÉE
 
@@ -104,7 +105,7 @@ Lorsqu'une étape ou un modèle de phase réutilisé est modifié dans la biblio
 
 **À concevoir :** gestion des versions des modèles, provenance de l'adoption, conservation des personnalisations locales et effet d'une modification de phase sur ses étapes composantes. Ne pas introduire de couplage implicite entre une bibliothèque et les process officiels.
 
-## 7. Champs et consignes — PROPOSITIONS DE STRUCTURE À CONFIRMER
+## 7. Champs et consignes — ORIENTATIONS FONCTIONNELLES APPROUVÉES, DÉTAILS TECHNIQUES À CONCEVOIR
 
 Pour une **phase** : titre, description/instructions facultatives, ordre, ingrédients directement associés, étapes, consignes facultatives.
 
@@ -115,9 +116,9 @@ Trois catégories distinctes de contrôles/consignes sont **validées** :
 2. contrôle qualité (aspect, poids, température attendue, etc.) ;
 3. maîtrise sanitaire / informations HACCP éventuelles.
 
-**Recommandation non encore figée dans le contrat final :** consigne + critère attendu + action corrective si nécessaire, facultatifs et structurés. Ne pas appeler automatiquement « CCP HACCP » toute vigilance sanitaire ; l'applicabilité réglementaire doit être étudiée et sourcée avant toute qualification juridique.
+**Décision approuvée (24) :** consigne, critère attendu et action corrective si nécessaire sont des champs structurés **facultatifs**, sans enregistrement des contrôles réellement effectués pendant une fabrication. Ne pas appeler automatiquement « CCP HACCP » toute vigilance sanitaire ; l'applicabilité réglementaire doit être étudiée et sourcée avant toute qualification juridique.
 
-Durées recommandées : travail actif, attente/repos, cuisson/traitement, avec chevauchements explicitables ; ne jamais additionner des durées simultanées comme si elles étaient séquentielles. Formats, unités et calcul précis de durée totale restent à arrêter avant implémentation.
+**Décision approuvée (23) :** distinguer travail actif, attente/repos et cuisson/traitement ; gérer les chevauchements d'opérations afin de ne pas additionner artificiellement des temps simultanés. Formats, unités et calcul précis de durée totale restent à arrêter avant implémentation.
 
 La question de la saisie des résultats des contrôles réalisés pendant une production reste volontairement différée.
 
@@ -126,8 +127,8 @@ La question de la saisie des résultats des contrôles réalisés pendant une pr
 - Cycle M-006 retenu : brouillon modifiable, validation explicite, version officielle immuable, historique consultable.
 - Une Fiche technique peut être officielle sans process ; les validations sont indépendantes.
 - La Fiche process validée doit pouvoir identifier la composition / validation M-004 à laquelle elle se rapporte.
-- Les brouillons peuvent préparer un process pendant que M-004 évolue ; proposition de vérification de cohérence au moment de la validation.
-- Les ingrédients non affectés doivent être signalés ; proposition : permettre une justification explicite plutôt qu'imposer des affectations artificielles.
+- Les brouillons peuvent préparer un process pendant que M-004 évolue ; la validation M-006 exige une composition M-004 validée et une vérification de cohérence avec la composition de référence.
+- **Décisions approuvées (22, 31) :** signaler les ingrédients non affectés ; autoriser leur non-affectation avec justification explicite. Pour valider, exiger au minimum une phase et une étape documentée ; durées, températures et contrôles demeurent facultatifs.
 - La gestion de concurrence doit refuser les écrasements silencieux, comme M-004.
 - Les évolutions de bibliothèque sont adoptées uniquement dans le brouillon, jamais appliquées en place à une version officielle.
 
@@ -138,7 +139,7 @@ Après validation d'une évolution de **composition** de M-004, proposer à l'ut
 - **Non** : terminer ce parcours sans mutation ni obligation de validation du process.
 - Une simple revalorisation tarifaire ne doit pas déclencher le même dialogue.
 
-Le rejet de la proposition n'est **pas** une mise à jour silencieuse du process ni une suppression de l'historique. L'affichage éventuel d'un écart entre la composition actuelle et celle du process officiel reste un sujet distinct à documenter.
+Le rejet de la proposition n'est **pas** une mise à jour silencieuse du process ni une suppression de l'historique. **Décision approuvée (32) :** conserver un indicateur non bloquant de décalage entre la composition M-004 courante et la composition de référence du process ; répondre « Non » à la révision ne mute pas le process.
 
 **Intégration à vérifier :** M-004 calcule des catégories de changement de validation (dont COMPOSITION), mais il faut vérifier les différences réelles pertinentes pour le process, sans assimiler tous les événements M-004 à un changement de fabrication.
 
@@ -152,15 +153,15 @@ La Fiche process **ne peut pas survivre à la purge de sa Fiche technique**. Ell
 | Suppression autonome d'une Fiche process | Suppression **immédiate et définitive** de l'agrégat M-006 (brouillon, historique, usages associés) après confirmation ; la Fiche technique M-004 et les modèles de bibliothèque restent intacts ; l'association 1:1 est libérée. |
 | Archivage autonome d'une Fiche process | **Interdit** ; l'archivage est exclusivement provoqué par la Fiche technique. |
 | Archivage de la Fiche technique | Archive automatiquement la Fiche process associée ; versions et bibliothèques conservées. |
-| Réactivation de la Fiche technique | **Proposition de cohérence** : remettre en activité le process archivé du fait de son parent, sans réactiver arbitrairement un process préalablement archivé volontairement. |
+| Réactivation de la Fiche technique | **Décision approuvée (29)** : réactiver le process conservé lorsque le parent est réactivé, selon l'état de référence enregistré, sans ressusciter un process supprimé définitivement. |
 | Suppression M-004 vers corbeille | Supprime **logiquement** la Fiche process associée dans la même opération métier, sans purge physique précoce. |
-| Restauration M-004 | **Proposition de cohérence** : restaure le process associé et son état approprié dans la même opération, si la Fiche technique est restaurable. |
+| Restauration M-004 | **Décision approuvée (29)** : restaurer le process associé et son état antérieur approprié avec le parent, s'il est restaurable ; ne jamais recréer un process supprimé définitivement. |
 | Purge définitive de M-004 | Purge aussi l'agrégat M-006 correspondant (brouillon, validations, liens d'utilisation) sans laisser d'orphelin. |
 | Copie de M-004 entre Dossiers | Reprend le contenu process autorisé dans une **nouvelle Fiche process DRAFT** associée à la **nouvelle Fiche technique DRAFT** du Dossier cible. N'importe pas les validations/historiques d'origine. |
 
 **Garantie de cohérence visée :** ces transitions doivent être transactionnelles, avec contrôles de tenancy, concurrence, permissions et audit, et sans altérer les documents de bibliothèque partagés par d'autres Fiches process. Une purge M-004 existante ne doit pas laisser de données M-006 orphelines.
 
-**Décision du propriétaire du produit (2026-10-26) :** aucune commande d'archivage autonome de Fiche process ; suppression autonome physique et définitive avec confirmation explicite. Cette destruction est distincte de la mise en corbeille par cascade depuis M-004. Une nouvelle Fiche process peut ensuite être créée pour la Fiche technique encore éligible. **À préciser :** rôles autorisés, conditions lorsque la Fiche technique est archivée/en corbeille, contenu minimal de la confirmation et exigences d'audit de la destruction (sans conserver de données censées être purgées).
+**Décision du propriétaire du produit (2026-10-26) :** aucune commande d'archivage autonome de Fiche process ; suppression autonome physique et définitive avec confirmation explicite. Cette destruction est distincte de la mise en corbeille par cascade depuis M-004. Une nouvelle Fiche process peut ensuite être créée pour la Fiche technique encore éligible. **Précisions approuvées (29, 33) :** suppression autonome physique uniquement si la Fiche technique parente est `ACTIVE`, après confirmation explicite et permission effective (Owner ou responsable habilité) ; elle reste interdite lorsque le parent est archivé ou en corbeille. La confirmation et l'audit exacts sont à concevoir sans conserver de données censées être purgées.
 
 **Preuve de code à prendre en compte :** technicalSheetLifecycle.service.js distingue ACTIVE / ARCHIVED / DELETED, calcule purgeScheduledAt, restaure depuis preDeleteStatus et purge TechnicalSheet, Draft et Validations dans une transaction. Il faudra brancher la cascade M-006 sur ces services effectifs plutôt que simuler une suppression immédiate.
 
@@ -171,16 +172,16 @@ La Fiche process **ne peut pas survivre à la purge de sa Fiche technique**. Ell
 - Les affectations des ingrédients doivent être **reliées aux lignes de composition réellement copiées** ; jamais conserver aveuglément les identifiants de sous-documents source.
 - Les modèles Workspace actifs peuvent être référencés selon les règles de version adoptées, les étapes locales du Dossier source ne doivent pas devenir visibles au Dossier cible par simple copie. Proposition : matérialiser des définitions/snapshots nécessaires en préservant le contenu et la provenance sans autorisation indue.
 - Aucun historique de validation, contexte économique ou donnée propre au magasin source ne doit être répliqué comme historique officiel du magasin cible.
-- Définir le comportement lorsque le process source n'est qu'un brouillon, lorsqu'il est archivé, ou lorsque les modèles locaux sont indisponibles avant de fermer le contrat.
+- **Décision approuvée (28) :** privilégier la dernière version officielle du process source lorsqu'elle existe ; en son absence, examiner le brouillon source s'il est cohérent avec la composition M-004 effectivement copiée et accessible. Toute copie crée un **nouveau brouillon M-006** sans historique validé source. La Fiche technique M-004 source doit toujours respecter ses propres préconditions de copie ; ne pas les contourner. Pour les modèles locaux indisponibles dans le Dossier cible, conserver le contenu nécessaire sous forme réutilisable localement sans exposer la bibliothèque source ; modalités techniques à concevoir.
 
 ## 11. Tenancy, RBAC et capabilities
 
 - Scope des Fiches process : Workspace + Dossier + Fiche technique du même scope. Toute requête recalcule l'autorisation côté serveur.
 - Bibliothèque Workspace : workspace immutable ; bibliothèque locale : workspace + dossier ; pas de fuite de modèles propres à d'autres Dossiers sans permission de publication.
 - Utiliser les mêmes primitives Core/M-001 : membership Workspace, permissions via applicationRolePermission.registry.js, loadAuthorizedDossierContext, politique des statuts Dossier, access mode, audit.
-- **Permissions métier distinctes proposées :** lire, créer, modifier, valider, imprimer, copier, gérer le cycle de vie ; administrer les modèles locaux, gérer/publier la bibliothèque Workspace. Les libellés techniques exacts et les associations aux profils restent à cadrer.
+- **Décision approuvée (33) :** Owner et Responsable **effectivement autorisé** peuvent valider et supprimer définitivement ; Contributeur effectivement autorisé peut créer/modifier ; Lecteur peut consulter ; l'administration/publication des bibliothèques exige des permissions distinctes. Les libellés exacts, l'impression, la copie et les autorisations détaillées doivent être conçus dans le registre applicatif Core, sans faire dépendre la sécurité d'un simple nom de profil.
 - Aucun rôle système Core modifié ; l'Owner dispose des permissions métier par extension, et les autres rôles uniquement selon leurs attributions effectives.
-- Aucun quota M-006 ni entitlement payant ne doit être **inventé**. Politique commerciale exacte (Free, limites de process/modèles/impressions, éventuelle consommation de stockage) **à valider** avant création d'un descriptor commercial ou d'une migration de Plan.
+- **Décision approuvée (34) :** Fiches process comprises dans tous les plans en V1, **sans quota supplémentaire de nombre de process** ; appliquer uniquement les limites de stockage existantes lorsqu'elles sont réellement pertinentes. Aucune capability payante ou quota M-006 nouveau n'est introduit implicitement.
 
 ## 12. API envisagée — CONCEPTION NON VALIDÉE
 
@@ -214,7 +215,7 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 - Point d'entrée depuis une Fiche technique existante selon sa situation : créer/ouvrir le process.
 - Éditeur : colonne/zone des ingrédients M-004, phases ordonnées, étapes réutilisables paramétrables, association des ingrédients à la phase et/ou à l'étape, indicateur des non-affectés, ajout de consignes et éléments propres au process.
 - Sur mobile/tablette : parcours lisible, prioriser la consultation et la manipulation accessible ; ne pas dupliquer une version parallèle des données.
-- Impression : mise en page imprimable, lisible, adaptée aux opérations de fabrication ; exigences de format, en-tête et visibilité des consignes à valider.
+- **Décision approuvée (35) :** impression des process validés et impression possible d'un brouillon **explicitement identifié comme brouillon** ; aucun stockage persistant de nouveau document généré. Mise en page, contenu exact et commande d'impression restent à concevoir. Aucune image/illustration en V1.
 - Navigation Workspace : surface métier « Bibliothèque de fabrication », cohérente avec les Gammes de produits finis, et non dans l'administration générique Core.
 - Réutiliser les primitives Core/design system, RTK Query pour les données serveur, Redux seulement si état client réellement global ; préserver accessibilité et thèmes.
 
@@ -253,19 +254,44 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 
 **Gates avant PR d'implémentation :** tests unitaires, Supertest/intégration MongoDB, RTL, E2E critiques, puis npm run release:check. Aucun test ni gate M-006 n'est déclaré exécuté à la date de cette proposition.
 
-## 16. Risques, inconnues et arbitrages à clore
+## 16. Arbitrages fonctionnels 21–35 approuvés le 2026-10-26 ; conception à poursuivre
 
-**À trancher avant tout code métier :**
-1. règles de permissions et confirmation pour la **suppression autonome définitive** du process ; cas de Fiche technique archivée/en corbeille ; restauration/réactivation synchronisée et traçabilité de destruction ;
-2. création process si M-004 ne possède qu'un DRAFT ; sources des ingrédients et rattachement à une validation M-004 ;
-3. identité stable d'ingrédient entre lignes DRAFT, snapshots VALIDATED, copies et doublons de ProductVariant ;
-4. règle de copie d'un process uniquement brouillon, archivé ou utilisant des modèles locaux du Dossier source ;
-5. champs obligatoires, bornes des durées/températures, consignes, critères et actions correctives ; chevauchements ;
-6. visibilité de l'écart de composition si l'utilisateur répond « Non » à la proposition de révision ;
-7. permissions détaillées et droit de publication inter-Dossier ; choix commerciaux/capabilities/quotas M-006 ;
-8. format d'impression, suppression/archivage des modèles et rétention des artefacts éventuels.
+Le propriétaire du produit **approuve les recommandations fonctionnelles 21 à 35**. L'approbation ne transforme ni les pistes techniques, ni les URLs envisagées, ni les algorithmes encore ouverts en contrats implémentables. Ce tableau lève les anciens arbitrages fonctionnels et fait autorité sur les formulations « proposé / à confirmer » antérieures du présent document.
 
-**Dette différée volontaire :** suivi des contrôles de fabrication, aide IA, infographies, multi-Workspace, automatisations, export documentaire avancé. Ne pas confondre report accepté et règle implémentée.
+| N° | Décision fonctionnelle approuvée |
+| --- | --- |
+| 21 | Préparation du brouillon process sur composition M-004 en cours ; validation M-006 seulement sur composition M-004 validée et cohérente. |
+| 22 | Ingrédients sans affectation signalés ; non-affectation volontaire avec justification explicite. |
+| 23 | Temps actif, attente/repos et cuisson/traitement distingués ; simultanéité prise en compte sans somme artificielle. |
+| 24 | Champs facultatifs structurés : consigne, critère attendu, action corrective ; **aucun journal d'exécution** en V1. |
+| 25 | Création rapide d'étape dans l'éditeur, initialement bibliothèque locale Dossier ; publication Workspace explicite si autorisée. |
+| 26 | Process brouillon permis avec une Fiche technique ACTIVE n'ayant elle-même qu'un brouillon ; validation officielle M-006 bloquée jusqu'à validation cohérente de M-004. |
+| 27 | Présentation unifiée sans quantité des Références Produit identiques, sans perdre l'identité des lignes métier nécessaires à la traçabilité. |
+| 28 | Copie préférentielle du dernier process validé ; sinon prise en considération d'un brouillon source réutilisable. Nouvelle Fiche process cible obligatoirement en brouillon, liée à la Fiche technique copiée ; préconditions M-004 conservées. |
+| 29 | Archivage, réactivation, corbeille, restauration et purge synchronisés avec M-004 ; suppression autonome définitive **seulement si le parent est ACTIVE** ; aucune résurrection après destruction physique. |
+| 30 | Archivage des modèles de bibliothèque : plus de nouvelles utilisations ; utilisations et historiques existants conservés. Suppression physique seulement sans dépendances imposant leur conservation. |
+| 31 | Validation : au moins une phase et une étape documentée ; temps, températures et contrôles facultatifs ; justification des ingrédients volontairement non affectés. |
+| 32 | Si révision proposée après changement de composition et refusée : aucune mutation du process et indicateur de décalage non bloquant. |
+| 33 | Owner et Responsable habilité : validation et suppression définitive ; Contributeur habilité : création et modification ; Lecteur : consultation ; permissions dédiées pour administrer/publier les bibliothèques, toutes évaluées côté serveur. |
+| 34 | Fonction incluse dans tous les plans en V1, sans quota process ajouté ; limites de stockage existantes uniquement si pertinentes. |
+| 35 | Impression des versions validées et des brouillons visiblement marqués, sans nouveaux documents générés stockés durablement. |
+
+**Décision de report distincte : illustrations/photographies des étapes EXCLUES de M-006 V1.** Aucun champ image/photo, upload, stockage dédié, galerie, affichage illustré ou sortie imprimée illustrée n'est à développer. Le cadrage futur devra traiter formats, limites, stockage, permissions, consultation, impressions et suppression. Ne pas construire prématurément une abstraction « pour plus tard ».
+
+### Détails restant à résoudre en conception, sans rouvrir les décisions ci-dessus
+
+1. **Identité de ligne M-004** : lier de manière stable les ingrédients d'un brouillon, d'une validation historique et d'une copie, notamment en cas de Références Produit répétées et de changement de composition ; ne pas prendre `productVariantId` seul pour une identité universelle.
+2. **Durées et simultanéité** : unités, bornes de saisie, représentation des dépendances et règle de calcul/affichage du temps total.
+3. **Révisions bibliothèque** : identité/version, adoption volontaire et préservation des paramètres locaux ; traitement des modèles archivés et dépendances empêchant une purge.
+4. **Copie inter-Dossier** : déterminer objectivement quand le brouillon process source est réutilisable, préserver la cohérence avec la composition validée copiée par M-004 et éviter toute fuite de modèles locaux.
+5. **Validation / concurrence** : cohérence transactionnelle de la composition de référence et de l'identité des ingrédients ; contrôle d'unicité 1:1 ; conflits de sauvegarde et de version.
+6. **Cycle de vie / audit** : implémenter la synchronisation parent-enfant sur les services M-004 et leur transaction ; définir l'UX de confirmation, la conservation des seules métadonnées d'audit réellement permises et la gestion des accès pendant corbeille/restauration.
+7. **Contrats d'interface** : permissions exactes dans les registres du Core intégré, erreurs API, pagination, contraintes Zod, impression sans stockage, composants et tests.
+8. **Réglementation** : séparer maîtrise sanitaire, vigilance et contrôle qualité, sans qualifier automatiquement des champs « CCP/HACCP ».
+
+### Condition de passage à la conception et au code
+
+**La validation des recommandations est acquise ; la validation explicite de la version finale du contrat consolidé et l'autorisation de commencer le développement sont encore distinctes et non accordées dans cette conversation.** Jusqu'à cette autorisation : documentation uniquement, pas de modèle, migration, endpoint, frontend M-006 ou test métier nouvellement implémenté.
 
 ## 17. Ordre d'implémentation proposé — SOUS RÉSERVE DE VALIDATION
 
@@ -299,4 +325,4 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 
 **Rappel :** le code réel et les tests qui seront exécutés restent prioritaires sur les propositions de ce document. Les règles à confirmer ne sont pas présentées comme déjà implémentées.
 
-**Décision de suspension :** le propriétaire du produit a explicitement demandé de **finir le cadrage avant toute implémentation**. Ne pas créer de models, migrations, routes, tests métier ou interfaces M-006 tant que les arbitrages de la section 16 et le contrat final n'ont pas été validés.
+**Décision de suspension maintenue :** les recommandations 21–35 et le report des illustrations ont été approuvés le 2026-10-26. La validation formelle du contrat final, ainsi que l'autorisation distincte de commencer le code, restent nécessaires. Aucun modèle, migration, route, test métier ou écran M-006 avant ces accords.
