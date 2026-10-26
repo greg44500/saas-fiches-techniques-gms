@@ -71,6 +71,26 @@ describe('M-006 — éditeur de brouillon process', () => {
     expect(payload.phases[0].steps[0].ingredientLineKeys).toEqual(['line:b']);
   });
 
+  it('saisit deux équipements séparés et conserve leur ordre lors de la sauvegarde', async () => {
+    const user = userEvent.setup();
+    view();
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+    const step = screen.getByRole('article', { name: 'Étape 1' });
+    const equipmentGroup = within(step).getByRole('group', { name: 'Équipements' });
+    await user.click(within(equipmentGroup).getByRole('button', { name: 'Ajouter' }));
+    await user.type(within(equipmentGroup).getByRole('textbox', {
+      name: 'Équipements 1',
+    }), 'Four');
+    await user.click(within(equipmentGroup).getByRole('button', { name: 'Ajouter' }));
+    await user.type(within(equipmentGroup).getByRole('textbox', {
+      name: 'Équipements 2',
+    }), 'Plaque');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(mocks.save.mock.calls[0][0].phases[0].steps[0].equipment)
+      .toEqual(['Four', 'Plaque']);
+  });
+
   it('garde chaque occurrence même avec une Référence Produit répétée et note les non-affectés', async () => {
     const user = userEvent.setup();
     view();
