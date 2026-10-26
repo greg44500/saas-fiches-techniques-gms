@@ -142,3 +142,11 @@ La liste M-006 et le compteur fonctionnent, mais la capture utilisateur du Dossi
 **Procédure locale nécessaire si Owner existant sans droit :** vérifier `MONGODB_URI` et la base de travail, appliquer la séquence de migrations du manifeste jusqu'à `npm run migration:m006-process-sheets` si non déjà appliquée, actualiser la session ou recharger les droits Workspace. Ne pas traiter ce problème par un changement de rôle par défaut ou un contournement du contrôle `POST /process-sheets`. Les captures précédentes montrent une Fiche « en révision » et trois « en brouillon », potentiellement **zéro** Fiche technique éligible même lorsque le bouton est déverrouillé.
 
 **Régressions :** tests RTL pour la présence du bouton avec l'Owner, permission de lecture seule, refus M-004, Dossier inactif/en cours/indisponible, modale, absence de Fiche éligible et lecture de la liste. Tests RBAC/migration et HTTP du lot 4 à rejouer. Aucun résultat nouveau de tests n'a été produit dans cette conversation.
+
+### Lot UI — Modale de création Outlined (2026-10-26)
+
+Décision UX utilisateur : deux champs seulement, **titre** et **Fiche technique associée**. Les libellés sont Outlined/flottants, les placeholders du titre et du sélecteur ne s'affichent qu'au focus, les (i) restent accessibles. Suppression du champ de recherche séparé « Rechercher parmi les Fiches validées… » pour ne pas présenter deux contrôles pour la même sélection. Réutilisation de `ProductVariantField` avec `floating` (pattern déjà utilisé par M-004) sans dupliquer la primitive shadcn/Core ; `Input` et `Select` existants restent les contrôles natifs de l'application.
+
+L'API d'éligibilité et les règles métier ne changent pas. La modale charge jusqu'à 100 Fiches techniques éligibles par page ; un contrôle de pagination apparaît **uniquement si plusieurs pages** sont nécessaires. La sélection changeable reste contrôlée et revient à vide au changement de page, pour ne jamais soumettre une référence devenue hors du jeu d'options. Tests RTL dédiés : absence de deuxième champ de recherche, libellés Outlined, focus/placeholders, sélection, pagination discrète, validation et conflits.
+
+**Validation à obtenir :** tests Vitest du composant et gates frontend exécutés sur le HEAD par l'utilisateur, non exécutables depuis le connecteur GitHub de cette session.

@@ -1,5 +1,8 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+**UX modale du 2026-10-26 :** à la demande du propriétaire, simplification à deux champs Outlined, labels flottants et exemples visibles uniquement au focus ; retrait complet de la recherche séparée des Fiches validées. Sélecteur éligible M-004 avec pagination n'apparaissant qu'au-delà de 100 éléments et (i) existants. Réutilisation du pattern déjà adopté pour M-004 ; tests RTL enrichis, vérification locale encore attendue. Aucun changement au backend ni aux règles de création strictes.
+
+
 **Correctif d'accès à la création (capture utilisateur 2026-10-26) :** le bouton caché par la combinaison `process-sheet:create`, `technical-sheet:read`, `Dossier.ACTIVE` est désormais **toujours affiché** (désactivé et motivé tant qu'une précondition manque, jamais de bypass RBAC). Nouvelle permission CREATE sur rôle Owner existant nécessite `migration:m006-process-sheets` sur la base locale puis actualisation du contexte Workspace. Les quatre Fiches M-004 observées précédemment étaient en brouillon/révision : elles ne sont pas éligibles avant validation et fermeture de brouillon. Tests React de permissions, de Dossier, de modale et zéro éligible ajoutés, **exécution locale encore attendue**. Voir `docs/m006/M-006-TECHNICAL-DESIGN.md`.
 
 

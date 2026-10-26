@@ -41,7 +41,7 @@ beforeEach(() => {
       technicalSheets: [
         { id: 'sheet-1', name: 'Tartine validée' },
       ],
-      pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
     },
     isError: false, isFetching: false, isLoading: false,
     refetch: vi.fn(),
@@ -65,8 +65,29 @@ describe('M-006 — modale de création', () => {
       name: 'Critères de disponibilité des Fiches techniques',
     })).toBeInTheDocument();
     expect(mocks.list).toHaveBeenCalledWith({
-      ...args, page: 1, limit: 10, search: undefined,
+      ...args, page: 1, limit: 100,
     }, { skip: false });
+    expect(screen.queryByRole('textbox', {
+      name: 'Rechercher une Fiche technique éligible',
+    })).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Rechercher parmi les Fiches validées…'))
+      .not.toBeInTheDocument();
+    const titleField = screen.getByRole('textbox', {
+      name: 'Titre de la Fiche process',
+    }).closest('[data-slot="field"]');
+    const linkedField = screen.getByRole('combobox', {
+      name: 'Fiche technique associée',
+    }).closest('[data-slot="field"]');
+    expect(titleField).toHaveAttribute('data-label-state', 'empty');
+    expect(linkedField).toHaveAttribute('data-label-state', 'empty');
+    expect(titleField).toHaveClass('group', 'relative', 'pt-2');
+    expect(linkedField).toHaveClass('group', 'relative', 'pt-2');
+    expect(screen.getByRole('textbox', { name: 'Titre de la Fiche process' }))
+      .toHaveClass('h-12', 'placeholder:text-transparent');
+    expect(screen.getByRole('combobox', { name: 'Fiche technique associée' }))
+      .toHaveClass('h-12', 'pt-3');
+    expect(screen.getByText('Titre de la Fiche process').parentElement)
+      .toHaveClass('group-focus-within:top-2');
     await userEvent.setup().click(screen.getByRole('combobox', {
       name: 'Fiche technique associée',
     }));
@@ -78,7 +99,7 @@ describe('M-006 — modale de création', () => {
     mocks.list.mockReturnValue({
       data: {
         technicalSheets: [],
-        pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+        pagination: { page: 1, limit: 100, total: 0, totalPages: 0 },
       },
       isError: false, isFetching: false, isLoading: false,
       refetch: vi.fn(),
@@ -87,6 +108,34 @@ describe('M-006 — modale de création', () => {
     expect(screen.getByText(/Les Fiches en brouillon/)).toBeInTheDocument();
     expect(screen.getByText(/validation M-004 sans brouillon/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeDisabled();
+  });
+
+  it('déplace les libellés outlined au focus et garde le libellé relevé après sélection', async () => {
+    renderDialog();
+    const user = userEvent.setup();
+    const title = screen.getByRole('textbox', { name: 'Titre de la Fiche process' });
+    const linked = screen.getByRole('combobox', { name: 'Fiche technique associée' });
+    expect(title).toHaveAttribute('placeholder', 'Ex. Fabrication de la tartine auvergnate');
+    expect(title).toHaveClass('focus:placeholder:text-muted-foreground');
+    await user.click(title);
+    expect(title).toHaveFocus();
+    await user.type(title, 'Fabrication');
+    expect(title.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'filled');
+    await user.click(linked);
+    expect(screen.getByRole('option', { name: 'Tartine validée' }))
+      .toBeInTheDocument();
+    await user.click(screen.getByRole('option', { name: 'Tartine validée' }));
+    expect(linked.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'filled');
+    expect(linked).toHaveTextContent('Tartine validée');
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeEnabled();
+  });
+
+  it('n’ajoute une pagination que lorsque le nombre de Fiches dépasse une page', () => {
+    renderDialog();
+    expect(screen.queryByRole('button', { name: 'Suivant' })).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', {
+      name: 'Fiche technique associée',
+    })).toBeInTheDocument();
   });
 
   it('n’autorise pas la soumission sans titre ni sélection M-004', async () => {

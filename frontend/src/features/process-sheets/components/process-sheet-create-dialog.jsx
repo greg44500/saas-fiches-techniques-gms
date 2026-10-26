@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { DataPagination } from '@/components/data-display/data-pagination';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
+import { ProductVariantField } from '@/features/products/components/product-variant-field';
 import { Button } from '@/components/ui/button';
 import {
   DialogContent, DialogFooter, DialogHeader, DialogOverlay,
@@ -22,11 +23,10 @@ function ProcessSheetCreateDialog({
 }) {
   const [title, setTitle] = useState('');
   const [technicalSheetId, setTechnicalSheetId] = useState('');
-  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [errorMessage, setErrorMessage] = useState('');
   const eligible = useListEligibleProcessTechnicalSheetsQuery(
-    { workspaceId, dossierId, search: search.trim() || undefined, page, limit: 10 },
+    { workspaceId, dossierId, page, limit: 100 },
     { skip: !open },
   );
   const [createProcess, state] = useCreateProcessSheetMutation();
@@ -79,17 +79,16 @@ function ProcessSheetCreateDialog({
             </div>
           </DialogHeader>
           <form className="mt-5 space-y-4" onSubmit={submit}>
-            <div className="space-y-2">
-              <div className="flex items-center gap-1">
-                <label className="text-sm font-medium" htmlFor="process-sheet-title">
-                  Titre de la Fiche process
-                </label>
-                <InfoTooltip
-                  label="À propos du titre de la Fiche process"
-                  content="Nommez votre procédure de fabrication. Ce titre peut différer du nom de la Fiche technique."
-                />
-              </div>
+            <ProductVariantField
+              filled={Boolean(title.trim())}
+              floating
+              helpContent="Nommez votre procédure de fabrication. Ce titre peut différer du nom de la Fiche technique."
+              helpLabel="À propos du titre de la Fiche process"
+              id="process-sheet-title"
+              label="Titre de la Fiche process"
+            >
               <Input
+                className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground"
                 id="process-sheet-title"
                 maxLength={160}
                 onChange={(event) => setTitle(event.target.value)}
@@ -97,28 +96,16 @@ function ProcessSheetCreateDialog({
                 required
                 value={title}
               />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center gap-1">
-                <label className="text-sm font-medium" id="process-sheet-linked-label">
-                  Fiche technique associée
-                </label>
-                <InfoTooltip
-                  label="Critères de disponibilité des Fiches techniques"
-                  content="Seules les Fiches actives, validées, sans brouillon de révision ouvert et sans Fiche process associée sont disponibles dans ce Dossier."
-                />
-              </div>
-              <Input
-                aria-label="Rechercher une Fiche technique éligible"
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  setTechnicalSheetId('');
-                  setPage(1);
-                }}
-                placeholder="Rechercher parmi les Fiches validées…"
-                type="search"
-                value={search}
-              />
+            </ProductVariantField>
+            <ProductVariantField
+              filled={Boolean(technicalSheetId)}
+              floating
+              helpContent="Seules les Fiches actives, validées, sans brouillon de révision ouvert et sans Fiche process associée sont disponibles dans ce Dossier."
+              helpLabel="Critères de disponibilité des Fiches techniques"
+              id="process-sheet-linked"
+              label="Fiche technique associée"
+              unavailable={eligible.isLoading || eligible.isError || options.length === 0}
+            >
               {eligible.isError ? (
                 <ErrorState
                   title="Sélection indisponible"
@@ -136,10 +123,16 @@ function ProcessSheetCreateDialog({
                     value={technicalSheetId || null}
                   >
                     <SelectTrigger
-                      aria-labelledby="process-sheet-linked-label"
-                      className="w-full"
+                      aria-label="Fiche technique associée"
+                      className="h-12 pt-3"
+                      id="process-sheet-linked"
                     >
-                      <SelectValue placeholder="Choisir une Fiche technique validée" />
+                      <SelectValue
+                        className={!technicalSheetId
+                          ? 'opacity-0 transition-opacity duration-200 group-focus-within:opacity-100'
+                          : undefined}
+                        placeholder="Sélectionner une Fiche technique"
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {options.map((sheet) => (
@@ -157,18 +150,20 @@ function ProcessSheetCreateDialog({
                       ouvert est nécessaire.
                     </p>
                   )}
-                  <DataPagination
-                    disabled={eligible.isFetching}
-                    onPageChange={(next) => {
-                      setPage(next);
-                      setTechnicalSheetId('');
-                    }}
-                    page={page}
-                    pagination={eligible.data?.pagination}
-                  />
+                  {(eligible.data?.pagination?.totalPages ?? 0) > 1 && (
+                    <DataPagination
+                      disabled={eligible.isFetching}
+                      onPageChange={(next) => {
+                        setPage(next);
+                        setTechnicalSheetId('');
+                      }}
+                      page={page}
+                      pagination={eligible.data?.pagination}
+                    />
+                  )}
                 </>
               )}
-            </div>
+            </ProductVariantField>
             {errorMessage && <p role="alert" className="text-sm text-destructive">{errorMessage}</p>}
             <DialogFooter>
               <Button disabled={state.isLoading} onClick={onClose} type="button" variant="outline">
