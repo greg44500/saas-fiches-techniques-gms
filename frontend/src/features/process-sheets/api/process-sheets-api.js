@@ -63,6 +63,19 @@ const processSheetsApi = baseApi.enhanceEndpoints({
         { type: 'ProcessSheet', id: workspaceId + ':' + dossierId + ':' + processSheetId },
       ],
     }),
+    saveProcessSheetDraft: builder.mutation({
+      query: ({ workspaceId, dossierId, processSheetId, expectedRevision, phases, unassignedReasons }) => ({
+        url: '/workspaces/' + workspaceId + '/dossiers/' + dossierId
+          + '/process-sheets/' + processSheetId + '/draft',
+        method: 'PUT',
+        body: { expectedRevision, phases, unassignedReasons },
+      }),
+      transformResponse: (response) => response.data.draft,
+      invalidatesTags: (_result, _error, { workspaceId, dossierId, processSheetId }) => [
+        { type: 'ProcessSheet', id: workspaceId + ':' + dossierId + ':' + processSheetId },
+        { type: 'ProcessSheetList', id: workspaceId + ':' + dossierId },
+      ],
+    }),
     getProcessSheetComposition: builder.query({
       query: ({ workspaceId, dossierId, technicalSheetId }) => ({
         url: '/workspaces/' + workspaceId
@@ -93,6 +106,7 @@ const {
   useGetProcessSheetQuery,
   useListEligibleProcessTechnicalSheetsQuery,
   useListProcessSheetsQuery,
+  useSaveProcessSheetDraftMutation,
 } = processSheetsApi;
 
 export {
@@ -103,4 +117,5 @@ export {
   useGetProcessSheetQuery,
   useListEligibleProcessTechnicalSheetsQuery,
   useListProcessSheetsQuery,
+  useSaveProcessSheetDraftMutation,
 };
