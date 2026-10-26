@@ -1,5 +1,23 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 
+## Finition UX M-003 : filtre animé, favoris et recherche compacte — 2026-10-26
+
+- Le filtre « Tous les articles / Favoris » reprend le curseur coulissant
+  200 ms (avec réduction des animations) des modes de recherche Produits
+  M-004. Le composant reste propre au produit : pas de changement de
+  primitive générique du Core.
+- Les actions Ajouter/Retirer des favoris exposent une infobulle au survol
+  et au focus clavier via la primitive Tooltip existante.
+- La recherche d'Articles du Dossier est initialement réduite à une
+  loupe ; clic puis expansion 300 ms avec champ conservé pendant
+  l'animation, comme la recherche de prix de l'en-tête du Dossier.
+  Recherche réactive côté serveur conservée ; la saisie maintient
+  l'expansion lors d'un clic extérieur. Échap efface la requête puis
+  rétracte le champ et rétablit le focus sur la loupe.
+- Tests du composant, RTL de page et E2E M-003 adaptés ; non exécutés
+  localement sur ce nouveau HEAD. Contrôles frontend, QA et
+  `npm run release:check` à effectuer avant PR.
+
 ## UX M-003 dans la branche Gammes M-004 — 2026-10-26 (recette à exécuter)
 
 - Décision utilisateur : conserver la branche `feature/m004-gammes-fiches-techniques`

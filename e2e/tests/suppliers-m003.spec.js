@@ -734,6 +734,17 @@ test('M-003 : les Articles fournisseur du Dossier sont visibles sans être favor
 
   await page.goto(context.dossierAPricingUrl);
   await expect(page.getByRole('tab', { name: /^Articles fournisseur \(/ })).toBeVisible();
+  await expect(page.getByRole('searchbox', {
+    name: 'Rechercher un Article fournisseur',
+  })).toHaveCount(0);
+  await page.getByRole('button', {
+    name: "Ouvrir la recherche d'Articles fournisseur",
+  }).click();
+  const search = page.getByRole('searchbox', {
+    name: 'Rechercher un Article fournisseur',
+  });
+  await expect(search).toBeFocused();
+  await search.fill(context.articleReference);
 
   const rows = page.getByRole('region', {
     name: 'Lignes des Articles fournisseur du Dossier',

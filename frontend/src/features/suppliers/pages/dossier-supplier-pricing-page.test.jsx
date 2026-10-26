@@ -213,6 +213,10 @@ describe('DossierSupplierPricingPage', () => {
     const add = screen.getByRole('button', {
       name: 'Ajouter aux favoris : 43279',
     });
+    await user.hover(add);
+    expect(await screen.findByText('Ajouter cet article aux favoris du Dossier.'))
+      .toBeInTheDocument();
+    await user.unhover(add);
     await user.click(add);
     expect(mocks.addReference).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
@@ -225,7 +229,13 @@ describe('DossierSupplierPricingPage', () => {
     expect(screen.queryByText('Croissant pur beurre')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ajouter aux favoris : 43279' }))
       .not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Retirer des favoris : 34171' }));
+    const remove = screen.getByRole('button', {
+      name: 'Retirer des favoris : 34171',
+    });
+    await user.hover(remove);
+    expect(await screen.findByText('Retirer cet article des favoris du Dossier.'))
+      .toBeInTheDocument();
+    await user.click(remove);
     expect(mocks.removeReference).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
       dossierId: 'dossier-1',
@@ -259,6 +269,12 @@ describe('DossierSupplierPricingPage', () => {
       expect.objectContaining({ page: 2, limit: 10 }),
       { skip: false },
     );
+    expect(screen.queryByRole('searchbox', {
+      name: 'Rechercher un Article fournisseur',
+    })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', {
+      name: "Ouvrir la recherche d'Articles fournisseur",
+    }));
     await user.type(screen.getByRole('searchbox', {
       name: 'Rechercher un Article fournisseur',
     }), 'BRIDOR');

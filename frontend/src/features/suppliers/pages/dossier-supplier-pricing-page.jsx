@@ -21,8 +21,14 @@ import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useToast } from '@/components/shared/toast-provider';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { SegmentedControl } from '@/components/ui/segmented-control';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  DossierSupplierArticleToolbar,
+} from '@/features/suppliers/components/dossier-supplier-article-toolbar';
 import {
   Tabs,
   TabsList,
@@ -391,24 +397,33 @@ function DossierSupplierPricingPage() {
         if (!canManageFavorites) return isFavorite ? 'Favori' : '—';
 
         return (
-          <Button
-            aria-label={(isFavorite ? 'Retirer des favoris : ' : 'Ajouter aux favoris : ')
-              + article.supplierReference}
-            className="gap-2"
-            disabled={pendingFavoriteId !== null
-              || addReferenceState.isLoading || removeReferenceState.isLoading}
-            onClick={() => toggleFavorite(article)}
-            size="sm"
-            type="button"
-            variant={isFavorite ? 'secondary' : 'outline'}
-          >
-            <Star
-              aria-hidden="true"
-              className="size-4 shrink-0"
-              fill={isFavorite ? 'currentColor' : 'none'}
-            />
-            {isFavorite ? 'Favori' : 'Ajouter'}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger render={(
+              <Button
+                aria-label={(isFavorite ? 'Retirer des favoris : ' : 'Ajouter aux favoris : ')
+                  + article.supplierReference}
+                className="gap-2"
+                disabled={pendingFavoriteId !== null
+                  || addReferenceState.isLoading || removeReferenceState.isLoading}
+                onClick={() => toggleFavorite(article)}
+                size="sm"
+                type="button"
+                variant={isFavorite ? 'secondary' : 'outline'}
+              >
+                <Star
+                  aria-hidden="true"
+                  className="size-4 shrink-0"
+                  fill={isFavorite ? 'currentColor' : 'none'}
+                />
+                {isFavorite ? 'Favori' : 'Ajouter'}
+              </Button>
+            )} />
+            <TooltipContent>
+              {isFavorite
+                ? 'Retirer cet article des favoris du Dossier.'
+                : 'Ajouter cet article aux favoris du Dossier.'}
+            </TooltipContent>
+          </Tooltip>
         );
       },
     },
@@ -711,35 +726,22 @@ function DossierSupplierPricingPage() {
 
       {section === 'references' && (
         <section className="overflow-hidden rounded-xl border border-border bg-card">
-          <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center">
-            {canReadArticles && canReadFavorites && (
-              <SegmentedControl
-                ariaLabel="Filtrer les Articles fournisseur"
-                items={[
-                  { value: 'all', label: 'Tous les articles' },
-                  { value: 'favorites', label: 'Favoris (' + references.length + ')' },
-                ]}
-                onValueChange={(value) => {
-                  setArticleFilter(value);
-                  setArticlePage(1);
-                  viewport.resetScroll();
-                }}
-                value={articleFilter}
-              />
-            )}
-            <Input
-              aria-label="Rechercher un Article fournisseur"
-              className="min-w-0 flex-1"
-              onChange={(event) => {
-                setArticleSearch(event.target.value);
-                setArticlePage(1);
-                viewport.resetScroll();
-              }}
-              placeholder="Rechercher un article fournisseur…"
-              type="search"
-              value={articleSearch}
-            />
-          </div>
+          <DossierSupplierArticleToolbar
+            favoriteCount={references.length}
+            onFilterChange={(value) => {
+              setArticleFilter(value);
+              setArticlePage(1);
+              viewport.resetScroll();
+            }}
+            onSearchChange={(value) => {
+              setArticleSearch(value);
+              setArticlePage(1);
+              viewport.resetScroll();
+            }}
+            search={articleSearch}
+            selectedFilter={articleFilter}
+            showFavoriteFilter={canReadArticles && canReadFavorites}
+          />
           {(canReadFavorites && referencesQuery.isError)
             || (showAllArticles && articlesQuery.isError) ? (
             <div className="p-4">

@@ -45,6 +45,21 @@ puis ajouter un Article pour le voir dans le Dossier. Le terme
 - Le backend M-003 existant est autorité pour les Articles accessibles
   et pour l'appartenance des favoris au Dossier.
 
+## Finition d'interaction validée — 2026-10-26
+
+- Glissement animé de l'indicateur du filtre sur 200 ms,
+  avec `prefers-reduced-motion` ; style aligné avec le sélecteur de
+  Produits des Fiches M-004.
+- Tooltip des actions favorites, au survol et au focus clavier :
+  confirmation explicite de l'ajout ou du retrait.
+- Barre de recherche fermée sur une loupe seule ; expansion animée
+  300 ms, champ de saisie conservé monté pendant la transition.
+  Focus transmis à la saisie à l'ouverture ; recherche serveur
+  inchangée. La saisie évite tout repli involontaire, et Échap
+  efface puis referme avec retour de focus.
+- Implémentation limitée à la feature M-003 ; aucune modification
+  des primitives génériques Core, du backend ni des règles de gestion.
+
 ## Tests et recette
 
 - RTL : affichage Articles/favoris, ajout/retrait, absence de création
