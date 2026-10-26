@@ -74,6 +74,21 @@ describe('M-006 — modale de création', () => {
       .toBeInTheDocument();
   });
 
+  it('explique pourquoi aucune Fiche technique n’est éligible', () => {
+    mocks.list.mockReturnValue({
+      data: {
+        technicalSheets: [],
+        pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+      },
+      isError: false, isFetching: false, isLoading: false,
+      refetch: vi.fn(),
+    });
+    renderDialog();
+    expect(screen.getByText(/Les Fiches en brouillon/)).toBeInTheDocument();
+    expect(screen.getByText(/validation M-004 sans brouillon/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeDisabled();
+  });
+
   it('n’autorise pas la soumission sans titre ni sélection M-004', async () => {
     renderDialog();
     const submit = screen.getByRole('button', { name: 'Créer et ouvrir' });

@@ -151,7 +151,10 @@ function ProcessSheetCreateDialog({
                   </Select>
                   {!eligible.isLoading && options.length === 0 && (
                     <p className="text-sm text-muted-foreground">
-                      Aucune Fiche technique validée et disponible ne correspond à la recherche.
+                      Aucune Fiche technique éligible. Les Fiches en brouillon,
+                      en révision ou déjà liées à un process ne peuvent pas
+                      être sélectionnées. Une validation M-004 sans brouillon
+                      ouvert est nécessaire.
                     </p>
                   )}
                   <DataPagination

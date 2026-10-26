@@ -145,10 +145,13 @@ describe('M-006 — liste des Fiches process uniquement', () => {
     const createButton = screen.getByRole('button', { name: 'Créer une Fiche process' });
     expect(createButton).toBeVisible();
     expect(createButton).toBeDisabled();
+    expect(createButton).toHaveAttribute(
+      'aria-describedby', 'process-sheet-create-reason',
+    );
     expect(screen.getByRole('status')).toHaveTextContent(
       'Votre rôle ne dispose pas du droit de créer des Fiches process.',
     );
-    await userEvent.setup().click(createButton, { pointerEventsCheck: 0 });
+    await userEvent.setup().click(createButton);
     expect(screen.queryByRole('dialog', { name: 'Création' })).not.toBeInTheDocument();
     expect(screen.getByText('Fabrication tartine')).toBeInTheDocument();
   });

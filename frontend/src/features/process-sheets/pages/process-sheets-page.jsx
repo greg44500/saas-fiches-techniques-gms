@@ -114,6 +114,7 @@ function ProcessSheetsPage() {
         </div>
         <div className="flex flex-col items-end gap-1">
           <Button
+            aria-describedby={creationBlockedReason ? 'process-sheet-create-reason' : undefined}
             disabled={!canCreate}
             onClick={() => setCreateOpen(true)}
             size="sm"
@@ -123,7 +124,11 @@ function ProcessSheetsPage() {
             Créer une Fiche process
           </Button>
           {creationBlockedReason && (
-            <p className="max-w-sm text-right text-xs text-muted-foreground" role="status">
+            <p
+              className="max-w-sm text-right text-xs text-muted-foreground"
+              id="process-sheet-create-reason"
+              role="status"
+            >
               {creationBlockedReason}
             </p>
           )}

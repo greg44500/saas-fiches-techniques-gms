@@ -1,5 +1,8 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+**Correctif d'accès à la création (capture utilisateur 2026-10-26) :** le bouton caché par la combinaison `process-sheet:create`, `technical-sheet:read`, `Dossier.ACTIVE` est désormais **toujours affiché** (désactivé et motivé tant qu'une précondition manque, jamais de bypass RBAC). Nouvelle permission CREATE sur rôle Owner existant nécessite `migration:m006-process-sheets` sur la base locale puis actualisation du contexte Workspace. Les quatre Fiches M-004 observées précédemment étaient en brouillon/révision : elles ne sont pas éligibles avant validation et fermeture de brouillon. Tests React de permissions, de Dossier, de modale et zéro éligible ajoutés, **exécution locale encore attendue**. Voir `docs/m006/M-006-TECHNICAL-DESIGN.md`.
+
+
 **Stabilisation frontend du 2026-10-26 après log utilisateur :** Vitest 8 suites réussies / 36 tests réussis et une suite shell Dossier non chargée (PARSE_ERROR, 0 test). Le fichier sur la branche comportait 902 lignes et des fragments dupliqués, contrairement à `main` (353). Réécriture depuis la source stable de `main` avec réapplication contrôlée des seules évolutions M-006 (onglet, compteur, détection du détail, permissions, skip RTK Query), et extension des tests pour route/permissions/compteurs. Les nouveaux tests restent **à relancer localement** sur le HEAD corrigé ; aucun statut vert extrapolé du log antérieur.
 
 
