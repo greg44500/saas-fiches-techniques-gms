@@ -185,6 +185,7 @@ function ProcessSheetDraftEditor({
   const [message, setMessage] = useState('');
   const [conflict, setConflict] = useState(false);
   const [saveDraft, saving] = useSaveProcessSheetDraftMutation();
+  const editable = canEdit && !saving.isLoading;
 
   // Do not overwrite an unsaved local edit when RTK Query refetches.
   // A newly saved revision is not replaced by a still-stale cached revision.
@@ -203,6 +204,7 @@ function ProcessSheetDraftEditor({
   const unassigned = ingredients.filter((line) => !assigned.has(line.lineKey));
 
   const edit = (updater) => {
+    if (!editable) return;
     setForm((current) => typeof updater === 'function' ? updater(current) : updater);
     setDirty(true);
     setMessage('');
@@ -228,6 +230,7 @@ function ProcessSheetDraftEditor({
     }));
   };
   const save = async () => {
+    if (!editable || !dirty || conflict) return;
     setMessage('');
     try {
       const result = await saveDraft({
@@ -275,7 +278,7 @@ function ProcessSheetDraftEditor({
             <CardTitle>Phases et étapes</CardTitle>
             <InfoTooltip label="À propos du brouillon process" content="Les phases, étapes et ingrédients associés sont propres à cette Fiche process. Les modifications sont enregistrées manuellement et ne modifient pas la Fiche technique." />
           </div>
-          {canEdit && (
+          {editable && (
             <Button disabled={!dirty || saving.isLoading || conflict} onClick={save} size="sm" type="button">
               <Save className="size-4" aria-hidden="true" /> {saving.isLoading ? 'Enregistrement…' : 'Enregistrer le brouillon'}
             </Button>
@@ -302,7 +305,7 @@ function ProcessSheetDraftEditor({
           <section className="space-y-3 rounded-lg border border-border p-3" key={phase.id} aria-label={'Phase ' + (i + 1)}>
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-semibold">Phase {i + 1}</h3>
-              {canEdit && (
+              {editable && (
                 <div className="flex gap-1">
                   <Button aria-label={'Monter phase ' + (i + 1)} disabled={i === 0} onClick={() => edit((state) => ({ ...state, phases: move(state.phases, i, -1) }))} size="icon" type="button" variant="ghost"><ArrowUp className="size-4" /></Button>
                   <Button aria-label={'Descendre phase ' + (i + 1)} disabled={i === form.phases.length - 1} onClick={() => edit((state) => ({ ...state, phases: move(state.phases, i, 1) }))} size="icon" type="button" variant="ghost"><ArrowDown className="size-4" /></Button>
@@ -311,34 +314,34 @@ function ProcessSheetDraftEditor({
               )}
             </div>
             <ProductVariantField floating filled={Boolean(phase.title)} id={'phase-' + phase.id} label="Titre de la phase">
-              <Input className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground" disabled={!canEdit} id={'phase-' + phase.id} maxLength={160} placeholder="Ex. Préparation" value={phase.title} onChange={(event) => patchPhase(i, { ...phase, title: event.target.value })} />
+              <Input className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground" disabled={!editable} id={'phase-' + phase.id} maxLength={160} placeholder="Ex. Préparation" value={phase.title} onChange={(event) => patchPhase(i, { ...phase, title: event.target.value })} />
             </ProductVariantField>
             <label className="grid gap-1 text-sm">Instructions de la phase
-              <Textarea disabled={!canEdit} maxLength={5000} value={phase.instructions ?? ''} onChange={(event) => patchPhase(i, { ...phase, instructions: event.target.value })} />
+              <Textarea disabled={!editable} maxLength={5000} value={phase.instructions ?? ''} onChange={(event) => patchPhase(i, { ...phase, instructions: event.target.value })} />
             </label>
             <IngredientChoices
-              disabled={!canEdit} ingredients={ingredients} label="Ingrédients directement affectés à la phase"
+              disabled={!editable} ingredients={ingredients} label="Ingrédients directement affectés à la phase"
               selected={phase.ingredientLineKeys ?? []}
               onChange={(next) => changeIngredients(i, null, next)}
             />
             {phase.steps.map((step, j) => (
               <ProcessStepEditor
-                count={phase.steps.length} disabled={!canEdit} index={j}
+                count={phase.steps.length} disabled={!editable} index={j}
                 ingredients={ingredients} key={step.id} step={step}
                 onChange={(next) => patchStep(i, j, next)}
                 onDelete={() => patchPhase(i, { ...phase, steps: phase.steps.filter((_, n) => n !== j) })}
                 onMove={(direction) => patchPhase(i, { ...phase, steps: move(phase.steps, j, direction) })}
               />
             ))}
-            {canEdit && (
-              <Button disabled={phase.steps.length >= 40} onClick={() => patchPhase(i, { ...phase, steps: [...phase.steps, newStep()] })} size="sm" type="button" variant="outline">
+            {editable && (
+              <Button disabled={!editable || phase.steps.length >= 40} onClick={() => patchPhase(i, { ...phase, steps: [...phase.steps, newStep()] })} size="sm" type="button" variant="outline">
                 <Plus className="size-4" aria-hidden="true" /> Ajouter une étape
               </Button>
             )}
           </section>
         ))}
-        {canEdit && (
-          <Button disabled={form.phases.length >= 40} onClick={() => edit((current) => ({
+        {editable && (
+          <Button disabled={!editable || form.phases.length >= 40} onClick={() => edit((current) => ({
             ...current, phases: [...current.phases, newPhase()],
           }))} type="button" variant="outline">
             <Plus className="size-4" aria-hidden="true" /> Ajouter une phase
@@ -353,7 +356,7 @@ function ProcessSheetDraftEditor({
           {unassigned.map((line) => (
             <label className="grid gap-1 text-xs" key={line.lineKey}>
               {line.productVariantName ?? 'Référence indisponible'} (ligne {line.sourcePosition + 1}) — justification éventuelle
-              <Input disabled={!canEdit} maxLength={1000} placeholder="Pourquoi cet ingrédient n’est-il pas utilisé ?" value={reasonFor(line.lineKey)} onChange={(event) => setReason(line.lineKey, event.target.value)} />
+              <Input disabled={!editable} maxLength={1000} placeholder="Pourquoi cet ingrédient n’est-il pas utilisé ?" value={reasonFor(line.lineKey)} onChange={(event) => setReason(line.lineKey, event.target.value)} />
             </label>
           ))}
         </section>
