@@ -27,6 +27,9 @@ import {
 import {
     PROCESS_LIBRARY_PERMISSIONS,
 } from '../../modules/process/processLibrary.registry.js';
+import {
+    PROCESS_SHEET_PERMISSION,
+} from '../../modules/process/processSheetPermission.registry.js';
 
 
 describe('application role permission registry', () => {
@@ -98,6 +101,22 @@ describe('application role permission registry', () => {
             ).toBe(false);
         }
     });
+    it('déclare la lecture process uniquement au rôle système Owner', () => {
+        expect(ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY.permissions)
+            .toContain(PROCESS_SHEET_PERMISSION.READ);
+        expect(
+            ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY
+                .systemRolePermissions[SYSTEM_ROLE_KEY.OWNER],
+        ).toContain(PROCESS_SHEET_PERMISSION.READ);
+        for (const roleKey of Object.values(SYSTEM_ROLE_KEY)) {
+            if (roleKey === SYSTEM_ROLE_KEY.OWNER) continue;
+            expect(
+                ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY
+                    .systemRolePermissions[roleKey] ?? [],
+            ).not.toContain(PROCESS_SHEET_PERMISSION.READ);
+        }
+    });
+
     it('enregistre M-006 sans donner de droits implicites hors Owner', () => {
         expect(
             ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY.permissions,

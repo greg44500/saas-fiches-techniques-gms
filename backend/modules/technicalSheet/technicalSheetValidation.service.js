@@ -262,6 +262,7 @@ const buildValidationLines = ({
         }
 
         return {
+            sourceLineId: line._id,
             kind: line.kind,
             productVariantId:
                 source.productVariant.id,

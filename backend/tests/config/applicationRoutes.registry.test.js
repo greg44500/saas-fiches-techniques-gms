@@ -93,6 +93,19 @@ describe('application backend route composition', () => {
         }
     });
 
+    it('enregistre le contexte de composition M-006 en lecture seule', () => {
+        const module = APPLICATION_BACKEND_ROUTE_MODULES.find(
+            ({ key }) => key === 'process-sheets-composition',
+        );
+        expect(module).toMatchObject({
+            mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets',
+            router: expect.any(Function),
+        });
+        const use = vi.fn();
+        mountApplicationRoutes({ use });
+        expect(use).toHaveBeenCalledWith(module.mountPath, module.router);
+    });
+
     it('monte un router métier sur son point de composition explicite', () => {
         const use = vi.fn();
         const app = { use };

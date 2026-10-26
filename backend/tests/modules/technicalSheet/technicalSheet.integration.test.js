@@ -1201,6 +1201,12 @@ describe('M-004 services Fiches techniques', () => {
         expect(
             result.validation.linesSnapshot,
         ).toHaveLength(1);
+        // M-006: new immutable snapshots retain the precise originating
+        // M-004 draft line, even when productVariantId is not unique.
+        expect(
+            result.validation.linesSnapshot[0]
+                .sourceLineId.toString(),
+        ).toBe(valued.draft.lines[0].id);
         expect(
             result.validation.linesSnapshot[0]
                 .materialCostSharePercent

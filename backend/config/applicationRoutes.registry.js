@@ -1,4 +1,7 @@
 import {
+    processSheetCompositionRouter,
+} from '../modules/process/processSheetComposition.routes.js';
+import {
     processLibraryDossierRouter,
     processLibraryWorkspaceRouter,
 } from '../modules/process/processLibrary.routes.js';
@@ -146,6 +149,11 @@ const mountApplicationRoutes = (
  * ]);
  */
 const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
+    Object.freeze({
+        key: 'process-sheets-composition',
+        mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets',
+        router: processSheetCompositionRouter,
+    }),
     Object.freeze({
         key: 'process-library-workspace',
         mountPath: '/api/workspaces/:workspaceId/process-library',
