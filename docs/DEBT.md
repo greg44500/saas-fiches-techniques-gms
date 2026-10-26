@@ -1,5 +1,16 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
 
+
+### GMS-M006-ILLUSTRATIONS — Illustrations et photos des étapes (décision du 2026-10-26)
+
+**Statut : report fonctionnel explicite — hors M-006 V1, non implémenté.** Le propriétaire du produit a approuvé les recommandations fonctionnelles 21–35 du cadrage M-006, **à l'exception de toute mise en œuvre des illustrations**, dont le cadrage est repoussé. Aucun champ image/photo, stockage dédié, galerie, upload, affichage illustré ou intégration des photographies à l'impression ne doit être créé dans la V1 M-006, même à titre « préparatoire ».
+
+Cadrage ultérieur indépendant requis : formats, taille/limites, ownership, stockage et rétention, permissions, import/suppression, affichage consultation et impression, sécurité et tests. Respecter le point d'extension fichiers Core réellement intégré plutôt que développer une infrastructure parallèle si un stockage est finalement nécessaire. Ne pas confondre ce report avec l'infographie synthétique et l'IA, également différées.
+
+### GMS-M006-DESIGN — Risques à résoudre avant implémentation (2026-10-26)
+
+**Statut : vigilance de conception, non-implémentation.** Les décisions 21–35 sont approuvées, mais le contrat final et le feu vert de développement demeurent requis. Auditer l'identité stable des ingrédients entre brouillons et validations M-004 (y compris Références Produit répétées), la copie inter-Dossier avec modèles locaux, la simultanéité des temps, les révisions bibliothèque, les cascades transactionnelles M-004 et le périmètre des métadonnées d'audit après suppression physique définitive. Les points sont repris dans `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`, section 16. Les traiter en conception technique sans modifier les versions M-004 historiques ni les primitives du Core.
+
 **Statut :** source de vérité documentaire pour les dettes non résolues  
 **Dernière mise à jour :** 2026-10-16  
 **Périmètre :** application GMS, avec dettes historiques du Core conservées distinctement
