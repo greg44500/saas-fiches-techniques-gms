@@ -311,4 +311,110 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
         expect(await ProcessSheet.countDocuments()).toBe(1);
         expect(await ProcessSheetDraft.countDocuments()).toBe(1);
     });
+    it('sauvegarde phases et étapes avec la vraie ligne de validation et audit', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id;
+        const initial = (await request(app).get(uri).set(bearer(owner.token)).expect(200)).body.data;
+        expect(initial.sourceIngredients.lines).toHaveLength(1);
+        const lineKey = initial.sourceIngredients.lines[0].lineKey;
+        expect(lineKey).toMatch(/^line:/);
+        const payload = {
+            expectedRevision: 0,
+            phases: [{
+                id: 'editor-phase-1', title: 'Préparer',
+                instructions: 'Laver', ingredientLineKeys: [lineKey],
+                steps: [{
+                    id: 'editor-step-1', title: 'Trancher',
+                    instructions: 'Couper finement', ingredientLineKeys: [lineKey],
+                    duration: { activeMinutes: 12, restMinutes: 5, treatmentMinutes: 0 },
+                    equipment: ['Couteau'], manufacturingVigilance: ['Lame'],
+                    qualityControls: [{ instruction: 'Épaisseur', expectedCriterion: '2 mm' }],
+                    sanitaryControls: [{ instruction: 'Mains propres' }],
+                }],
+            }],
+            unassignedReasons: [],
+        };
+        const saved = (await request(app).put(uri + '/draft')
+            .set(bearer(owner.token)).send(payload).expect(200)).body.data.draft;
+        expect(saved.revision).toBe(1);
+        expect(saved.phases[0].steps[0].ingredientLineKeys).toEqual([lineKey]);
+        const again = (await request(app).get(uri).set(bearer(owner.token)).expect(200)).body.data;
+        expect(again.draft.revision).toBe(1);
+        expect(again.draft.phases[0].steps[0].qualityControls[0].instruction).toBe('Épaisseur');
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: process.id, action: 'PROCESS_SHEET_DRAFT_SAVED',
+        })).toBe(1);
+        expect((await ProcessSheet.findById(process.id)).revision).toBe(1);
+        await request(app).put(uri + '/draft').set(bearer(owner.token)).send(payload).expect(409);
+        expect((await ProcessSheetDraft.findOne({ processSheet: process.id })).revision).toBe(1);
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: process.id, action: 'PROCESS_SHEET_DRAFT_SAVED',
+        })).toBe(1);
+    });
+
+    it('refuse les identifiants ingrédient étrangers et les justifications incohérentes', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id + '/draft';
+        const detail = (await request(app).get(base + '/' + process.id)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        const real = detail.sourceIngredients.lines[0].lineKey;
+        const payload = {
+            expectedRevision: 0,
+            phases: [{ id: 'editor-phase-1', title: 'Préparer',
+                ingredientLineKeys: ['line:someone-else'], steps: [] }],
+            unassignedReasons: [],
+        };
+        await request(app).put(uri).set(bearer(owner.token)).send(payload).expect(400);
+        payload.phases[0].ingredientLineKeys = [real];
+        payload.unassignedReasons = [{ lineKey: real, reason: 'Déjà affecté' }];
+        await request(app).put(uri).set(bearer(owner.token)).send(payload).expect(400);
+        payload.phases[0].ingredientLineKeys = [];
+        payload.unassignedReasons = [{ lineKey: real, reason: 'Non utilisé dans cette recette' }];
+        await request(app).put(uri).set(bearer(owner.token)).send(payload).expect(200);
+        expect((await ProcessSheetDraft.findOne({ processSheet: process.id }))
+            .unassignedReasons[0].lineKey).toBe(real);
+    });
+
+    it('interdit les champs photo, économiques, les duplications et les acteurs sans EDIT', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id + '/draft';
+        const body = { expectedRevision: 0, phases: [], unassignedReasons: [] };
+        await request(app).put(uri).send(body).expect(401);
+        await request(app).put(uri).set(bearer(owner.token))
+            .send({ ...body, photoUrl: 'file.png' }).expect(400);
+        await request(app).put(uri).set(bearer(owner.token))
+            .send({ ...body, cost: 12 }).expect(400);
+        await request(app).put(uri).set(bearer(owner.token))
+            .send({ ...body, phases: [
+                { id: 'editor-duplicate', title: 'A', steps: [] },
+                { id: 'editor-duplicate', title: 'B', steps: [] },
+            ] }).expect(400);
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: owner.workspace._id, actorId: owner.owner._id,
+            permissions: [PROCESS_SHEET_PERMISSION.READ],
+        });
+        await grantDossierAccess({
+            workspaceId: owner.workspace._id, dossierId: dossier._id,
+            membershipId: member.membership._id, actorId: owner.owner._id,
+        });
+        await request(app).put(uri).set(bearer(member.token)).send(body).expect(403);
+    });
+
+    it('refuse les écritures si le parent M-004 est archivé et n’altère pas le brouillon', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        await archiveTechnicalSheet({
+            workspaceId: owner.workspace._id, dossierId: dossier._id,
+            technicalSheetId: valid.created.sheet.id, actorId: owner.owner._id,
+            expectedRevision: await getCurrentRevision(valid.created.sheet.id),
+        });
+        const uri = base + '/' + process.id + '/draft';
+        await request(app).put(uri).set(bearer(owner.token))
+            .send({ expectedRevision: 0, phases: [], unassignedReasons: [] }).expect(404);
+        expect((await ProcessSheetDraft.findOne({ processSheet: process.id })).revision).toBe(0);
+    });
+
 });
