@@ -1368,24 +1368,27 @@ Les deux peuvent partager les mécanismes d'approvisionnement sans partager les 
 
 ---
 
-## 15. Fiche process
+## 15. Fiche process — M-006, décisions fonctionnelles approuvées (2026-10-26)
 
-Une Fiche process est reliée au travail d'un dossier et décrit la fabrication.
+Une Fiche technique M-004 (**composition**) peut posséder **0 ou 1** Fiche process (**fabrication**). La Fiche process dépend d'exactement une Fiche technique du même Workspace et du même Dossier. Le lien est unique y compris si le process possède un brouillon ou se trouve archivé par cascade.
 
-Concepts déjà identifiés :
+Concepts métier visés, **non encore implémentés** :
+- identité durable de Fiche process et lien 1:1 avec M-004 ;
+- brouillon de travail, versions validées immuables, composition M-004 de référence ;
+- phases ordonnées, étapes ordonnées, associations d'ingrédients issues des lignes de composition M-004 ; aucun moteur économique distinct ;
+- modèles d'étape/de phase et révisions de bibliothèque : scope Dossier ou Workspace, adoption non automatique ;
+- temps actif, attente/repos, cuisson/traitement, possibilité de simultanéité ;
+- consignes, éléments de fabrication, vigilance, qualité et maîtrise sanitaire ; critères et actions correctives facultatifs ;
+- validation minimale d'une phase et d'une étape documentée, justification des ingrédients non affectés ;
+- suivi non bloquant du décalage de composition et proposition de révision après changement M-004 ;
+- cascade d'archivage, corbeille, restauration et purge liée à M-004 ; aucun archivage autonome ;
+- suppression autonome physique définitive après permission/confirmation **uniquement lorsque M-004 est ACTIVE** ;
+- copie inter-Dossier dans un nouveau brouillon rattaché à la nouvelle Fiche technique, sans versions officielles source ;
+- permissions applicatives, accès Dossier, historique, consultation responsive et impression de version/brouillon identifié.
 
-- étapes ;
-- durées ;
-- denrées ;
-- points critiques ;
-- critères d'acceptabilité.
+**Limites V1 :** pas d'illustrations ni photographie, champ image, stockage dédié ou galerie ; pas de journal de production ni certification HACCP automatique ; pas de partage inter-Workspace. Les illustrations feront l'objet d'un cadrage distinct.
 
-**À cadrer :**
-
-- relation avec la fiche technique ;
-- versionnement ;
-- réutilisation ;
-- données process présentes directement dans la fiche technique.
+**Statut :** recommandations fonctionnelles 21–35 validées ; identité technique des ingrédients, API, transactions, dates et permissions détaillées à concevoir ; contrat final et implémentation en attente d'autorisation. Autorité : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`.
 
 ---
 
