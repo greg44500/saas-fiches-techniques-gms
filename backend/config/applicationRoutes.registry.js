@@ -1,3 +1,7 @@
+import {
+    processLibraryDossierRouter,
+    processLibraryWorkspaceRouter,
+} from '../modules/process/processLibrary.routes.js';
 import { dossierRouter } from '../modules/dossier/dossier.routes.js';
 import {
     productCatalogGlobalRouter,
@@ -133,6 +137,16 @@ const mountApplicationRoutes = (
  * import { catalogRouter } from '../modules/catalog/catalog.routes.js';
  *
  * const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
+    Object.freeze({
+        key: 'process-library-workspace',
+        mountPath: '/api/workspaces/:workspaceId/process-library',
+        router: processLibraryWorkspaceRouter,
+    }),
+    Object.freeze({
+        key: 'process-library-dossier',
+        mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/process-library',
+        router: processLibraryDossierRouter,
+    }),
  *     Object.freeze({
  *         key: 'catalog',
  *         mountPath: '/api/workspaces/:workspaceId/catalog',

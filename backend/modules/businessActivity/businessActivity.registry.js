@@ -31,6 +31,11 @@ const BUSINESS_ACTIVITY_ACTION_REGISTRY = Object.freeze({
         value: 'PRODUCT_CATALOG_REACTIVATED',
         label: 'Produit réactivé dans le catalogue',
     }),
+    PROCESS_LIBRARY_CREATED: Object.freeze({ value: 'PROCESS_LIBRARY_CREATED', label: 'Modèle de fabrication créé' }),
+    PROCESS_LIBRARY_REVISED: Object.freeze({ value: 'PROCESS_LIBRARY_REVISED', label: 'Modèle de fabrication révisé' }),
+    PROCESS_LIBRARY_ARCHIVED: Object.freeze({ value: 'PROCESS_LIBRARY_ARCHIVED', label: 'Modèle de fabrication archivé' }),
+    PROCESS_LIBRARY_REACTIVATED: Object.freeze({ value: 'PROCESS_LIBRARY_REACTIVATED', label: 'Modèle de fabrication réactivé' }),
+    PROCESS_LIBRARY_PUBLISHED: Object.freeze({ value: 'PROCESS_LIBRARY_PUBLISHED', label: 'Modèle de fabrication publié' }),
     TECHNICAL_SHEET_RANGE_CREATED: Object.freeze({ value: 'TECHNICAL_SHEET_RANGE_CREATED', label: 'Gamme de Fiches créée' }),
     TECHNICAL_SHEET_RANGE_RENAMED: Object.freeze({ value: 'TECHNICAL_SHEET_RANGE_RENAMED', label: 'Gamme de Fiches renommée' }),
     TECHNICAL_SHEET_RANGE_ARCHIVED: Object.freeze({ value: 'TECHNICAL_SHEET_RANGE_ARCHIVED', label: 'Gamme de Fiches archivée' }),
@@ -131,6 +136,7 @@ const BUSINESS_ACTIVITY_ENTITY_TYPE = Object.freeze({
     WORKSPACE_PRODUCT: 'WORKSPACE_PRODUCT',
     TECHNICAL_SHEET: 'TECHNICAL_SHEET',
     TECHNICAL_SHEET_RANGE: 'TECHNICAL_SHEET_RANGE',
+    PROCESS_LIBRARY_TEMPLATE: 'PROCESS_LIBRARY_TEMPLATE',
     WORKSPACE_BUSINESS_SETTINGS: 'WORKSPACE_BUSINESS_SETTINGS',
 });
 

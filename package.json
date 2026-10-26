@@ -68,7 +68,8 @@
     "seed:m003-global-indicative-prices": "node backend/seeds/seedM003GlobalIndicativePrices.js",
     "migration:m004-export-plan-limit": "node backend/migrations/runAddM004TechnicalSheetExportPlanLimitMigration.js",
     "migration:m004-export-permission": "node backend/migrations/runBackfillM004TechnicalSheetExportPermissionMigration.js",
-    "migration:m004-ranges": "node backend/migrations/runEnsureM004RangeIndexesMigration.js"
+    "migration:m004-ranges": "node backend/migrations/runEnsureM004RangeIndexesMigration.js",
+    "migration:m006-process-library": "node backend/migrations/runEnsureM006ProcessLibraryMigration.js"
   },
   "license": "UNLICENSED",
   "dependencies": {

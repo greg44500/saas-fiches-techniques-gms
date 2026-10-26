@@ -1,5 +1,8 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+**Démarrage du développement approuvé le 2026-10-26 :** contrat final M-006 validé par le propriétaire. Lot 1 backend Bibliothèques de fabrication (scopes Dossier/Workspace, révisions non destructives, publication, archivage, RBAC, audit, migration et tests HTTP) engagé sur `feature/m006-fiches-process`. **Implémentation M-006 partielle :** aucun agrégat Fiche process, aucune intégration cycle de vie M-004, aucun frontend/process/impression encore livré. Gates et migrations non exécutées dans cette conversation. Voir `docs/m006/M-006-TECHNICAL-DESIGN.md`. Illustrations toujours exclues.
+
+
 **Statut : cadrage en cours sur feature/m006-fiches-process ; implémentation métier non autorisée avant validation du contrat final.**
 
 **Nouvelle décision métier du 2026-10-26 — réponses aux recommandations 21 à 35 :** toutes les recommandations fonctionnelles 21–35 sont **approuvées** ; les illustrations/photographies restent **expressément exclues de M-006 V1**, car leur cadrage est reporté. Le contrat de travail `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md` consigne les quinze décisions et les inconnues techniques restantes ; PRODUCT-SCOPE, ROADMAP, GLOSSARY, DOMAIN-MODEL et DEBT ont été alignés. **Cela ne constitue pas encore la validation finale du contrat consolidé ni l'autorisation de coder.** Aucun champ image, infrastructure de stockage/photo, UI d'illustration ou impression illustrée ne doit être implémenté dans M-006.

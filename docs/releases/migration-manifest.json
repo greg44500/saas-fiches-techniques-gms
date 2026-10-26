@@ -190,6 +190,14 @@
       "script": "migration:m004-usage-reconcile",
       "runner": "backend/migrations/runReconcileM004TechnicalSheetUsageMetricMigration.js",
       "dependsOn": []
+    },
+    {
+      "id": "m006-process-library",
+      "script": "migration:m006-process-library",
+      "runner": "backend/migrations/runEnsureM006ProcessLibraryMigration.js",
+      "dependsOn": [
+        "m004-technical-sheets"
+      ]
     }
   ]
 }
