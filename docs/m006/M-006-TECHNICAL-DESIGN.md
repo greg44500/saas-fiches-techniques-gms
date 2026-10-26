@@ -83,3 +83,7 @@ Tests ajoutés : projection unitaire avec Référence Produit répétée, absenc
 ### Déploiement des permissions du lot 2
 
 La permission `process-sheet:read` est nouvelle **après** le lot Bibliothèque. Une exécution historique de `migration:m006-process-library` ne suffit pas à garantir les droits des Owners déjà persistés. Migration distincte `migration:m006-process-composition-permission` ajoutée au manifeste avec dépendance sur le lot Bibliothèque, idempotente via `backfillRegisteredSystemRolePermissions`. L'application ne doit pas être ouverte aux parcours M-006 avant cette réconciliation dans l'environnement cible. Rôles personnalisés non élargis automatiquement. Aucun changement commercial ni nouveau quota.
+
+### Robustesse des références en brouillon
+
+La projection utilise les `productVariant` ObjectId **bruts** des lignes de brouillon, et résout les libellés via une lecture groupée distincte des Références Produit. Une ancienne référence devenue indisponible ne doit pas effacer la clé de ligne ni provoquer un `500` par déréférencement `null` lors d'un `populate`. Le nom peut être `null` jusqu'à la revue des données ; les identifiants et occurrences restent conservés. Test HTTP dédié sur une Référence absente. Ce comportement n'autorise pas la validation automatique d'un process dont la composition n'est pas cohérente.

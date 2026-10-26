@@ -1,5 +1,7 @@
 import '../../setup.js';
 
+import mongoose from 'mongoose';
+
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -68,6 +70,39 @@ describe('M-006 — lecture sécurisée de la composition M-004', () => {
             draft: { sourceKind: 'DRAFT', lines: [], groupedIngredients: [] },
         });
         expect(JSON.stringify(response.body.data)).not.toContain('finalPrice');
+    });
+
+    it('conserve les occurrences distinctes même si la référence Produit est indisponible', async () => {
+        const draft = await TechnicalSheetDraft.findOne({
+            technicalSheet: sheet.id,
+        });
+        const unavailableVariant = new mongoose.Types.ObjectId();
+        for (const order of [0, 1]) {
+            draft.lines.push({
+                kind: 'INGREDIENT',
+                productVariant: unavailableVariant,
+                netQuantity: '1',
+                inputUnit: 'KG',
+                order,
+            });
+        }
+        await draft.save();
+
+        const response = await request(app).get(path)
+            .set(bearer(owner.token)).expect(200);
+        const projection = response.body.data.draft;
+        expect(projection.lines).toHaveLength(2);
+        expect(projection.lines.map((line) => line.productVariantId))
+            .toEqual([
+                unavailableVariant.toString(),
+                unavailableVariant.toString(),
+            ]);
+        expect(projection.lines[0].lineKey).not.toBe(
+            projection.lines[1].lineKey,
+        );
+        expect(projection.groupedIngredients).toHaveLength(1);
+        expect(projection.groupedIngredients[0].lineKeys).toHaveLength(2);
+        expect(projection.lines[0].productVariantName).toBeNull();
     });
 
     it('répond 401 sans jeton et 400 sur identifiant invalide', async () => {

@@ -12,6 +12,7 @@ import {
 const toIngredientProjection = ({
     sourceKind,
     source,
+    variantNamesById = new Map(),
 }) => {
     const isDraft = sourceKind === 'DRAFT';
     if (!['DRAFT', 'VALIDATION'].includes(sourceKind)) {
@@ -35,11 +36,17 @@ const toIngredientProjection = ({
             ? 'line:' + explicitId
             : 'validation:' + sourceId + ':index:' + originalIndex;
 
-        const productVariantId = isDraft
-            ? (line.productVariant?._id ?? line.productVariant).toString()
-            : line.productVariantId.toString();
+        const variant = isDraft
+            ? (line.productVariant?._id ?? line.productVariant)
+            : line.productVariantId;
+        if (!variant) {
+            throw new Error('Missing M-004 product variant reference.');
+        }
+        const productVariantId = variant.toString();
         const name = isDraft
-            ? line.productVariant?.name ?? null
+            ? (variantNamesById.get(productVariantId)
+                ?? line.productVariant?.name
+                ?? null)
             : line.productVariantName;
 
         return [{

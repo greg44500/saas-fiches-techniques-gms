@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 import { AppError } from '../../utils/appError.js';
+import {
+    ProductVariant,
+} from '../productCatalog/productVariant.model.js';
+import {
+    TECHNICAL_SHEET_LINE_KIND,
+} from '../technicalSheet/technicalSheet.registry.js';
 import { TechnicalSheet } from '../technicalSheet/technicalSheet.model.js';
 import { TechnicalSheetDraft } from '../technicalSheet/technicalSheetDraft.model.js';
 import {
@@ -38,10 +44,7 @@ const getProcessSheetCompositionContext = async ({
             technicalSheet: sheet._id,
             workspace: workspaceId,
             dossier: dossierId,
-        })).populate({
-            path: 'lines.productVariant',
-            select: '_id name',
-        }),
+        })).lean(),
         sheet.currentValidatedState
             ? TechnicalSheetValidation.findOne(mongoose.trusted({
                 _id: sheet.currentValidatedState,
@@ -59,8 +62,31 @@ const getProcessSheetCompositionContext = async ({
         );
     }
 
+    // Resolve display names independently of the references. A deleted
+    // ProductVariant must not erase the saved M-004 line identity.
+    const ingredientVariantIds = draft
+        ? [...new Set(draft.lines
+            .filter(({ kind }) => kind === TECHNICAL_SHEET_LINE_KIND.INGREDIENT)
+            .map(({ productVariant }) => productVariant?.toString())
+            .filter(Boolean))]
+        : [];
+
+    const variantNamesById = new Map();
+    if (ingredientVariantIds.length) {
+        const variants = await ProductVariant.find(mongoose.trusted({
+            _id: mongoose.trusted({
+                $in: ingredientVariantIds,
+            }),
+        })).select('_id name').lean();
+        for (const variant of variants) {
+            variantNamesById.set(variant._id.toString(), variant.name);
+        }
+    }
+
     const draftComposition = draft
-        ? toIngredientProjection({ sourceKind: 'DRAFT', source: draft })
+        ? toIngredientProjection({
+            sourceKind: 'DRAFT', source: draft, variantNamesById,
+        })
         : null;
     const validatedComposition = validation
         ? toIngredientProjection({ sourceKind: 'VALIDATION', source: validation })
