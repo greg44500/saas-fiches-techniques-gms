@@ -261,7 +261,14 @@ const setTemplateStatus = ({
         { session, returnDocument: 'after', runValidators: true },
     );
     if (!template) throw conflict();
-    // A status transition does not create a new content snapshot.
+    // Keep the content lookup valid for every revision number. A status
+    // transition has an identical, but independently immutable, snapshot.
+    await createRevision({
+        template,
+        definition: template.definition,
+        actorId,
+        session,
+    });
     await audit({
         workspaceId, dossierId, actorId, template, session,
         action: nextStatus === PROCESS_LIBRARY_STATUS.ARCHIVED
