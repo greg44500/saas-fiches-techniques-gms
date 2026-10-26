@@ -383,13 +383,13 @@ Les exports et la diffusion restent un bloc V1 séparé et ne sont pas implicite
 
 ### 2.5 Fiches process — lot M-006 prioritaire, cadrage consolidé (2026-10-26)
 
-**État courant : recommandations fonctionnelles 21–35 validées, version finale du contrat et autorisation d'implémentation encore attendues.**
+**État courant : contrat M-006 validé et implémentation autorisée le 2026-10-26 ; premier lot backend bibliothèques engagé, module complet non livré.**
 
 Branche existante : `feature/m006-fiches-process`. Cadrage : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`. Le lot ajoute au Dossier les modes opératoires associés 1:1 aux Fiches techniques : création guidée, phases/étapes, affectation des ingrédients M-004, bibliothèques Dossier/Workspace, contrôles structurés facultatifs, validations historiques, cycle de vie parent-enfant, suppression autonome définitive autorisée et impression.
 
 **Lot ultérieur, exclu de M-006 V1 : illustrations et photographies**, y compris champs photo, stockage, affichage, galerie et impression illustrée. Le cadrage des formats, tailles, permissions, rétention et coûts doit être distinct. Sont également différés : journaux d'exécution des contrôles, aide IA, infographies et diffusion documentaire avancée.
 
-Suite ordonnée : clôture du contrat final et accord utilisateur → audit/conception technique M-004/Core → backend + tests → intégrations transactionnelles → frontend/RTL → E2E → `npm run release:check` → recette et éventuelle PR **sur autorisation**. Aucun code M-006 ni tests M-006 réalisés à ce stade.
+Suite ordonnée : bibliothèques backend (code et tests créés, **non exécutés**) → conception de l'identité ingrédients M-004 → agrégat Fiche process/backend → intégrations transactionnelles parent/enfant → frontend/RTL → E2E → `npm run release:check` → recette et éventuelle PR **sur autorisation**. La migration M-006 n'a pas été exécutée dans cette conversation.
 
 ### 2.6 Utilisateurs, RBAC, capabilities et quotas
 
