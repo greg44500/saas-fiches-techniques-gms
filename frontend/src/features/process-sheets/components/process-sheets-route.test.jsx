@@ -37,11 +37,10 @@ describe('M-006 — barrière frontend de lecture', () => {
   });
 
   it.each([
-    [PROCESS_SHEET_PERMISSION.READ],
-    [TECHNICAL_SHEET_PERMISSION.READ],
-    [],
-  ])('masque la surface lorsqu’un droit manque (%s)', (allowedPermission) => {
-    const allowed = allowedPermission ? [allowedPermission] : [];
+    { scenario: 'process uniquement', allowed: [PROCESS_SHEET_PERMISSION.READ] },
+    { scenario: 'M-004 uniquement', allowed: [TECHNICAL_SHEET_PERMISSION.READ] },
+    { scenario: 'aucun droit', allowed: [] },
+  ])('masque la surface lorsqu’un droit manque ($scenario)', ({ allowed }) => {
     mocks.context.mockReturnValue({
       canAll: (permissions) => permissions.every(
         (permission) => allowed.includes(permission),

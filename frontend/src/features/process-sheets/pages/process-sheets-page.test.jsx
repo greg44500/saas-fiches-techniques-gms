@@ -59,7 +59,7 @@ beforeEach(() => {
   mocks.list.mockReturnValue({
     data: {
       sheets,
-      pagination: { page: 1, limit: 20, total: 2, totalPages: 1 },
+      pagination: { page: 1, limit: 10, total: 2, totalPages: 1 },
     },
     isLoading: false,
     isFetching: false,
@@ -96,7 +96,7 @@ describe('M-006 — première page Dossier Fiches process', () => {
       workspaceId: 'workspace-1',
       dossierId: 'dossier-1',
       page: 1,
-      limit: 20,
+      limit: 10,
       status: 'ACTIVE',
       search: undefined,
     });
@@ -138,6 +138,28 @@ describe('M-006 — première page Dossier Fiches process', () => {
       search: 'purée',
       status: 'ACTIVE',
       page: 1,
+    }));
+  });
+
+  it('utilise la pagination serveur et conserve la sélection en URL', async () => {
+    mocks.list.mockReturnValue({
+      data: {
+        sheets,
+        pagination: { page: 1, limit: 10, total: 22, totalPages: 3 },
+      },
+      isLoading: false,
+      isFetching: false,
+      isError: false,
+      refetch: vi.fn(),
+    });
+    renderPage();
+    await userEvent.setup().click(screen.getByRole('button', {
+      name: 'Suivant',
+    }));
+    expect(mocks.list).toHaveBeenLastCalledWith(expect.objectContaining({
+      page: 2,
+      limit: 10,
+      status: 'ACTIVE',
     }));
   });
 

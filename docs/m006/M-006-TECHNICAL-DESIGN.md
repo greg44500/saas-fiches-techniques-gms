@@ -87,3 +87,30 @@ La permission `process-sheet:read` est nouvelle **après** le lot Bibliothèque.
 ### Robustesse des références en brouillon
 
 La projection utilise les `productVariant` ObjectId **bruts** des lignes de brouillon, et résout les libellés via une lecture groupée distincte des Références Produit. Une ancienne référence devenue indisponible ne doit pas effacer la clé de ligne ni provoquer un `500` par déréférencement `null` lors d'un `populate`. Le nom peut être `null` jusqu'à la revue des données ; les identifiants et occurrences restent conservés. Test HTTP dédié sur une Référence absente. Ce comportement n'autorise pas la validation automatique d'un process dont la composition n'est pas cohérente.
+
+## Lot 3 — Première interface React de consultation (2026-10-26)
+
+**Statut : frontend de lecture M-006 implémenté et tests RTL ajoutés ; gates et CI de ce HEAD non vérifiées.**
+
+La V1 complète de création/édition/validation des Fiches process n'est **pas** disponible côté backend. L'onglet Dossier « Fiches process » démarre donc comme une **surface de préparation explicite**, sans prétendre afficher des Fiches process sauvegardées ni proposer de fausses actions. Le nombre de Fiches process n'est pas calculable à ce stade ; aucun compteur trompeur.
+
+- Route enfant Dossier `process-sheets`, assemblée dans `application-routes.js` via le module `process-sheets-routes.js`, sans modification du routeur Core.
+- Onglet dans le shell Dossier, exposé uniquement pour les utilisateurs disposant conjointement de `process-sheet:read` **et** `technical-sheet:read`. Une barrière côté route répète ce contrôle avant de monter la page ; le backend contrôle toujours membership Workspace et droits Dossier.
+- Sélecteur de Fiches techniques M-004 **actives**, recherche et pagination serveur réutilisées via `useListTechnicalSheetsQuery` ; état local piloté par `useDataPagination`. L'ID sélectionné reste dans le paramètre d'URL `?sheet=` (lien partageable, aucune donnée métier dans Redux).
+- Panneau de composition alimenté par la seule API existante `GET .../process-sheets/technical-sheets/:technicalSheetId/composition` avec RTK Query ; tags de cache `TechnicalSheet` et `TechnicalSheetDraft` partagés avec M-004. Affichage des deux sources distinctes si présentes, regroupement visuel des variantes répétées sans effacer les lignes, avertissement legacy, références indisponibles, états de chargement/erreur/absence, rafraîchissement manuel par l'état d'erreur.
+- Pas d'appel process avec un ID absent (`skip`), pas de mutation M-006, pas de compteur de process, pas d'upload/image, pas d'impression.
+- Reprise des primitives UI `DataTable`, `DataPagination`, `EmptyState`, `ErrorState`, `StatusBadge` et des classes d'onglet existantes.
+- Tests : composition des routes, visibilité conditionnelle de l'onglet, barrière d'accès, contrat RTK Query, liste/sélection/recherche/pagination et rendu des deux états et des cas limites.
+
+### Gates attendues avant recette
+
+```bash
+npm --prefix frontend run test -- src/features/process-sheets src/features/dossiers/pages/dossier-workspace-page.test.jsx src/app/application-routes.test.js src/features/dossiers/dossiers-composition.test.js
+npm --prefix frontend run lint
+npm --prefix frontend run build
+npm run release:check
+```
+
+Les commandes doivent être exécutées localement sous le Node 24.x spécifié par le dépôt. **Aucun résultat vert n'est revendiqué pour ce nouveau lot**, et aucune PR/fusion n'est ouverte avant la validation complète.
+
+La prochaine implémentation fonctionnelle est l'agrégat M-006 1:1 avec M-004 et sa cascade transactionnelle ; ensuite seulement l'éditeur, la validation officielle, les historiques, les impressions et les bibliothèques dans l'UI.

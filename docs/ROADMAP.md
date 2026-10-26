@@ -383,7 +383,7 @@ Les exports et la diffusion restent un bloc V1 séparé et ne sont pas implicite
 
 ### 2.5 Fiches process — lot M-006 prioritaire, cadrage consolidé (2026-10-26)
 
-**État courant : contrat M-006 validé et implémentation autorisée le 2026-10-26 ; premier lot backend bibliothèques engagé, module complet non livré.**
+**État courant : contrat M-006 validé et implémentation autorisée le 2026-10-26 ; lots backend bibliothèques et projection M-004 engagés ; première surface frontend de lecture seule intégrée (lot 3, vérifications locales et gate restantes), module complet non livré.**
 
 Branche existante : `feature/m006-fiches-process`. Cadrage : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`. Le lot ajoute au Dossier les modes opératoires associés 1:1 aux Fiches techniques : création guidée, phases/étapes, affectation des ingrédients M-004, bibliothèques Dossier/Workspace, contrôles structurés facultatifs, validations historiques, cycle de vie parent-enfant, suppression autonome définitive autorisée et impression.
 
