@@ -41,8 +41,42 @@ const normalize = (draft) => ({
   phases: draft?.phases ?? [],
   unassignedReasons: draft?.unassignedReasons ?? [],
 });
-const linesText = (items) => (items ?? []).join('\n');
-const parseLines = (value) => value.split('\n').map((line) => line.trim()).filter(Boolean);
+function StringListEditor({ label, items, disabled, onChange }) {
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-xs font-medium">{label}</legend>
+      {items.map((item, index) => (
+        <div className="flex items-center gap-2" key={index}>
+          <Input
+            aria-label={label + ' ' + (index + 1)}
+            disabled={disabled}
+            maxLength={1000}
+            onChange={(event) => onChange(updateAt(items, index, event.target.value))}
+            value={item}
+          />
+          {!disabled && (
+            <Button
+              aria-label={'Supprimer ' + label + ' ' + (index + 1)}
+              onClick={() => onChange(items.filter((_, i) => i !== index))}
+              size="icon" type="button" variant="ghost"
+            >
+              <Trash2 className="size-4" aria-hidden="true" />
+            </Button>
+          )}
+        </div>
+      ))}
+      {!disabled && (
+        <Button
+          disabled={items.length >= 30}
+          onClick={() => onChange([...items, ''])}
+          size="sm" type="button" variant="outline"
+        >
+          <Plus aria-hidden="true" className="size-3" /> Ajouter
+        </Button>
+      )}
+    </fieldset>
+  );
+}
 
 function IngredientChoices({ ingredients, selected, onChange, disabled, label }) {
   if (!ingredients.length) return <p className="text-xs text-muted-foreground">Aucun ingrédient disponible.</p>;
@@ -162,13 +196,19 @@ function ProcessStepEditor({ step, index, disabled, ingredients, onChange, onDel
         <label className="grid gap-1 text-xs">Température (°C)
           <Input disabled={disabled} min="-100" max="350" step="0.1" type="number" value={step.temperatureCelsius ?? ''} onChange={(event) => assign('temperatureCelsius', event.target.value === '' ? null : Number(event.target.value))} />
         </label>
-        <label className="grid gap-1 text-xs">Équipements (un par ligne)
-          <Textarea disabled={disabled} onChange={(event) => assign('equipment', parseLines(event.target.value))} value={linesText(step.equipment)} />
-        </label>
+        <StringListEditor
+          label="Équipements"
+          items={step.equipment ?? []}
+          disabled={disabled}
+          onChange={(items) => assign('equipment', items)}
+        />
       </div>
-      <label className="grid gap-1 text-xs">Points de vigilance (un par ligne)
-        <Textarea disabled={disabled} onChange={(event) => assign('manufacturingVigilance', parseLines(event.target.value))} value={linesText(step.manufacturingVigilance)} />
-      </label>
+      <StringListEditor
+        label="Points de vigilance"
+        items={step.manufacturingVigilance ?? []}
+        disabled={disabled}
+        onChange={(items) => assign('manufacturingVigilance', items)}
+      />
       <ControlFields label="Qualité" controls={step.qualityControls ?? []} disabled={disabled} onChange={(next) => assign('qualityControls', next)} />
       <ControlFields label="Maîtrise sanitaire" controls={step.sanitaryControls ?? []} disabled={disabled} onChange={(next) => assign('sanitaryControls', next)} />
     </article>
