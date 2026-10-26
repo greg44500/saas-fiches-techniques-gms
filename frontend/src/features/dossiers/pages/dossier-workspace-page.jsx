@@ -66,6 +66,7 @@ import {
   useGetDossierTechnicalSheetSettingsQuery,
   useListTechnicalSheetsQuery,
 } from '@/features/technical-sheets/api/technical-sheets-api';
+import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/process-sheet-permissions';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { cn } from '@/lib/utils';
 
@@ -189,6 +190,10 @@ function DossierWorkspacePage() {
   const operational = dossier.status === 'ACTIVE';
   const canReadSuppliers = canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS);
   const canReadTechnicalSheets = can(TECHNICAL_SHEET_PERMISSION.READ);
+  // The current process preview uses the M-004 list, so both permissions
+  // are required. This is not a process creation or process count.
+  const canReadProcessComposition = can(PROCESS_SHEET_PERMISSION.READ)
+    && canReadTechnicalSheets;
   const canManageMargin = can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE);
   const activeSheetCount = activeSheetsQuery.data?.pagination?.total;
   const marginBasisPoints = marginQuery.data?.defaultTargetMarginBasisPoints;
@@ -296,7 +301,7 @@ function DossierWorkspacePage() {
         </Card>
       )}
 
-      {(canReadSuppliers || canReadTechnicalSheets) && (
+      {(canReadSuppliers || canReadTechnicalSheets || canReadProcessComposition) && (
         <nav
           aria-label="Navigation du Dossier"
           className={SECTION_TAB_NAV_CLASS_NAME}
@@ -329,6 +334,19 @@ function DossierWorkspacePage() {
                 {Number.isInteger(activeSheetCount)
                   ? ' (' + activeSheetCount + ')'
                   : ''}
+              </NavLink>
+            )}
+            {canReadProcessComposition && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/process-sheets`}
+              >
+                Fiches process
               </NavLink>
             )}
           </div>

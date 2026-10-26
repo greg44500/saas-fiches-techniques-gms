@@ -10,6 +10,9 @@ import {
 import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
+import {
+  PROCESS_SHEET_PERMISSION,
+} from '@/features/process-sheets/constants/process-sheet-permissions';
 
 const mocks = vi.hoisted(() => ({
   detailQuery: vi.fn(),
@@ -95,6 +98,7 @@ describe('DossierWorkspacePage', () => {
         SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
         TECHNICAL_SHEET_PERMISSION.READ,
         TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE,
+        PROCESS_SHEET_PERMISSION.READ,
       ].includes(permission)),
       canAny: vi.fn(() => true),
       workspace: { id: 'workspace-1', name: 'Acme' },
@@ -155,6 +159,11 @@ describe('DossierWorkspacePage', () => {
       'href',
       '/workspaces/workspace-1/dossiers/dossier-1/suppliers',
     );
+    expect(screen.getByRole('link', { name: 'Fiches process' })).toHaveAttribute(
+      'href',
+      '/workspaces/workspace-1/dossiers/dossier-1/process-sheets',
+    );
+
     expect(screen.getByRole('link', { name: 'Fiches techniques (3)' })).toHaveAttribute(
       'href',
       '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets',
@@ -268,6 +277,28 @@ describe('DossierWorkspacePage', () => {
     await user.click(screen.getByRole('button', { name: 'Nantes Centre' }));
     expect(await screen.findByText('Aucune coordonnée complémentaire renseignée.'))
       .toBeInTheDocument();
+  });
+
+  it('ne montre Fiches process que si les deux lectures process et M-004 sont autorisées', () => {
+    mocks.detailQuery.mockReturnValue(queryResult({
+      id: 'dossier-1', name: 'Nantes Centre', status: 'ACTIVE',
+    }));
+    mocks.workspaceContext.mockReturnValue({
+      can: (permission) => permission === PROCESS_SHEET_PERMISSION.READ,
+      canAny: () => false,
+      workspace: { id: 'workspace-1', name: 'Acme' },
+    });
+    const view = renderPage();
+    expect(screen.queryByRole('link', { name: 'Fiches process' })).not.toBeInTheDocument();
+    view.unmount();
+
+    mocks.workspaceContext.mockReturnValue({
+      can: (permission) => permission === TECHNICAL_SHEET_PERMISSION.READ,
+      canAny: () => false,
+      workspace: { id: 'workspace-1', name: 'Acme' },
+    });
+    renderPage();
+    expect(screen.queryByRole('link', { name: 'Fiches process' })).not.toBeInTheDocument();
   });
 
   it('masque la recherche de prix et l’édition de marge sans permissions', () => {

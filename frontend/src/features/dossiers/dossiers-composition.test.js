@@ -35,6 +35,7 @@ describe('dossiers frontend composition', () => {
         expect.objectContaining({ path: 'suppliers' }),
         expect.objectContaining({ path: 'technical-sheets' }),
         expect.objectContaining({ path: 'technical-sheets/:technicalSheetId' }),
+        expect.objectContaining({ path: 'process-sheets' }),
       ]),
     );
   });

@@ -94,6 +94,7 @@ describe('application frontend route composition', () => {
         'technical-sheets',
         'technical-sheets/:technicalSheetId',
         'technical-sheets/:technicalSheetId/optimization',
+        'process-sheets',
       ]),
     );
     expect(dossierRoute.children.some((route) => route.index === true)).toBe(true);
