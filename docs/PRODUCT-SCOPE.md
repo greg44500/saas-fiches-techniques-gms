@@ -1693,22 +1693,21 @@ Les alertes et graphiques détaillés peuvent être différés ; les données n�
 
 ---
 
-## 10. Fiche process
+## 10. Fiche process — cadrage fonctionnel M-006 approuvé en principe le 2026-10-26
 
-Le produit doit également gérer des fiches process de fabrication.
+La Fiche technique M-004 définit **ce qui compose le produit** et demeure la seule source autoritative des ingrédients, quantités et valeurs économiques. La **Fiche process M-006** décrit **comment le fabriquer**. Toute Fiche process dépend obligatoirement d'une Fiche technique du **même Workspace et Dossier** ; relation **0..1** côté Fiche technique, sans process autonome ni doublon.
 
-Le cahier des charges initial prévoit notamment :
+Une Fiche process est préparée en brouillon, constituée de phases et étapes ordonnées, avec ingrédients repris de M-004, équipements, consignes, temps de travail/attente/cuisson, vigilance de fabrication, qualité et maîtrise sanitaire. Les phases et étapes sont réutilisables dans les bibliothèques locale Dossier et commune Workspace ; leurs mises à jour ne modifient jamais automatiquement un process existant.
 
-- denrées ;
-- temps / durées ;
-- étapes de fabrication ;
-- points critiques ;
-- critères d'acceptabilité ;
-- génération future possible d'une infographie synthétique.
+Un brouillon process peut commencer pendant l'édition d'un brouillon M-004, mais une **validation M-006** nécessite une composition M-004 **validée et cohérente**. Les versions officielles M-004 et M-006 restent indépendantes et immuables. Les ingrédients volontairement non affectés exigent une justification. La validation minimale M-006 comprend au moins une phase et une étape documentée ; durées et contrôles facultatifs. Un changement de composition M-004 propose une révision M-006 sans la forcer et peut créer un indicateur non bloquant de décalage.
 
-Les exemples de fiches techniques contiennent déjà des colonnes « mode opératoire » et « temps ».
+L'archivage, la corbeille, la restauration et la purge du process suivent le parent M-004. Il n'existe **aucun archivage autonome M-006**. La suppression autonome d'un process est en revanche **physique et définitive**, limitée à un parent M-004 `ACTIVE`, soumise à permission et confirmation, sans supprimer la Fiche technique ni les modèles communs. La copie entre Dossiers produit une nouvelle Fiche process en brouillon, sans historique officiel du Dossier source.
 
-**Point ouvert :** définir la frontière exacte entre les informations process visibles dans une fiche technique et la fiche process détaillée reliée.
+L'édition est privilégiée sur ordinateur, la consultation sur tablette/téléphone ; l'impression doit permettre versions validées et brouillons explicitement marqués, sans enregistrer durablement les sorties. Le module est prévu dans **tous les plans en V1**, sans nouveau quota de process et dans le respect des permissions métier et limites de stockage existantes pertinentes.
+
+**Hors M-006 V1 :** illustrations et photographies des étapes (cadrage reporté), galerie/stockage photo, infographie, assistant IA, journal de contrôles exécutés en production, qualification automatique de conformité HACCP, partage inter-Workspace et exports documentaires avancés.
+
+**Statut :** recommandations fonctionnelles 21–35 approuvées, **contrat final et développement non encore autorisés**. Référence de cadrage : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`. Les choix de représentation des ingrédients, de durée, de permissions techniques, d'API et de transitions transactionnelles restent à formaliser avant code.
 
 ---
 
