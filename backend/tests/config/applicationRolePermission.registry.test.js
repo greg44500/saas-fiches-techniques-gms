@@ -106,6 +106,8 @@ describe('application role permission registry', () => {
             .toContain(PROCESS_SHEET_PERMISSION.READ);
         expect(ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY.permissions)
             .toContain(PROCESS_SHEET_PERMISSION.CREATE);
+        expect(ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY.permissions)
+            .toContain(PROCESS_SHEET_PERMISSION.EDIT);
         expect(
             ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY
                 .systemRolePermissions[SYSTEM_ROLE_KEY.OWNER],
@@ -114,6 +116,10 @@ describe('application role permission registry', () => {
             ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY
                 .systemRolePermissions[SYSTEM_ROLE_KEY.OWNER],
         ).toContain(PROCESS_SHEET_PERMISSION.CREATE);
+        expect(
+            ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY
+                .systemRolePermissions[SYSTEM_ROLE_KEY.OWNER],
+        ).toContain(PROCESS_SHEET_PERMISSION.EDIT);
         for (const roleKey of Object.values(SYSTEM_ROLE_KEY)) {
             if (roleKey === SYSTEM_ROLE_KEY.OWNER) continue;
             expect(
@@ -124,6 +130,10 @@ describe('application role permission registry', () => {
                 ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY
                     .systemRolePermissions[roleKey] ?? [],
             ).not.toContain(PROCESS_SHEET_PERMISSION.CREATE);
+            expect(
+                ACTIVE_APPLICATION_ROLE_PERMISSION_REGISTRY
+                    .systemRolePermissions[roleKey] ?? [],
+            ).not.toContain(PROCESS_SHEET_PERMISSION.EDIT);
         }
     });
 

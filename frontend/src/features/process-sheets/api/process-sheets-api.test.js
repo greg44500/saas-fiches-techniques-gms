@@ -34,6 +34,7 @@ describe('M-006 — contrats frontend RTK Query', () => {
     expect(Object.keys(captured.endpoints).sort()).toEqual([
       'createProcessSheet', 'getProcessSheet', 'getProcessSheetComposition',
       'listEligibleProcessTechnicalSheets', 'listProcessSheets',
+      'saveProcessSheetDraft',
     ].sort());
     expect(captured.tags).toEqual(expect.arrayContaining([
       'ProcessSheetComposition', 'ProcessSheetList', 'ProcessSheet',
@@ -72,6 +73,27 @@ describe('M-006 — contrats frontend RTK Query', () => {
     )).toEqual([
       { type: 'ProcessSheetList', id: 'w:d' },
       { type: 'EligibleProcessTechnicalSheets', id: 'w:d' },
+    ]);
+  });
+
+  it('sauvegarde un brouillon par révision et invalide la fiche process', () => {
+    const payload = {
+      ...scope, processSheetId: 'process-1', expectedRevision: 3,
+      phases: [], unassignedReasons: [],
+    };
+    expect(captured.endpoints.saveProcessSheetDraft.query(payload)).toEqual({
+      url: '/workspaces/w/dossiers/d/process-sheets/process-1/draft',
+      method: 'PUT',
+      body: { expectedRevision: 3, phases: [], unassignedReasons: [] },
+    });
+    expect(captured.endpoints.saveProcessSheetDraft.transformResponse({
+      data: { draft: { id: 'draft-1', revision: 4 } },
+    })).toEqual({ id: 'draft-1', revision: 4 });
+    expect(captured.endpoints.saveProcessSheetDraft.invalidatesTags(
+      undefined, undefined, payload,
+    )).toEqual([
+      { type: 'ProcessSheet', id: 'w:d:process-1' },
+      { type: 'ProcessSheetList', id: 'w:d' },
     ]);
   });
 

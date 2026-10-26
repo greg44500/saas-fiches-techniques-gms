@@ -214,6 +214,14 @@
       "dependsOn": [
         "m006-process-composition-permission"
       ]
+    },
+    {
+      "id": "m006-process-editor-permission",
+      "script": "migration:m006-process-editor-permission",
+      "runner": "backend/migrations/runBackfillM006ProcessEditPermissionMigration.js",
+      "dependsOn": [
+        "m006-process-sheets"
+      ]
     }
   ]
 }
