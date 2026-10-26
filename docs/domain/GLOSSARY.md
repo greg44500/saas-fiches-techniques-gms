@@ -1236,9 +1236,33 @@ Les zones proches de leurs limites de modulation doivent être signalées visuel
 
 ## Fiche process
 
-Document/donnée métier décrivant la fabrication : étapes, durées, points critiques et critères d'acceptabilité.
+Document métier **du même Workspace et Dossier que sa Fiche technique M-004**, décrivant le **comment fabriquer**. Une Fiche technique a zéro ou une Fiche process ; aucune Fiche process autonome. Le process comporte brouillon, validation explicite et historique officiel immuable, indépendants des validations M-004.
 
-La frontière exacte entre les données process portées par la fiche technique et la fiche process détaillée reste à définir.
+La **composition et les quantités** proviennent exclusivement de la Fiche technique. Les ingrédients affectés au process peuvent se présenter sans quantités et être liés à plusieurs phases et étapes ; les lignes métier répétées restent distinguables quand nécessaire.
+
+L'archivage, la corbeille, la restauration et la purge suivent le parent ; pas d'archivage autonome. La suppression autonome d'un process est physique, définitive et contrôlée, seulement si le parent est `ACTIVE`.
+
+## Phase de fabrication
+
+Ensemble ordonné d'étapes d'une Fiche process. Une phase peut recevoir des ingrédients directement, indépendamment de ceux affectés à ses étapes.
+
+## Étape de fabrication
+
+Action documentée et ordonnée dans une phase, paramétrable selon la recette (consignes, équipements, températures, durées, vigilance, qualité et maîtrise sanitaire). Une définition d'étape peut être réutilisée depuis une bibliothèque.
+
+## Bibliothèque de fabrication
+
+Référentiel de modèles de phases et d'étapes, soit **local au Dossier**, soit **commun au Workspace**. Publication locale vers Workspace soumise à permission ; révisions proposées et adoptées explicitement, sans mutation rétroactive des process existants.
+
+## Composition de référence du process
+
+Version validée de la composition M-004 avec laquelle la version officielle de la Fiche process doit être cohérente. Le brouillon process peut être préparé plus tôt. Un écart ultérieur avec M-004 est signalable sans bloquer automatiquement le process.
+
+## Vigilance / contrôle qualité / maîtrise sanitaire
+
+Trois catégories distinctes de consignes ou contrôles possibles dans une étape. Les champs facultatifs peuvent décrire consigne, critère attendu et action corrective. Leur présence ne constitue ni un journal d'exécution ni une qualification automatique de point critique HACCP.
+
+**Illustrations des étapes :** aucune illustration ou photographie en M-006 V1 ; vocabulaire et cycle de vie documentaire à définir ultérieurement.
 
 ---
 
