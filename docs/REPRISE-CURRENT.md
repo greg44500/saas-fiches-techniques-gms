@@ -1,5 +1,25 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 
+## Stabilisation pré-PR — release:verify / manifeste des Gammes (2026-10-26)
+
+- La gate locale `npm run release:check` signalée par l'utilisateur
+  s'arrête à `release:verify` : `migration:m004-ranges` et son
+  runner M-004 existent bien, mais manquent dans l'inventaire de
+  `docs/releases/migration-manifest.json`.
+- Audit du HEAD : 29 scripts `migration:*` et 29 runners contre
+  28 entrées du manifeste ; un seul écart (Gammes), aucun doublon,
+  aucun autre script ou runner orphelin.
+- Une entrée `m004-ranges` a été ajoutée avec dépendance à
+  `m004-technical-sheets` ; notes opérationnelles de migration
+  complétées dans le contrat Gammes.
+- Cette correction ne modifie ni le runner, ni MongoDB, ni le
+  vérificateur Core ni les migrations existantes.
+- `release:verify`, lint, tests backend/frontend, build, E2E et
+  `release:check` **restent à exécuter sur le nouveau HEAD**.
+  Pas de PR/merge tant que la gate réelle n'est pas validée.
+
+
+
 ## Finition UX M-003 : filtre animé, favoris et recherche compacte — 2026-10-26
 
 - Le filtre « Tous les articles / Favoris » reprend le curseur coulissant

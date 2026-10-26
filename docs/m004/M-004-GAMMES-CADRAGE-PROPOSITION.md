@@ -370,6 +370,46 @@ de Fiches dupliquées pour représenter les Gammes.
 - La création du modèle métier et les index attendent l'approbation du
   présent contrat.
 
+### Notes de livraison — migration M-004 Gammes
+
+- **Runner :** `backend/migrations/runEnsureM004RangeIndexesMigration.js`,
+  exposé par `npm run migration:m004-ranges` et inventorié dans
+  `docs/releases/migration-manifest.json` (id `m004-ranges`).
+- **Dépendance :** `m004-technical-sheets` : les nouveaux index de
+  classement portent notamment sur le modèle des Fiches M-004.
+- **Phase :** préparer avant de rendre l'écran Gammes utilisable dans
+  l'environnement cible (pré-déploiement de la fonctionnalité), après
+  la migration M-004 des Fiches et sur la base produit correcte.
+- **Préconditions :** connexion MongoDB fonctionnelle, privilèges de
+  création d'index et de mise à jour des rôles système, schéma M-004
+  intégré ; sauvegarde/snapshot adaptée avant une mise en production.
+  Ne jamais exécuter une migration sur la base de développement pour
+  valider les tests E2E, qui utilisent leur base dédiée.
+- **Effets :** création/vérification de quatre index nommés des
+  Gammes/Fiches, puis backfill des permissions applicatives pour les
+  seuls rôles système persistés. Aucun classement automatique
+  d'anciennes Fiches, aucune permission attribuée aux rôles personnalisés.
+- **Idempotence :** les appels `createIndexes` et `$addToSet` du
+  backfill peuvent être rejoués ; la vérification refuse les index
+  attendus absents. Le runner s'arrête en erreur si la création d'un
+  index unique révèle des doublons incompatibles ; examiner les données
+  plutôt que supprimer la contrainte.
+- **Compatibilité :** les Fiches historiques restent sans Gamme et les
+  routes existantes n'en exigent aucune ; l'ajout d'index et de droits
+  n'implique pas d'effacement de données.
+- **Contrôles post-exécution :** sortie sans erreur du runner, présence
+  des quatre index attendus, droits de l'Owner sur les Gammes et
+  absence d'accès indu pour les rôles personnalisés ; ensuite tests
+  ciblés M-004 et `npm run release:check`.
+- **Retour arrière :** ne pas supprimer les index ou permissions
+  aveuglément : retirer d'abord l'accès à la fonctionnalité, analyser
+  les données/permissions impactées, puis décider d'une compensation
+  et restauration à partir du snapshot selon le contexte. Un `git revert`
+  ne restaure pas MongoDB.
+- **Vérification de release :** `npm run release:verify` doit confirmer
+  la correspondance exacte du script, du runner et du manifeste.
+  Ce contrôle statique ne lance pas la migration.
+
 ## 13. Cas limites et critères d'acceptation
 
 1. Un Workspace peut avoir ses Gammes, et un autre ses propres Gammes,
