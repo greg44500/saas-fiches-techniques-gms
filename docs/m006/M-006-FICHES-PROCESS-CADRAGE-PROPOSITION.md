@@ -59,7 +59,7 @@ Usages retenus : rédaction sur ordinateur dans le Dossier, consultation sur ord
 Depuis « Dossier → Fiches process », l'action « Créer une Fiche process » propose d'abord un **sélecteur des Fiches techniques disponibles** :
 
 1. uniquement celles du Dossier courant et accessibles à l'utilisateur ;
-2. uniquement les Fiches techniques **ACTIVE** ;
+2. uniquement les Fiches techniques **ACTIVE avec validation officielle M-004 courante**, **sans brouillon de révision M-004 ouvert** ;
 3. uniquement celles **sans Fiche process déjà associée**, même si ce process est actuellement archivé ;
 4. recherche, pagination et compteur déterminés par le backend si le volume le justifie ;
 5. aucune option provenant d'un autre Dossier ou Workspace ;
@@ -70,7 +70,7 @@ La liste ne doit pas confondre « aucune Fiche process validée » et « aucune 
 
 Autre entrée validée : depuis la Fiche technique, afficher « Créer la Fiche process » si éligible et « Ouvrir la Fiche process » lorsqu'elle existe, sous réserve des permissions. Les mêmes contrôles serveur s'appliquent.
 
-**Décision approuvée (21, 26) :** si la Fiche technique ACTIVE ne dispose encore que d'un brouillon, autoriser la préparation d'un brouillon process à partir des ingrédients M-004 en cours. La validation officielle M-006 exige une composition M-004 validée et cohérente avec les ingrédients/associations du process ; aucun brouillon M-004 seul n'autorise la validation M-006.
+**Décision nouvelle du 2026-10-26 (remplace expressément 21 et 26 pour la création) :** la création d'une Fiche process est interdite tant que la Fiche technique n'est pas ACTIVE, validée officiellement et **sans** brouillon M-004 de révision ouvert. La validation M-006 exige toujours une composition officielle M-004 cohérente. Les process déjà créés subsistent si M-004 ouvre ensuite une révision ; ils restent consultables et doivent être réconciliés avant toute validation nouvelle.
 
 ## 5. Récupération et affectation des ingrédients — DÉCISIONS VALIDÉES
 
@@ -127,7 +127,7 @@ La question de la saisie des résultats des contrôles réalisés pendant une pr
 - Cycle M-006 retenu : brouillon modifiable, validation explicite, version officielle immuable, historique consultable.
 - Une Fiche technique peut être officielle sans process ; les validations sont indépendantes.
 - La Fiche process validée doit pouvoir identifier la composition / validation M-004 à laquelle elle se rapporte.
-- Les brouillons peuvent préparer un process pendant que M-004 évolue ; la validation M-006 exige une composition M-004 validée et une vérification de cohérence avec la composition de référence.
+- La **création initiale** d'un brouillon process nécessite une M-004 ACTIVE, officiellement validée, sans brouillon de révision ouvert ; après création, un brouillon process existant peut évoluer parallèlement à M-004. La validation M-006 exige une composition M-004 validée et une vérification de cohérence avec la composition de référence.
 - **Décisions approuvées (22, 31) :** signaler les ingrédients non affectés ; autoriser leur non-affectation avec justification explicite. Pour valider, exiger au minimum une phase et une étape documentée ; durées, températures et contrôles demeurent facultatifs.
 - La gestion de concurrence doit refuser les écrasements silencieux, comme M-004.
 - Les évolutions de bibliothèque sont adoptées uniquement dans le brouillon, jamais appliquées en place à une version officielle.
@@ -157,7 +157,7 @@ La Fiche process **ne peut pas survivre à la purge de sa Fiche technique**. Ell
 | Suppression M-004 vers corbeille | Supprime **logiquement** la Fiche process associée dans la même opération métier, sans purge physique précoce. |
 | Restauration M-004 | **Décision approuvée (29)** : restaurer le process associé et son état antérieur approprié avec le parent, s'il est restaurable ; ne jamais recréer un process supprimé définitivement. |
 | Purge définitive de M-004 | Purge aussi l'agrégat M-006 correspondant (brouillon, validations, liens d'utilisation) sans laisser d'orphelin. |
-| Copie de M-004 entre Dossiers | Reprend le contenu process autorisé dans une **nouvelle Fiche process DRAFT** associée à la **nouvelle Fiche technique DRAFT** du Dossier cible. N'importe pas les validations/historiques d'origine. |
+| Copie de M-004 entre Dossiers | La cible M-004 est créée en brouillon : **ne pas créer automatiquement la Fiche process cible** tant que la Fiche technique copiée n'a pas été validée officiellement. La reprise des phases/étapes source pourra être proposée après validation, via remappage explicite, sans historique officiel importé. |
 
 **Garantie de cohérence visée :** ces transitions doivent être transactionnelles, avec contrôles de tenancy, concurrence, permissions et audit, et sans altérer les documents de bibliothèque partagés par d'autres Fiches process. Une purge M-004 existante ne doit pas laisser de données M-006 orphelines.
 
@@ -168,11 +168,11 @@ La Fiche process **ne peut pas survivre à la purge de sa Fiche technique**. Ell
 ## 10. Copie inter-Dossier
 
 - La copie M-004 est aujourd'hui conditionnée par une composition source validée et l'absence de brouillon source ouvert. M-006 devra s'intégrer à ce parcours existant.
-- Si un process source existe et qu'un état réutilisable est éligible, créer un process cible DRAFT lié à la nouvelle Fiche technique cible (une seule identité par parent).
+- Si un process source existe, mémoriser éventuellement l'origine M-004 de la copie pour une **reprise guidée ultérieure**. Ne créer **aucune** Fiche process cible tant que la nouvelle Fiche technique M-004 reste en brouillon ; la cible devra être validée et sans révision ouverte.
 - Les affectations des ingrédients doivent être **reliées aux lignes de composition réellement copiées** ; jamais conserver aveuglément les identifiants de sous-documents source.
 - Les modèles Workspace actifs peuvent être référencés selon les règles de version adoptées, les étapes locales du Dossier source ne doivent pas devenir visibles au Dossier cible par simple copie. Proposition : matérialiser des définitions/snapshots nécessaires en préservant le contenu et la provenance sans autorisation indue.
 - Aucun historique de validation, contexte économique ou donnée propre au magasin source ne doit être répliqué comme historique officiel du magasin cible.
-- **Décision approuvée (28) :** privilégier la dernière version officielle du process source lorsqu'elle existe ; en son absence, examiner le brouillon source s'il est cohérent avec la composition M-004 effectivement copiée et accessible. Toute copie crée un **nouveau brouillon M-006** sans historique validé source. La Fiche technique M-004 source doit toujours respecter ses propres préconditions de copie ; ne pas les contourner. Pour les modèles locaux indisponibles dans le Dossier cible, conserver le contenu nécessaire sous forme réutilisable localement sans exposer la bibliothèque source ; modalités techniques à concevoir.
+- **Décision amendée (28, 2026-10-26) :** privilégier la dernière version officielle du process source lorsqu'elle existe ; en son absence, examiner le brouillon source cohérent. La reprise n'intervient **qu'après validation M-004 de la copie**, et toujours en nouveau brouillon M-006 sans historique validé source. La Fiche technique M-004 source doit toujours respecter ses propres préconditions de copie ; ne pas les contourner. Pour les modèles locaux indisponibles dans le Dossier cible, conserver le contenu nécessaire sous forme réutilisable localement sans exposer la bibliothèque source ; modalités techniques à concevoir.
 
 ## 11. Tenancy, RBAC et capabilities
 
@@ -211,7 +211,8 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 
 - Ajouter **Fiches process (N)** au niveau des onglets du Dossier, sous réserve du droit de lecture.
 - Liste : nom, Fiche technique associée, statut, date de modification, recherche/filtre, accès au brouillon ou à la version validée, indicateur d'une évolution à revoir le cas échéant, action de suppression autonome uniquement selon permission et avec confirmation explicite.
-- Création : sélecteur **Fiches techniques actives sans Fiche process**, alimenté par l'API éligible ; sélectionner puis ouvrir directement un brouillon.
+- **Liste principale : uniquement les Fiches process réellement créées**, avec Fiche technique associée, état, dernière modification, recherche/pagination et actions autorisées. Jamais une table des Fiches techniques sur cette page.
+- **Création en modale :** titre obligatoire + liste déroulante des Fiches techniques du Dossier **ACTIVE, validées, sans brouillon M-004 ouvert et sans process**, filtrée par le backend (recherche/pagination). Confirmation : création 1:1 en transaction puis ouverture de la Fiche process brouillon. Les explications des champs et sections sont placées dans les infobulles (i), pas en longs sous-titres.
 - Point d'entrée depuis une Fiche technique existante selon sa situation : créer/ouvrir le process.
 - Éditeur : colonne/zone des ingrédients M-004, phases ordonnées, étapes réutilisables paramétrables, association des ingrédients à la phase et/ou à l'étape, indicateur des non-affectés, ajout de consignes et éléments propres au process.
 - Sur mobile/tablette : parcours lisible, prioriser la consultation et la manipulation accessible ; ne pas dupliquer une version parallèle des données.
@@ -239,7 +240,7 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 **Critères d'acceptation indispensables :**
 1. impossible de créer une Fiche process sans Fiche technique ;
 2. impossible d'en créer deux pour une même Fiche technique, même sous concurrence ;
-3. le sélecteur de création montre seulement les Fiches techniques actives non associées du Dossier autorisé ;
+3. le sélecteur de création montre seulement les Fiches techniques actives **officiellement validées, sans brouillon M-004 ouvert**, non associées du Dossier autorisé ;
 4. les ingrédients M-004 peuvent être liés aux phases et/ou aux étapes, sans dupliquer ni recalculer la recette ;
 5. les versions validées ne changent jamais silencieusement ;
 6. les mises à jour de modèles partagés n'altèrent pas les process existants ;
@@ -260,14 +261,14 @@ Le propriétaire du produit **approuve les recommandations fonctionnelles 21 à 
 
 | N° | Décision fonctionnelle approuvée |
 | --- | --- |
-| 21 | Préparation du brouillon process sur composition M-004 en cours ; validation M-006 seulement sur composition M-004 validée et cohérente. |
+| 21 | **Remplacée le 2026-10-26** : création M-006 uniquement depuis M-004 ACTIVE, validée et sans brouillon M-004 ouvert ; validation M-006 sur composition officielle cohérente. |
 | 22 | Ingrédients sans affectation signalés ; non-affectation volontaire avec justification explicite. |
 | 23 | Temps actif, attente/repos et cuisson/traitement distingués ; simultanéité prise en compte sans somme artificielle. |
 | 24 | Champs facultatifs structurés : consigne, critère attendu, action corrective ; **aucun journal d'exécution** en V1. |
 | 25 | Création rapide d'étape dans l'éditeur, initialement bibliothèque locale Dossier ; publication Workspace explicite si autorisée. |
-| 26 | Process brouillon permis avec une Fiche technique ACTIVE n'ayant elle-même qu'un brouillon ; validation officielle M-006 bloquée jusqu'à validation cohérente de M-004. |
+| 26 | **Remplacée le 2026-10-26** : process initial interdit sur fiche en brouillon ; les process existants sont conservés si M-004 est mise ultérieurement en révision. |
 | 27 | Présentation unifiée sans quantité des Références Produit identiques, sans perdre l'identité des lignes métier nécessaires à la traçabilité. |
-| 28 | Copie préférentielle du dernier process validé ; sinon prise en considération d'un brouillon source réutilisable. Nouvelle Fiche process cible obligatoirement en brouillon, liée à la Fiche technique copiée ; préconditions M-004 conservées. |
+| 28 | **Amendée le 2026-10-26** : copie M-004 produit une Fiche technique cible DRAFT, donc **pas de process cible immédiat**. Reprise du contenu process proposée **après validation M-004 cible**, en brouillon M-006 sans historique source ; contrôles de copie M-004 conservés. |
 | 29 | Archivage, réactivation, corbeille, restauration et purge synchronisés avec M-004 ; suppression autonome définitive **seulement si le parent est ACTIVE** ; aucune résurrection après destruction physique. |
 | 30 | Archivage des modèles de bibliothèque : plus de nouvelles utilisations ; utilisations et historiques existants conservés. Suppression physique seulement sans dépendances imposant leur conservation. |
 | 31 | Validation : au moins une phase et une étape documentée ; temps, températures et contrôles facultatifs ; justification des ingrédients volontairement non affectés. |
@@ -326,3 +327,9 @@ Le propriétaire du produit **approuve les recommandations fonctionnelles 21 à 
 **Rappel :** le code réel et les tests qui seront exécutés restent prioritaires sur les propositions de ce document. Les règles à confirmer ne sont pas présentées comme déjà implémentées.
 
 **État actualisé le 2026-10-26 :** le contrat complet est validé et l'implémentation autorisée. Lot backend des bibliothèques de fabrication engagé (voir `docs/m006/M-006-TECHNICAL-DESIGN.md`). **M-006 n'est pas livré dans son ensemble :** les Fiches process, leur intégration transactionnelle à M-004, le frontend et l'impression restent à réaliser/tester. Aucun résultat de gate n'est revendiqué.
+
+## 19. Rectification validée du parcours principal (2026-10-26)
+
+Le propriétaire a confirmé expressément, après examen de la première UI, que **la liste principale doit contenir exclusivement des Fiches process**. Le tableau de Fiches techniques créé au lot 3 est remplacé. La création s'effectue dans une modale « titre + Fiche technique éligible », avec des (i) d'infobulle aux titres. Après création, ouvrir le brouillon M-006. Cette décision rend caduques les descriptions antérieures suggérant un explorateur permanent des compositions M-004 sur la page principale.
+
+La règle **M-004 ACTIVE, officiellement VALIDATED, sans DRAFT M-004 et sans M-006 déjà associé** est approuvée ; le serveur en garantit l'application, même en situation concurrente. Les anciennes décisions 21 et 26 contraires ne restent pas des alternatives applicables. La décision 28 est adaptée en conséquence : aucune création process pendant que la copie M-004 cible est encore en brouillon.

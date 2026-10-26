@@ -1370,6 +1370,8 @@ Les deux peuvent partager les mécanismes d'approvisionnement sans partager les 
 
 ## 15. Fiche process — M-006, décisions fonctionnelles approuvées (2026-10-26)
 
+Une Fiche process ne peut être créée que depuis une Fiche technique ACTIVE, officiellement validée, sans brouillon de révision M-004 ouvert. L'association est initialisée en transaction ; toute copie M-004 en brouillon reporte la reprise du process à sa validation. La liste principale du Dossier affiche les process, non les Fiches techniques.
+
 Une Fiche technique M-004 (**composition**) peut posséder **0 ou 1** Fiche process (**fabrication**). La Fiche process dépend d'exactement une Fiche technique du même Workspace et du même Dossier. Le lien est unique y compris si le process possède un brouillon ou se trouve archivé par cascade.
 
 Concepts métier visés, **non encore implémentés** :
@@ -1383,7 +1385,7 @@ Concepts métier visés, **non encore implémentés** :
 - suivi non bloquant du décalage de composition et proposition de révision après changement M-004 ;
 - cascade d'archivage, corbeille, restauration et purge liée à M-004 ; aucun archivage autonome ;
 - suppression autonome physique définitive après permission/confirmation **uniquement lorsque M-004 est ACTIVE** ;
-- copie inter-Dossier dans un nouveau brouillon rattaché à la nouvelle Fiche technique, sans versions officielles source ;
+- copie inter-Dossier : process cible **non créé tant que M-004 cible est en brouillon** ; reprise guidée seulement après validation M-004 cible, sans versions officielles source ;
 - permissions applicatives, accès Dossier, historique, consultation responsive et impression de version/brouillon identifié.
 
 **Limites V1 :** pas d'illustrations ni photographie, champ image, stockage dédié ou galerie ; pas de journal de production ni certification HACCP automatique ; pas de partage inter-Workspace. Les illustrations feront l'objet d'un cadrage distinct.

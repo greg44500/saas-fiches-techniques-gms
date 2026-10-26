@@ -1236,7 +1236,7 @@ Les zones proches de leurs limites de modulation doivent être signalées visuel
 
 ## Fiche process
 
-Document métier **du même Workspace et Dossier que sa Fiche technique M-004**, décrivant le **comment fabriquer**. Une Fiche technique a zéro ou une Fiche process ; aucune Fiche process autonome. Le process comporte brouillon, validation explicite et historique officiel immuable, indépendants des validations M-004.
+Document métier **du même Workspace et Dossier que sa Fiche technique M-004**, décrivant le **comment fabriquer**. Une Fiche technique a zéro ou une Fiche process ; aucune Fiche process autonome. Sa création exige que M-004 soit ACTIVE, validée officiellement, sans brouillon de révision ouvert et sans process déjà lié. Le process comporte brouillon, validation explicite et historique officiel immuable, indépendants des validations M-004.
 
 La **composition et les quantités** proviennent exclusivement de la Fiche technique. Les ingrédients affectés au process peuvent se présenter sans quantités et être liés à plusieurs phases et étapes ; les lignes métier répétées restent distinguables quand nécessaire.
 
