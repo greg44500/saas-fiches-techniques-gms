@@ -381,14 +381,15 @@ Stabilisation finale confirmée le 2026-10-02 :
 Les exports et la diffusion restent un bloc V1 séparé et ne sont pas implicitement ouverts par cette clôture. La priorité suivante est l'audit/cadrage des Produits globaux ; le bloc Exports et diffusion reprend ensuite.
 
 
-### 2.5 Fiches process
+### 2.5 Fiches process — lot M-006 prioritaire, cadrage consolidé (2026-10-26)
 
-**État : DIFFÉRÉ — non bloquant pour M-001**
+**État courant : recommandations fonctionnelles 21–35 validées, version finale du contrat et autorisation d'implémentation encore attendues.**
 
-Le domaine reste prévu mais son cadrage détaillé n'est plus une condition préalable au démarrage.
+Branche existante : `feature/m006-fiches-process`. Cadrage : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`. Le lot ajoute au Dossier les modes opératoires associés 1:1 aux Fiches techniques : création guidée, phases/étapes, affectation des ingrédients M-004, bibliothèques Dossier/Workspace, contrôles structurés facultatifs, validations historiques, cycle de vie parent-enfant, suppression autonome définitive autorisée et impression.
 
-Il sera cadré avant son implémentation : relation avec la Fiche technique, étapes, durées, points critiques, critères d'acceptabilité, versionnement et données communes/séparées.
+**Lot ultérieur, exclu de M-006 V1 : illustrations et photographies**, y compris champs photo, stockage, affichage, galerie et impression illustrée. Le cadrage des formats, tailles, permissions, rétention et coûts doit être distinct. Sont également différés : journaux d'exécution des contrôles, aide IA, infographies et diffusion documentaire avancée.
 
+Suite ordonnée : clôture du contrat final et accord utilisateur → audit/conception technique M-004/Core → backend + tests → intégrations transactionnelles → frontend/RTL → E2E → `npm run release:check` → recette et éventuelle PR **sur autorisation**. Aucun code M-006 ni tests M-006 réalisés à ce stade.
 
 ### 2.6 Utilisateurs, RBAC, capabilities et quotas
 
