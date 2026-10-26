@@ -2,6 +2,9 @@
 
 **Statut : cadrage en cours sur feature/m006-fiches-process ; implémentation métier non autorisée avant validation du contrat final.**
 
+**Mise à jour du 2026-10-26 — décision de suspension et règle de suppression :** le propriétaire du produit a demandé de terminer le cadrage **avant toute implémentation**. La Fiche process ne peut **jamais être archivée seule** ; elle suit l'archivage M-004. En revanche, une Fiche process peut être supprimée **seule, définitivement et physiquement**, après confirmation explicite et contrôle des permissions : la Fiche technique et les modèles réutilisables restent intacts, le brouillon et l'historique du process sont purgés, l'association 1:1 est libérée. Les cascades depuis la Fiche technique vers la corbeille M-004 restent une suppression logique, à distinguer de cette destruction autonome. Définir avant code la confirmation, les droits, la traçabilité, le cas d'un parent archivé/en corbeille et les autres arbitrages ouverts.
+
+
 - PR #50 fusionnée sur main au commit 190962a68086b151b50b82d05cf133f915c5c0ea ; Core Gate post-merge GitHub Actions #40336850143 réussie.
 - Branche M-006 initialement identique à main, Core intégré v1.2.1 (voir core-origin.json). 
 - Proposition de cadrage **créée sur cette branche** : docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md. Les règles acquises sont distinguées des propositions à confirmer.
@@ -11,7 +14,7 @@
 - **Cascade parent M-004** : archivage de la Fiche technique => archivage du process ; suppression logique de la Fiche technique => suppression logique du process ; purge définitive => purge du process enfant. La restauration/réactivation symétrique est proposée avec conservation de l'état précédent et reste à fermer contractuellement. La copie inter-Dossier du parent doit créer un process enfant brouillon si la source possède un process éligible.
 - Code réel audité : backend/modules/technicalSheet/{technicalSheet.model.js,technicalSheetDraft.model.js,technicalSheetValidation.model.js,technicalSheetValidation.service.js,technicalSheetCopy.service.js,technicalSheetLifecycle.service.js}, routes et registres métier ; frontend/src/features/dossiers/pages/dossier-workspace-page.jsx, application-routes.js, technical-sheets-routes.js. **Point à traiter : identité de ligne stable entre brouillon M-004 et snapshot validé, y compris pour des références Produit répétées.**
 - Aucune collection M-006, route M-006, UI M-006, migration ou test M-006 n'a été créée par ce lot. Aucun test local ni gate n'a été exécuté pour le cadrage ; ne pas annoncer de release:check verte.
-- Prochaines décisions : archivage/suppression autonome d'un process, éligibilité d'une Fiche technique seulement en brouillon, appariement des ingrédients par ligne/version, règles de copie de process avec modèles locaux, quotas/capabilities et détails de l'impression.
+- Prochaines décisions : suppression autonome sous parent archivé/en corbeille, permissions et confirmation, éligibilité d'une Fiche technique seulement en brouillon, appariement des ingrédients par ligne/version, règles de copie de process avec modèles locaux, quotas/capabilities et détails de l'impression.
 - Ne pas créer de PR, coder le domaine ni modifier main avant validation du contrat et vérification des gates applicables.
 
 ---
