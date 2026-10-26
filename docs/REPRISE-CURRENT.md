@@ -1,5 +1,29 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 
+## Stabilisation finale E2E Gammes — notifications (2026-10-26)
+
+- Exécution locale rapportée par l'utilisateur : 37 tests Playwright,
+  36 réussis, 1 échec dans `technical-sheet-ranges-m004.spec.js` après
+  suppression refusée d'une Gamme encore utilisée.
+- Cause démontrée par le log : la même description d'erreur existe dans
+  une notification visible et dans la région d'annonce ARIA ; le sélecteur
+  global `page.getByText(/encore associée .../)` échoue en strict mode.
+  Le serveur retourne bien le refus métier attendu ; aucun défaut de
+  suppression MongoDB n'est établi.
+- Le scénario utilise désormais l'utilitaire E2E partagé
+  `expectVisibleToast` qui cible `[data-slot="toast"]`. Il vérifie
+  aussi le titre « Suppression impossible », le maintien du dialogue
+  puis l'état archivé et l'affectation de la Fiche.
+- Le test React de gestion des Gammes couvre en complément la réponse
+  d'erreur serveur, le feedback destructif et la conservation du dialogue.
+  Audit des 13 fichiers E2E : pas d'autre assertion portant directement
+  sur une description de toast non scoped ayant ce symptôme.
+- **Les tests du nouveau HEAD restent à exécuter**, y compris
+  `npm run release:check` et la Core Gate PR. Pas de PR ni de merge
+  sans validation de l'utilisateur.
+
+
+
 ## Stabilisation pré-PR — release:verify / manifeste des Gammes (2026-10-26)
 
 - La gate locale `npm run release:check` signalée par l'utilisateur

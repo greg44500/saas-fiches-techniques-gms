@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -103,6 +103,38 @@ describe('M-004 Gammes — gestion Workspace', () => {
         reviewedCandidateIds: [],
       });
     });
+  });
+
+  it('conserve la Gamme et le dialogue quand la suppression est refusée par le serveur', async () => {
+    const user = userEvent.setup();
+    const refusal = 'Cette Gamme est encore associée à des Fiches techniques.';
+    mocks.remove.mockReturnValue({
+      unwrap: vi.fn().mockRejectedValue({ data: { message: refusal } }),
+    });
+
+    renderPage();
+    await user.click(screen.getByRole('button', { name: 'Actions de Traiteur' }));
+    await user.click(screen.getByRole('button', { name: 'Supprimer définitivement' }));
+
+    const dialog = screen.getByRole('dialog', { name: /Supprimer « Traiteur »/ });
+    await user.click(within(dialog).getByRole('button', {
+      name: 'Supprimer définitivement',
+    }));
+
+    expect(mocks.remove).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      rangeId: 'range-2',
+      expectedRevision: 1,
+    });
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith({
+      title: 'Suppression impossible',
+      description: refusal,
+      variant: 'destructive',
+    }));
+    expect(dialog).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler' }));
+    expect(screen.getByText('Traiteur')).toBeInTheDocument();
+    expect(screen.getByText('Archivée')).toBeInTheDocument();
   });
 
   it('refuse les fonctions d’administration en lecture seule', () => {

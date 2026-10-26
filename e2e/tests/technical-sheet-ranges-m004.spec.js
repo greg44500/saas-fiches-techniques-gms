@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { loginWithIdentity } from '../support/auth.js';
 import { provisionTechnicalSheetWorkspace } from '../support/technical-sheet-fixtures.js';
+import { expectVisibleToast } from '../support/toast.js';
 
 test('M-004 Gammes : un référentiel Workspace classe les Fiches du Dossier sans dupliquer les données', async ({ page }) => {
   const context = await provisionTechnicalSheetWorkspace();
@@ -45,7 +46,17 @@ test('M-004 Gammes : un référentiel Workspace classe les Fiches du Dossier san
   await page.getByRole('button', { name: 'Actions de Snacking' }).click();
   await page.getByRole('button', { name: 'Supprimer définitivement' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Supprimer définitivement' }).click();
-  await expect(page.getByText(/encore associée à des Fiches techniques/)).toBeVisible();
+  const refusalToast = await expectVisibleToast(
+    page,
+    'Cette Gamme est encore associée à des Fiches techniques.',
+  );
+  await expect(refusalToast).toContainText('Suppression impossible');
+
+  // La transaction a refusé la suppression : conserver le dialogue et les données.
+  const deleteDialog = page.getByRole('dialog', { name: /Supprimer « Snacking »/ });
+  await expect(deleteDialog).toBeVisible();
+  await deleteDialog.getByRole('button', { name: 'Annuler' }).click();
+  await expect(page.getByRole('row', { name: /Snacking/ })).toContainText('Archivée');
 
   await page.goto(context.dossierATechnicalSheetsUrl);
   await expect(page.getByRole('row', { name: /Fiche Gammes E2E/ }))
