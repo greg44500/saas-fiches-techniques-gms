@@ -3,177 +3,170 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/process-sheet-permissions';
+import { TECHNICAL_SHEET_PERMISSION } from '@/features/technical-sheets/constants/technical-sheet-permissions';
+
 const mocks = vi.hoisted(() => ({
   list: vi.fn(),
-  composition: vi.fn(),
+  dossier: vi.fn(),
+  navigate: vi.fn(),
 }));
 
-vi.mock('react-router', async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock('react-router', async (original) => ({
+  ...(await original()),
+  useNavigate: () => mocks.navigate,
   useParams: () => ({ dossierId: 'dossier-1' }),
 }));
 
-vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
-  useListTechnicalSheetsQuery: mocks.list,
+vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
+  useListProcessSheetsQuery: mocks.list,
 }));
 
-vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
-  useGetProcessSheetCompositionQuery: mocks.composition,
+vi.mock('@/features/dossiers/api/dossiers-api', () => ({
+  useGetDossierByIdQuery: mocks.dossier,
+}));
+
+vi.mock('@/features/process-sheets/components/process-sheet-create-dialog', () => ({
+  ProcessSheetCreateDialog: ({ onCreated }) => (
+    <div role="dialog" aria-label="Création">
+      <button onClick={() => onCreated({ id: 'new-process' })} type="button">
+        Simuler la création réussie
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: () => ({
     workspace: { id: 'workspace-1' },
+    can: (p) => [
+      PROCESS_SHEET_PERMISSION.READ,
+      PROCESS_SHEET_PERMISSION.CREATE,
+      TECHNICAL_SHEET_PERMISSION.READ,
+    ].includes(p),
   }),
 }));
 
-import {
-  ProcessSheetsPage,
-} from '@/features/process-sheets/pages/process-sheets-page';
+import { ProcessSheetsPage } from '@/features/process-sheets/pages/process-sheets-page';
 
-const sheets = [
-  {
-    id: 'sheet-1',
-    name: 'Purée de légumes',
-    hasDraft: true,
-    currentValidatedStateId: null,
-  },
-  {
-    id: 'sheet-2',
-    name: 'Gratin',
-    hasDraft: false,
-    currentValidatedStateId: 'validation-2',
-  },
-];
+const processes = [{
+  id: 'process-1',
+  title: 'Fabrication tartine',
+  technicalSheetId: 'sheet-1',
+  technicalSheetName: 'Tartine auvergnate',
+  editorialState: 'DRAFT',
+  status: 'ACTIVE',
+  updatedAt: '2026-10-26T12:00:00.000Z',
+}, {
+  id: 'process-2',
+  title: 'Préparation bourguignon',
+  technicalSheetId: 'sheet-2',
+  technicalSheetName: 'Bœuf Bourguignon',
+  editorialState: 'VALIDATED',
+  status: 'ARCHIVED',
+  updatedAt: '2026-10-26T12:00:00.000Z',
+}];
 
-function renderPage(path = '/workspaces/workspace-1/dossiers/dossier-1/process-sheets') {
+function renderPage() {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <ProcessSheetsPage />
+    <MemoryRouter>
+      <TooltipProvider>
+        <ProcessSheetsPage />
+      </TooltipProvider>
     </MemoryRouter>,
   );
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.dossier.mockReturnValue({ data: { status: 'ACTIVE' } });
   mocks.list.mockReturnValue({
-    data: {
-      sheets,
-      pagination: { page: 1, limit: 10, total: 2, totalPages: 1 },
-    },
+    data: { processes, pagination: { page: 1, limit: 10, total: 2, totalPages: 1 } },
     isLoading: false,
     isFetching: false,
     isError: false,
     refetch: vi.fn(),
   });
-  mocks.composition.mockImplementation((_args, { skip }) => ({
-    data: skip ? undefined : {
-      technicalSheetName: 'Gratin',
-      draft: null,
-      validated: null,
-      requiresExplicitLegacyMapping: false,
-    },
-    isLoading: false,
-    isError: false,
-    refetch: vi.fn(),
-  }));
 });
 
-describe('M-006 — première page Dossier Fiches process', () => {
-  it('filtre sur les Fiches techniques actives et n’invente pas de fiche process', () => {
+describe('M-006 — liste des Fiches process uniquement', () => {
+  it('liste les process enregistrés avec leur lien M-004, pas les Fiches techniques', () => {
     renderPage();
-    expect(screen.getByRole('heading', { name: 'Fiches process' }))
-      .toBeInTheDocument();
-    expect(screen.getByRole('table', {
-      name: 'Fiches techniques disponibles pour consultation process',
-    })).toBeInTheDocument();
-    expect(screen.getByText('Purée de légumes')).toBeInTheDocument();
-    expect(screen.getByText('Gratin')).toBeInTheDocument();
-    expect(screen.getByText('Sélectionnez une Fiche technique')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Créer une Fiche process/ }))
-      .not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Fiches process' })).toBeInTheDocument();
+    expect(screen.getByRole('table', { name: 'Fiches process du Dossier' })).toBeInTheDocument();
+    expect(screen.getByText('Fabrication tartine')).toBeInTheDocument();
+    expect(screen.getByText('Tartine auvergnate')).toBeInTheDocument();
+    expect(screen.getByText('Préparation bourguignon')).toBeInTheDocument();
+    expect(screen.getByText('Archivée')).toBeInTheDocument();
+    expect(screen.queryByText('Composition de référence M-004')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Créer une Fiche process' })).toBeInTheDocument();
     expect(mocks.list).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
       dossierId: 'dossier-1',
       page: 1,
       limit: 10,
-      status: 'ACTIVE',
       search: undefined,
     });
-    expect(mocks.composition).toHaveBeenCalledWith({
-      workspaceId: 'workspace-1',
-      dossierId: 'dossier-1',
-      technicalSheetId: null,
-    }, { skip: true });
   });
 
-  it('sélectionne une Fiche et interroge le contexte de composition de cette Fiche', async () => {
+  it('ouvre le process sélectionné et non sa Fiche technique', async () => {
     renderPage();
     await userEvent.setup().click(screen.getByRole('button', {
-      name: 'Consulter les ingrédients de Gratin',
+      name: 'Ouvrir la Fiche process Fabrication tartine',
     }));
-    expect(mocks.composition).toHaveBeenLastCalledWith({
-      workspaceId: 'workspace-1',
-      dossierId: 'dossier-1',
-      technicalSheetId: 'sheet-2',
-    }, { skip: false });
-    expect(screen.getByRole('button', {
-      name: 'Consulter les ingrédients de Gratin',
-    })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('Composition de référence M-004')).toBeInTheDocument();
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      '/workspaces/workspace-1/dossiers/dossier-1/process-sheets/process-1',
+    );
   });
 
-  it('restaure une sélection existante par l’URL et recherche côté serveur', async () => {
-    renderPage('/workspaces/workspace-1/dossiers/dossier-1/process-sheets?sheet=sheet-2');
-    expect(mocks.composition).toHaveBeenLastCalledWith({
-      workspaceId: 'workspace-1',
-      dossierId: 'dossier-1',
-      technicalSheetId: 'sheet-2',
-    }, { skip: false });
-
-    await userEvent.setup().type(screen.getByRole('textbox', {
-      name: 'Rechercher une Fiche technique pour le process',
-    }), 'purée');
-    expect(mocks.list).toHaveBeenLastCalledWith(expect.objectContaining({
-      search: 'purée',
-      status: 'ACTIVE',
-      page: 1,
-    }));
+  it('ouvre la modale puis la Fiche process créée', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Créer une Fiche process' }));
+    expect(screen.getByRole('dialog', { name: 'Création' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Simuler la création réussie' }));
+    expect(mocks.navigate).toHaveBeenCalledWith(
+      '/workspaces/workspace-1/dossiers/dossier-1/process-sheets/new-process',
+    );
   });
 
-  it('utilise la pagination serveur et conserve la sélection en URL', async () => {
+  it('gère recherche et pagination serveur plutôt qu’un filtre de M-004', async () => {
     mocks.list.mockReturnValue({
-      data: {
-        sheets,
-        pagination: { page: 1, limit: 10, total: 22, totalPages: 3 },
-      },
+      data: { processes, pagination: { page: 1, limit: 10, total: 22, totalPages: 3 } },
       isLoading: false,
       isFetching: false,
       isError: false,
       refetch: vi.fn(),
     });
     renderPage();
-    await userEvent.setup().click(screen.getByRole('button', {
-      name: 'Suivant',
-    }));
-    expect(mocks.list).toHaveBeenLastCalledWith(expect.objectContaining({
-      page: 2,
-      limit: 10,
-      status: 'ACTIVE',
-    }));
+    const user = userEvent.setup();
+    await user.type(screen.getByRole('textbox', {
+      name: 'Rechercher une Fiche process',
+    }), 'tartine');
+    expect(mocks.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ search: 'tartine', page: 1 }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Suivant' }));
+    expect(mocks.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 2, limit: 10 }),
+    );
   });
 
-  it('affiche les états d’erreur de la liste plutôt qu’un tableau vide trompeur', () => {
+  it('montre le vide et les erreurs sans présenter des M-004 comme process', () => {
     mocks.list.mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isError: true,
-      isFetching: false,
-      refetch: vi.fn(),
+      data: { processes: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } },
+      isLoading: false, isFetching: false, isError: false, refetch: vi.fn(),
+    });
+    const view = renderPage();
+    expect(screen.getByText('Aucune Fiche process')).toBeInTheDocument();
+    view.unmount();
+
+    mocks.list.mockReturnValue({
+      data: null, isLoading: false, isFetching: false,
+      isError: true, refetch: vi.fn(),
     });
     renderPage();
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      'Liste des Fiches techniques indisponible',
-    );
+    expect(screen.getByRole('alert')).toHaveTextContent('Fiches process indisponibles');
   });
 });
