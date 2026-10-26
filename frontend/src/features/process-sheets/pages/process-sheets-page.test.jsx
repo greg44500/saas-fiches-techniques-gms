@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   dossier: vi.fn(),
   navigate: vi.fn(),
+  can: vi.fn(),
 }));
 
 vi.mock('react-router', async (original) => ({
@@ -40,11 +41,7 @@ vi.mock('@/features/process-sheets/components/process-sheet-create-dialog', () =
 vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: () => ({
     workspace: { id: 'workspace-1' },
-    can: (p) => [
-      PROCESS_SHEET_PERMISSION.READ,
-      PROCESS_SHEET_PERMISSION.CREATE,
-      TECHNICAL_SHEET_PERMISSION.READ,
-    ].includes(p),
+    can: mocks.can,
   }),
 }));
 
@@ -80,7 +77,15 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.dossier.mockReturnValue({ data: { status: 'ACTIVE' } });
+  mocks.can.mockImplementation((permission) => [
+    PROCESS_SHEET_PERMISSION.READ,
+    PROCESS_SHEET_PERMISSION.CREATE,
+    TECHNICAL_SHEET_PERMISSION.READ,
+  ].includes(permission));
+  mocks.dossier.mockReturnValue({
+    data: { status: 'ACTIVE' },
+    isLoading: false, isError: false,
+  });
   mocks.list.mockReturnValue({
     data: { processes, pagination: { page: 1, limit: 10, total: 2, totalPages: 1 } },
     isLoading: false,
@@ -100,7 +105,7 @@ describe('M-006 — liste des Fiches process uniquement', () => {
     expect(screen.getByText('Préparation bourguignon')).toBeInTheDocument();
     expect(screen.getByText('Archivée')).toBeInTheDocument();
     expect(screen.queryByText('Composition de référence M-004')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Créer une Fiche process' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Créer une Fiche process' })).toBeEnabled();
     expect(mocks.list).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
       dossierId: 'dossier-1',
@@ -128,6 +133,69 @@ describe('M-006 — liste des Fiches process uniquement', () => {
     await user.click(screen.getByRole('button', { name: 'Simuler la création réussie' }));
     expect(mocks.navigate).toHaveBeenCalledWith(
       '/workspaces/workspace-1/dossiers/dossier-1/process-sheets/new-process',
+    );
+  });
+
+  it('rend visible la création sans la permettre quand un rôle n’a que la lecture', async () => {
+    mocks.can.mockImplementation((permission) => [
+      PROCESS_SHEET_PERMISSION.READ,
+      TECHNICAL_SHEET_PERMISSION.READ,
+    ].includes(permission));
+    renderPage();
+    const createButton = screen.getByRole('button', { name: 'Créer une Fiche process' });
+    expect(createButton).toBeVisible();
+    expect(createButton).toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Votre rôle ne dispose pas du droit de créer des Fiches process.',
+    );
+    await userEvent.setup().click(createButton, { pointerEventsCheck: 0 });
+    expect(screen.queryByRole('dialog', { name: 'Création' })).not.toBeInTheDocument();
+    expect(screen.getByText('Fabrication tartine')).toBeInTheDocument();
+  });
+
+  it('bloque la création dans un Dossier non actif tout en permettant la lecture', () => {
+    mocks.dossier.mockReturnValue({
+      data: { status: 'ARCHIVED' }, isLoading: false, isError: false,
+    });
+    renderPage();
+    expect(screen.getByRole('button', { name: 'Créer une Fiche process' }))
+      .toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Le Dossier doit être actif',
+    );
+    expect(screen.getByText('Fabrication tartine')).toBeInTheDocument();
+  });
+
+  it('ne déduit jamais ACTIVE d’un Dossier en chargement ou indisponible', () => {
+    mocks.dossier.mockReturnValue({
+      data: undefined, isLoading: true, isError: false,
+    });
+    const first = renderPage();
+    expect(screen.getByRole('button', { name: 'Créer une Fiche process' }))
+      .toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Vérification du Dossier en cours',
+    );
+    first.unmount();
+
+    mocks.dossier.mockReturnValue({
+      data: undefined, isLoading: false, isError: true,
+    });
+    renderPage();
+    expect(screen.getByRole('button', { name: 'Créer une Fiche process' }))
+      .toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Le Dossier est indisponible',
+    );
+  });
+
+  it('signale la dépendance de lecture M-004 sans accorder de permission', () => {
+    mocks.can.mockImplementation((permission) => permission === PROCESS_SHEET_PERMISSION.CREATE);
+    renderPage();
+    expect(screen.getByRole('button', { name: 'Créer une Fiche process' }))
+      .toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'La lecture des Fiches techniques est nécessaire',
     );
   });
 
