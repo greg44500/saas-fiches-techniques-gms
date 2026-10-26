@@ -15,6 +15,9 @@ import {
     TechnicalSheetDraft,
 } from '../../../modules/technicalSheet/technicalSheetDraft.model.js';
 import {
+    TechnicalSheet,
+} from '../../../modules/technicalSheet/technicalSheet.model.js';
+import {
     bearer, createWorkspaceMemberFixture, createWorkspaceOwnerFixture,
 } from '../../helpers/dossierTest.fixtures.js';
 import {
@@ -113,7 +116,40 @@ describe('M-006 — lecture sécurisée de la composition M-004', () => {
             .set(bearer(member.token)).expect(200);
     });
 
-    it('ne retourne pas de version validée fantôme ni de parent supprimé', async () => {
+    it('refuse la lecture à un rôle sans permission, même avec accès Dossier', async () => {
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: owner.workspace._id,
+            actorId: owner.owner._id,
+            permissions: [],
+        });
+        await grantDossierAccess({
+            workspaceId: owner.workspace._id,
+            dossierId: dossier._id,
+            membershipId: member.membership._id,
+            actorId: owner.owner._id,
+        });
+        await request(app).get(path)
+            .set(bearer(member.token)).expect(403);
+    });
+
+    it('respecte le statut du parent archivé ou placé en corbeille', async () => {
+        await TechnicalSheet.updateOne(
+            { _id: sheet.id, workspace: owner.workspace._id },
+            { $set: { status: 'ARCHIVED' } },
+        );
+        const archived = await request(app).get(path)
+            .set(bearer(owner.token)).expect(200);
+        expect(archived.body.data.technicalSheetStatus).toBe('ARCHIVED');
+
+        await TechnicalSheet.updateOne(
+            { _id: sheet.id, workspace: owner.workspace._id },
+            { $set: { status: 'DELETED' } },
+        );
+        await request(app).get(path)
+            .set(bearer(owner.token)).expect(404);
+    });
+
+    it('ne retourne pas de version validée fantôme ', async () => {
         await TechnicalSheetDraft.deleteOne({
             technicalSheet: sheet.id,
         });

@@ -105,6 +105,20 @@ describe('M-006 — identité des ingrédients provenant de M-004', () => {
         })).toThrow('Duplicate composition line identity.');
     });
 
+    it('refuse un brouillon M-004 sans identifiant de ligne', () => {
+        expect(() => toIngredientProjection({
+            sourceKind: 'DRAFT',
+            source: {
+                _id: documentId,
+                revision: 1,
+                lines: [{
+                    kind: 'INGREDIENT',
+                    productVariant: { _id: sameVariant, name: 'Carotte' },
+                }],
+            },
+        })).toThrow('Missing M-004 draft line identity.');
+    });
+
     it('refuse un type de source non géré', () => {
         expect(() => toIngredientProjection({
             sourceKind: 'AUTO', source: {},

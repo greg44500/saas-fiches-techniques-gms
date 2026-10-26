@@ -54,3 +54,28 @@ L'exécution locale communiquée par le propriétaire du produit (`vitest v4.1.1
 Correction : déclaration réelle des deux modules via le point d'extension applicatif, avant la route Dossier générale. Contrôles préventifs : test du registre et du montage, tests stricts Zod (phase/étape/média/révisions), tests HTTP de détection 200/400/401/403/404, recherche, pagination, conflits 409, rollback d'une publication en doublon, audit, isolation Dossier et statut archivé.
 
 **Preuve d'exécution :** la sortie locale fournie établit uniquement l'état **rouge de l'ancien HEAD**. Les nouveaux tests et l'intégration corrigée **ne sont pas encore exécutés** sur la machine locale ; aucun résultat vert n'est revendiqué. Ne pas fusionner avant passage des gates applicables.
+
+## Lot 2 — Identité des lignes et lecture M-004 pour M-006 (2026-10-26)
+
+**Statut : backend commité, tests ajoutés, vérification locale à réaliser ; pas encore de création de Fiche process.**
+
+Le code M-004 confirme que `TechnicalSheetDraft.lines` dispose d'un identifiant ObjectId par ligne, mais que `TechnicalSheetValidation.linesSnapshot` n'enregistrait auparavant que la Référence Produit et l'ordre. Un `productVariantId` n'identifie pas une occurrence : deux lignes peuvent utiliser la même Référence. Remapper par Référence Produit, par nom ou uniquement par ordre risquerait donc d'attribuer un ingrédient à la mauvaise étape.
+
+### Changement compatible côté M-004
+
+- Nouveau champ **facultatif** `sourceLineId` dans les **nouvelles** lignes `TechnicalSheetValidation.linesSnapshot` ; capturé lors de la validation à partir de l'`_id` de chaque ligne de brouillon.
+- Aucun changement de l'identité des lignes de brouillon existantes, des calculs économiques, du schéma Core ou des snapshots M-004 historiques ; **aucun backfill destructif**.
+- Les anciennes validations dépourvues de `sourceLineId` utilisent exclusivement une identité `validation:<validationId>:index:<index>`, valable **dans cette version uniquement**. Le service indique `requiresExplicitLegacyMapping` ; aucune inférence implicite entre versions.
+- Les lignes d'ingrédient individuelles portent une clé `line:<sourceLineId>` quand connue. Le regroupement de Références Produit répète toutes les clés `lineKeys`, sans fusionner la traçabilité.
+
+### API de lecture (pas de mutation)
+
+`GET /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/technical-sheets/:technicalSheetId/composition`
+
+Réponse : identifiant et statut du parent, `draft` et `validated` quand disponibles, `currentSourceKind`, lignes INGREDIENT avec identités et libellés, et `groupedIngredients` sans doublon d'affichage. Aucune quantité, aucun prix, aucun fournisseur, aucune fiche process créée. Les composants `ECONOMAT` M-004 ne sont pas réinjectés artificiellement parmi les ingrédients de fabrication.
+
+Autorisation : `process-sheet:read` par registre applicatif, membership Workspace, accès au Dossier et politique de lecture du statut du Dossier. Parent M-004 en corbeille masqué (`404`), parent archivé consultable en lecture seule. Les droits ne sont pas confondus avec la capacité commerciale ni avec un quota de création.
+
+Tests ajoutés : projection unitaire avec Référence Produit répétée, absence d'identité, snapshots legacy et sélection de lignes ; intégration HTTP (auth, RBAC, tenancy, Dossier et statut parent) ; non-régression de la validation M-004 réelle attestant la présence du `sourceLineId` ; registres de routes et de permissions.
+
+**Suite sécurisée :** implémenter l'agrégat 1:1, le brouillon et les versions validées, puis intégrer les cascades M-004 dans les transactions des services existants **avant** d'autoriser le premier endpoint de création M-006. La gestion des copies doit reconstruire les liens sur les nouvelles lignes cibles. Les tests du nouveau HEAD et la gate restent à exécuter ; aucun statut « vert » revendiqué.

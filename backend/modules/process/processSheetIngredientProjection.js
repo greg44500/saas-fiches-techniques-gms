@@ -23,8 +23,11 @@ const toIngredientProjection = ({
     const lines = sourceLines.flatMap((line, originalIndex) => {
         if (line.kind !== TECHNICAL_SHEET_LINE_KIND.INGREDIENT) return [];
 
+        if (isDraft && !line._id) {
+            throw new Error('Missing M-004 draft line identity.');
+        }
         const explicitId = isDraft
-            ? line._id?.toString()
+            ? line._id.toString()
             : line.sourceLineId?.toString();
 
         // Never use productVariantId as a line key (repeated variants exist).
@@ -43,7 +46,7 @@ const toIngredientProjection = ({
             lineKey,
             productVariantId,
             productVariantName: name,
-            order: line.order,
+            order: Number.isInteger(line.order) ? line.order : originalIndex,
             identityKind: explicitId ? 'SOURCE_LINE' : 'LEGACY_POSITION',
             sourcePosition: originalIndex,
         }];
