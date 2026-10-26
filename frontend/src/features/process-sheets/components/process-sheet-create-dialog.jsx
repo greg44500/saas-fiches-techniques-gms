@@ -1,0 +1,188 @@
+import { useState } from 'react';
+
+import { DataPagination } from '@/components/data-display/data-pagination';
+import { ErrorState } from '@/components/shared/error-state';
+import { InfoTooltip } from '@/components/shared/info-tooltip';
+import { Button } from '@/components/ui/button';
+import {
+  DialogContent, DialogFooter, DialogHeader, DialogOverlay,
+  DialogPortal, DialogRoot, DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  useCreateProcessSheetMutation,
+  useListEligibleProcessTechnicalSheetsQuery,
+} from '@/features/process-sheets/api/process-sheets-api';
+
+function ProcessSheetCreateDialog({
+  dossierId, onClose, onCreated, open, workspaceId,
+}) {
+  const [title, setTitle] = useState('');
+  const [technicalSheetId, setTechnicalSheetId] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [errorMessage, setErrorMessage] = useState('');
+  const eligible = useListEligibleProcessTechnicalSheetsQuery(
+    { workspaceId, dossierId, search: search.trim() || undefined, page, limit: 10 },
+    { skip: !open },
+  );
+  const [createProcess, state] = useCreateProcessSheetMutation();
+  const options = eligible.data?.technicalSheets ?? [];
+
+  async function submit(event) {
+    event.preventDefault();
+    if (state.isLoading) return;
+    if (!title.trim() || !technicalSheetId) {
+      setErrorMessage('Renseignez un titre et sélectionnez une Fiche technique.');
+      return;
+    }
+    setErrorMessage('');
+    try {
+      const created = await createProcess({
+        workspaceId, dossierId, title: title.trim(), technicalSheetId,
+      }).unwrap();
+      onCreated(created);
+    } catch (error) {
+      if (error?.status === 409) {
+        setErrorMessage(
+          'Cette Fiche technique n’est plus disponible : elle a pu être modifiée, mise en révision ou liée à une autre Fiche process.',
+        );
+        setTechnicalSheetId('');
+        eligible.refetch();
+      } else {
+        setErrorMessage(
+          error?.data?.message ?? 'La Fiche process n’a pas pu être créée.',
+        );
+      }
+    }
+  }
+
+  return (
+    <DialogRoot
+      disablePointerDismissal
+      onOpenChange={(next) => { if (!next && !state.isLoading) onClose(); }}
+      open={open}
+    >
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogContent>
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <DialogTitle>Créer une Fiche process</DialogTitle>
+              <InfoTooltip
+                label="À propos de la création d’une Fiche process"
+                content="Chaque Fiche process est liée à une seule Fiche technique validée. Un second process sur la même Fiche est interdit."
+              />
+            </div>
+          </DialogHeader>
+          <form className="mt-5 space-y-4" onSubmit={submit}>
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <label className="text-sm font-medium" htmlFor="process-sheet-title">
+                  Titre de la Fiche process
+                </label>
+                <InfoTooltip
+                  label="À propos du titre de la Fiche process"
+                  content="Nommez votre procédure de fabrication. Ce titre peut différer du nom de la Fiche technique."
+                />
+              </div>
+              <Input
+                id="process-sheet-title"
+                maxLength={160}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="Ex. Fabrication de la tartine auvergnate"
+                required
+                value={title}
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-1">
+                <label className="text-sm font-medium" id="process-sheet-linked-label">
+                  Fiche technique associée
+                </label>
+                <InfoTooltip
+                  label="Critères de disponibilité des Fiches techniques"
+                  content="Seules les Fiches actives, validées, sans brouillon de révision ouvert et sans Fiche process associée sont disponibles dans ce Dossier."
+                />
+              </div>
+              <Input
+                aria-label="Rechercher une Fiche technique éligible"
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setTechnicalSheetId('');
+                  setPage(1);
+                }}
+                placeholder="Rechercher parmi les Fiches validées…"
+                type="search"
+                value={search}
+              />
+              {eligible.isError ? (
+                <ErrorState
+                  title="Sélection indisponible"
+                  description="La liste des Fiches techniques éligibles n’a pas pu être chargée."
+                  onRetry={eligible.refetch}
+                />
+              ) : (
+                <>
+                  <Select
+                    disabled={eligible.isLoading || options.length === 0}
+                    items={options.map((sheet) => ({
+                      value: sheet.id, label: sheet.name,
+                    }))}
+                    onValueChange={(nextValue) => setTechnicalSheetId(nextValue || '')}
+                    value={technicalSheetId || null}
+                  >
+                    <SelectTrigger
+                      aria-labelledby="process-sheet-linked-label"
+                      className="w-full"
+                    >
+                      <SelectValue placeholder="Choisir une Fiche technique validée" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {options.map((sheet) => (
+                        <SelectItem key={sheet.id} value={sheet.id}>
+                          {sheet.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!eligible.isLoading && options.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Aucune Fiche technique validée et disponible ne correspond à la recherche.
+                    </p>
+                  )}
+                  <DataPagination
+                    disabled={eligible.isFetching}
+                    onPageChange={(next) => {
+                      setPage(next);
+                      setTechnicalSheetId('');
+                    }}
+                    page={page}
+                    pagination={eligible.data?.pagination}
+                  />
+                </>
+              )}
+            </div>
+            {errorMessage && <p role="alert" className="text-sm text-destructive">{errorMessage}</p>}
+            <DialogFooter>
+              <Button disabled={state.isLoading} onClick={onClose} type="button" variant="outline">
+                Annuler
+              </Button>
+              <Button
+                disabled={state.isLoading || eligible.isError || !title.trim() || !technicalSheetId}
+                type="submit"
+              >
+                {state.isLoading ? 'Création…' : 'Créer et ouvrir'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </DialogPortal>
+    </DialogRoot>
+  );
+}
+
+export { ProcessSheetCreateDialog };
