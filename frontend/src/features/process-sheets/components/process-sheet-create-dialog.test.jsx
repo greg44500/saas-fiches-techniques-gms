@@ -138,6 +138,43 @@ describe('M-006 — modale de création', () => {
     })).toBeInTheDocument();
   });
 
+  it('permet de parcourir les lots rares de plus de 100 Fiches éligibles sans second champ', async () => {
+    mocks.list.mockReturnValue({
+      data: {
+        technicalSheets: [{ id: 'sheet-1', name: 'Tartine validée' }],
+        pagination: { page: 1, limit: 100, total: 122, totalPages: 2 },
+      },
+      isError: false, isFetching: false, isLoading: false,
+      refetch: vi.fn(),
+    });
+    renderDialog();
+    expect(screen.queryByRole('textbox', {
+      name: 'Rechercher une Fiche technique éligible',
+    })).not.toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Suivant' }));
+    expect(mocks.list).toHaveBeenLastCalledWith({
+      ...args, page: 2, limit: 100,
+    }, { skip: false });
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeDisabled();
+  });
+
+  it('soumet exactement le titre et la référence M-004 choisie', async () => {
+    renderDialog();
+    const user = userEvent.setup();
+    await user.type(screen.getByRole('textbox', {
+      name: 'Titre de la Fiche process',
+    }), 'Fabrication tartine');
+    await user.click(screen.getByRole('combobox', {
+      name: 'Fiche technique associée',
+    }));
+    await user.click(screen.getByRole('option', { name: 'Tartine validée' }));
+    await user.click(screen.getByRole('button', { name: 'Créer et ouvrir' }));
+    expect(mocks.mutate).toHaveBeenCalledWith({
+      ...args, title: 'Fabrication tartine', technicalSheetId: 'sheet-1',
+    });
+    expect(mocks.created).toHaveBeenCalledWith({ id: 'process-new' });
+  });
+
   it('n’autorise pas la soumission sans titre ni sélection M-004', async () => {
     renderDialog();
     const submit = screen.getByRole('button', { name: 'Créer et ouvrir' });
