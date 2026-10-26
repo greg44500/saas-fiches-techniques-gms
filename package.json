@@ -69,7 +69,8 @@
     "migration:m004-export-plan-limit": "node backend/migrations/runAddM004TechnicalSheetExportPlanLimitMigration.js",
     "migration:m004-export-permission": "node backend/migrations/runBackfillM004TechnicalSheetExportPermissionMigration.js",
     "migration:m004-ranges": "node backend/migrations/runEnsureM004RangeIndexesMigration.js",
-    "migration:m006-process-library": "node backend/migrations/runEnsureM006ProcessLibraryMigration.js"
+    "migration:m006-process-library": "node backend/migrations/runEnsureM006ProcessLibraryMigration.js",
+    "migration:m006-process-composition-permission": "node backend/migrations/runBackfillM006ProcessCompositionPermissionMigration.js"
   },
   "license": "UNLICENSED",
   "dependencies": {

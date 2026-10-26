@@ -79,3 +79,7 @@ Autorisation : `process-sheet:read` par registre applicatif, membership Workspac
 Tests ajoutés : projection unitaire avec Référence Produit répétée, absence d'identité, snapshots legacy et sélection de lignes ; intégration HTTP (auth, RBAC, tenancy, Dossier et statut parent) ; non-régression de la validation M-004 réelle attestant la présence du `sourceLineId` ; registres de routes et de permissions.
 
 **Suite sécurisée :** implémenter l'agrégat 1:1, le brouillon et les versions validées, puis intégrer les cascades M-004 dans les transactions des services existants **avant** d'autoriser le premier endpoint de création M-006. La gestion des copies doit reconstruire les liens sur les nouvelles lignes cibles. Les tests du nouveau HEAD et la gate restent à exécuter ; aucun statut « vert » revendiqué.
+
+### Déploiement des permissions du lot 2
+
+La permission `process-sheet:read` est nouvelle **après** le lot Bibliothèque. Une exécution historique de `migration:m006-process-library` ne suffit pas à garantir les droits des Owners déjà persistés. Migration distincte `migration:m006-process-composition-permission` ajoutée au manifeste avec dépendance sur le lot Bibliothèque, idempotente via `backfillRegisteredSystemRolePermissions`. L'application ne doit pas être ouverte aux parcours M-006 avant cette réconciliation dans l'environnement cible. Rôles personnalisés non élargis automatiquement. Aucun changement commercial ni nouveau quota.

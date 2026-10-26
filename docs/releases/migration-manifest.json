@@ -198,6 +198,14 @@
       "dependsOn": [
         "m004-technical-sheets"
       ]
+    },
+    {
+      "id": "m006-process-composition-permission",
+      "script": "migration:m006-process-composition-permission",
+      "runner": "backend/migrations/runBackfillM006ProcessCompositionPermissionMigration.js",
+      "dependsOn": [
+        "m006-process-library"
+      ]
     }
   ]
 }
