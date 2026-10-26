@@ -126,3 +126,8 @@ L'agrégat `ProcessSheet` est 1:1 avec la Fiche technique. `ProcessSheetDraft` e
 **Copie inter-Dossier, décision 28 amendée :** M-004 copie vers DRAFT ; aucune Fiche process enfant n'est créée avant validation M-004 cible. La reprise de contenu source pourra être proposée après cette validation, après conception du remappage des ingrédients et de la non-divulgation des bibliothèques locales. Ne pas contourner les préconditions de copie M-004.
 
 **Statut précis :** les API de liste, éligibilité, création et lecture et le frontend correspondant sont codés, avec tests de couverture ajoutés. **L'éditeur de phases/étapes, la sauvegarde métier, les versions validées, l'impression et la suppression autonome ne sont pas livrés. Les tests et la gate du nouveau HEAD ne sont pas exécutés dans cette conversation.**
+
+
+### Stabilisation du shell Dossier — parse JSX (2026-10-26)
+
+Recette locale communiquée par l'utilisateur : 8 fichiers de tests frontend passent (36 tests), un fichier `dossier-workspace-page.test.jsx` ne charge pas (0 test) à cause d'une chaîne JavaScript tronquée. Audit du composant GitHub : 902 lignes contre 353 sur `main` et présence de blocs dupliqués. La correction **reconstruit depuis le fichier sain `main`**, puis réapplique les seules extensions M-006 : reconnaissance des détails process et techniques, absence de shell et requêtes sautées sur ces postes, compteur serveur des véritables process, onglet conditionné aux deux permissions lecture. Les tests sont étendus aux détails des deux métiers, aux requêtes `skip`, à l'absence de fuite d'un compteur, à l'état zéro et aux permissions. Aucune règle métier n'est modifiée, aucun changement Core. **Nouveaux tests et gate à exécuter localement ; ne pas annoncer de vert sans log.**

@@ -178,6 +178,16 @@ describe('DossierWorkspacePage', () => {
       '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets',
     );
 
+    expect(mocks.processCountQuery).toHaveBeenCalledWith(
+      {
+        workspaceId: 'workspace-1',
+        dossierId: 'dossier-1',
+        page: 1,
+        limit: 1,
+      },
+      { skip: false },
+    );
+
     expect(mocks.activeSheetsQuery).toHaveBeenCalledWith(
       {
         workspaceId: 'workspace-1',
@@ -238,6 +248,28 @@ describe('DossierWorkspacePage', () => {
       }));
 
       renderPage(pathname);
+
+      expect(mocks.processCountQuery).toHaveBeenCalledWith(
+        {
+          workspaceId: 'workspace-1',
+          dossierId: 'dossier-1',
+          page: 1,
+          limit: 1,
+        },
+        { skip: true },
+      );
+      expect(mocks.activeSheetsQuery).toHaveBeenCalledWith(
+        expect.objectContaining({ dossierId: 'dossier-1' }),
+        { skip: true },
+      );
+      expect(mocks.detailQuery).toHaveBeenCalledWith(
+        expect.objectContaining({ dossierId: 'dossier-1' }),
+        { skip: true },
+      );
+      expect(mocks.metadataQuery).toHaveBeenCalledWith(
+        'workspace-1',
+        { skip: true },
+      );
 
       expect(screen.queryByRole('heading', {
         name: 'Nantes Centre',
@@ -300,6 +332,10 @@ describe('DossierWorkspacePage', () => {
     });
     const view = renderPage();
     expect(screen.queryByRole('link', { name: 'Fiches process (2)' })).not.toBeInTheDocument();
+    expect(mocks.processCountQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dossierId: 'dossier-1' }),
+      { skip: true },
+    );
     view.unmount();
 
     mocks.workspaceContext.mockReturnValue({
@@ -309,6 +345,33 @@ describe('DossierWorkspacePage', () => {
     });
     renderPage();
     expect(screen.queryByRole('link', { name: 'Fiches process (2)' })).not.toBeInTheDocument();
+    expect(mocks.processCountQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dossierId: 'dossier-1' }),
+      { skip: true },
+    );
+  });
+
+  it('affiche uniquement le total serveur des process et aucun compteur trompeur', () => {
+    mocks.detailQuery.mockReturnValue(queryResult({
+      id: 'dossier-1', name: 'Nantes Centre', status: 'ACTIVE',
+    }));
+    mocks.processCountQuery.mockReturnValue(queryResult({
+      processes: [],
+      pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
+    }));
+    const view = renderPage();
+    expect(screen.getByRole('link', { name: 'Fiches process (0)' }))
+      .toBeInTheDocument();
+    view.unmount();
+
+    mocks.processCountQuery.mockReturnValue({
+      data: undefined, isError: true, isLoading: false, refetch: vi.fn(),
+    });
+    renderPage();
+    expect(screen.getByRole('link', { name: 'Fiches process' }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Fiches process (0)' }))
+      .not.toBeInTheDocument();
   });
 
   it('masque la recherche de prix et l’édition de marge sans permissions', () => {

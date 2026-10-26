@@ -1,5 +1,8 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+**Stabilisation frontend du 2026-10-26 après log utilisateur :** Vitest 8 suites réussies / 36 tests réussis et une suite shell Dossier non chargée (PARSE_ERROR, 0 test). Le fichier sur la branche comportait 902 lignes et des fragments dupliqués, contrairement à `main` (353). Réécriture depuis la source stable de `main` avec réapplication contrôlée des seules évolutions M-006 (onglet, compteur, détection du détail, permissions, skip RTK Query), et extension des tests pour route/permissions/compteurs. Les nouveaux tests restent **à relancer localement** sur le HEAD corrigé ; aucun statut vert extrapolé du log antérieur.
+
+
 **Nouvelle décision et lot 4 du 2026-10-26 (autorisé par utilisateur) :** correction de l'UX après capture réelle. L'onglet doit lister des **Fiches process**, pas des Fiches techniques. Création via modale **titre + Fiche technique éligible**, ouverture de la Fiche process initialisée, informations complémentaires via (i). Règle de création maintenant stricte : M-004 ACTIVE + validation courante + aucun brouillon M-004 ouvert + aucun process 1:1 existant. Elle **remplace** les anciennes décisions 21/26. Une copie inter-Dossier M-004 cible initialement DRAFT ne crée plus automatiquement de process ; reprise du contenu ultérieure après validation cible (28 amendée). Backend ProcessSheet et ProcessSheetDraft, API liste/éligibilité/création/détail, audit et index unique, clôture transactionnelle des cascades archive/corbeille/purge M-004 ; frontend liste réelle, modale, détail initial. **Le cycle d'édition/validation/impression M-006 n'est pas livré, nouveau lot tests/QA non exécutés.** Branche feature/m006-fiches-process, pas de PR ni merge.
 
 
