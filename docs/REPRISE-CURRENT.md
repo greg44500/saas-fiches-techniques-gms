@@ -1,5 +1,7 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+**Incident de validation local du 2026-10-26 :** 7/7 tests HTTP M-006 échouent (404) sur l'ancien HEAD. Cause vérifiée dans le code : les deux routes Process Library ont été ajoutées dans un commentaire d'exemple, pas dans le tableau de composition réel. Correction des descriptors dans le tableau, audit transversal et extension des tests de non-régression (routes, scopes, Zod, conflits, rollback, audit) sur `feature/m006-fiches-process`. **Résultat post-correctif non encore exécuté**, ne pas déclarer la gate verte. Voir `docs/m006/M-006-TECHNICAL-DESIGN.md`.
+
 **Démarrage du développement approuvé le 2026-10-26 :** contrat final M-006 validé par le propriétaire. Lot 1 backend Bibliothèques de fabrication (scopes Dossier/Workspace, révisions non destructives, publication, archivage, RBAC, audit, migration et tests HTTP) engagé sur `feature/m006-fiches-process`. **Implémentation M-006 partielle :** aucun agrégat Fiche process, aucune intégration cycle de vie M-004, aucun frontend/process/impression encore livré. Gates et migrations non exécutées dans cette conversation. Voir `docs/m006/M-006-TECHNICAL-DESIGN.md`. Illustrations toujours exclues.
 
 

@@ -46,3 +46,11 @@ La migration `migration:m006-process-library` installe les index des deux modèl
 6. **Qualité** : migrations sur base de test dédiée, Vitest/Supertest, tests frontend RTL, E2E Playwright, contrôles tenancy/RBAC/concurrence puis `npm run release:check`. PR et fusion uniquement après validation des preuves et autorisation correspondante.
 
 **Hors lot M-006 V1 : illustrations/photographies, galerie, upload, stockage image, impression illustrée, journal de production et assistant IA.**
+
+## Audit de remédiation des 7 échecs HTTP (2026-10-26)
+
+L'exécution locale communiquée par le propriétaire du produit (`vitest v4.1.10`) indique 7 échecs / 7, tous dus à un `404` reçu dès le premier appel, y compris le contrôle cross-Workspace attendu en `403`. L'audit du code source révèle que les descriptors `process-library-workspace` et `process-library-dossier` avaient été placés accidentellement **dans le commentaire d'exemple** de `applicationRoutes.registry.js`, et non dans le tableau `APPLICATION_BACKEND_ROUTE_MODULES`. Ce défaut ne nécessite aucune modification du Core.
+
+Correction : déclaration réelle des deux modules via le point d'extension applicatif, avant la route Dossier générale. Contrôles préventifs : test du registre et du montage, tests stricts Zod (phase/étape/média/révisions), tests HTTP de détection 200/400/401/403/404, recherche, pagination, conflits 409, rollback d'une publication en doublon, audit, isolation Dossier et statut archivé.
+
+**Preuve d'exécution :** la sortie locale fournie établit uniquement l'état **rouge de l'ancien HEAD**. Les nouveaux tests et l'intégration corrigée **ne sont pas encore exécutés** sur la machine locale ; aucun résultat vert n'est revendiqué. Ne pas fusionner avant passage des gates applicables.

@@ -5,6 +5,12 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { app } from '../../../app.js';
 import { Dossier } from '../../../modules/dossier/dossier.model.js';
+import {
+    BUSINESS_ACTIVITY_ACTION,
+} from '../../../modules/businessActivity/businessActivity.registry.js';
+import {
+    BusinessActivityEvent,
+} from '../../../modules/businessActivity/businessActivity.model.js';
 import { grantDossierAccess } from '../../../modules/dossier/dossierAccess.service.js';
 import {
     PROCESS_LIBRARY_PERMISSION,
@@ -217,6 +223,178 @@ describe('M-006 — bibliothèques de fabrication', () => {
         await request(app).post(workspacePath() + '/steps')
             .set(bearer(member.token))
             .send({ definition: step('Global interdit') }).expect(403);
+    });
+
+    it('expose les routes métier et rejette méthodes, kinds et identifiants invalides', async () => {
+        const path = workspacePath();
+        await request(app).get(path + '/steps')
+            .set(bearer(owner.token)).expect(200);
+        await request(app).get(dossierPath() + '/phases')
+            .set(bearer(owner.token)).expect(200);
+        await request(app).get(path + '/invalid')
+            .set(bearer(owner.token)).expect(400);
+        await request(app).get(path + '/steps/not-an-id')
+            .set(bearer(owner.token)).expect(400);
+        await request(app).get(path + '/steps/aaaaaaaaaaaaaaaaaaaaaaaa')
+            .set(bearer(owner.token)).expect(404);
+        await request(app).get(path + '/steps')
+            .query({ limit: 101 }).set(bearer(owner.token)).expect(400);
+        await request(app).get(path + '/steps').expect(401);
+    });
+
+    it('refuse les définitions incohérentes, durées invalides et tout média', async () => {
+        const workspace = workspacePath();
+        const invalidSteps = [
+            { ...step(), photoUrl: '/photo.png' },
+            { ...step(), duration: { activeMinutes: -1 } },
+            { ...step(), duration: { restMinutes: 10081 } },
+            { ...step(), sanitaryControls: [{ instruction: '' }] },
+            { ...step(), qualityControls: [{ instruction: 'OK', photoId: 'test' }] },
+            { title: 'Phase au lieu d’étape', steps: [step()] },
+        ];
+        for (const definition of invalidSteps) {
+            await request(app).post(workspace + '/steps')
+                .set(bearer(owner.token)).send({ definition }).expect(400);
+        }
+        await request(app).post(workspace + '/phases')
+            .set(bearer(owner.token))
+            .send({ definition: step() }).expect(400);
+        await request(app).post(workspace + '/phases')
+            .set(bearer(owner.token))
+            .send({ definition: { title: 'Phase vide', steps: [] } })
+            .expect(400);
+        await request(app).post(workspace + '/steps')
+            .set(bearer(owner.token))
+            .send({ definition: step(), unknownField: 'ignored?' })
+            .expect(400);
+        expect(await ProcessLibraryTemplate.countDocuments({
+            workspace: owner.workspace._id,
+        })).toBe(0);
+    });
+
+    it('filtre et pagine sans interpréter la recherche comme une regex', async () => {
+        const path = workspacePath() + '/steps';
+        for (const title of ['Cuisson', 'C++', 'Sauce']) {
+            await request(app).post(path)
+                .set(bearer(owner.token))
+                .send({ definition: step(title) }).expect(201);
+        }
+        const literalSearch = await request(app).get(path)
+            .query({ search: 'C++' })
+            .set(bearer(owner.token)).expect(200);
+        expect(literalSearch.body.data.templates.map((item) => item.title))
+            .toEqual(['C++']);
+
+        const firstPage = await request(app).get(path)
+            .query({ limit: 2, page: 1 })
+            .set(bearer(owner.token)).expect(200);
+        const nextPage = await request(app).get(path)
+            .query({ limit: 2, page: 2 })
+            .set(bearer(owner.token)).expect(200);
+        expect(firstPage.body.data.pagination.total).toBe(3);
+        expect(firstPage.body.data.pagination.totalPages).toBe(2);
+        expect(firstPage.body.data.templates).toHaveLength(2);
+        expect(nextPage.body.data.templates).toHaveLength(1);
+    });
+
+    it('refuse les révisions obsolètes et garde toutes les versions et audits', async () => {
+        const path = workspacePath() + '/steps';
+        const created = (await request(app).post(path)
+            .set(bearer(owner.token))
+            .send({ definition: step('Fermentation') }).expect(201)
+        ).body.data.template;
+        const next = (await request(app).put(path + '/' + created.id)
+            .set(bearer(owner.token))
+            .send({
+                definition: step('Fermentation lente'),
+                expectedRevision: 0,
+            }).expect(200)).body.data.template;
+        await request(app).post(path + '/' + created.id + '/archive')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 0 }).expect(409);
+        await request(app).put(path + '/' + created.id)
+            .set(bearer(owner.token))
+            .send({
+                definition: step('Ancienne version'),
+                expectedRevision: 0,
+            }).expect(409);
+
+        const current = await request(app).get(path + '/' + created.id)
+            .set(bearer(owner.token)).expect(200);
+        expect(current.body.data.template).toMatchObject({
+            revision: next.revision,
+            title: 'Fermentation lente',
+            status: 'ACTIVE',
+        });
+        const history = await request(app).get(path + '/' + created.id + '/revisions')
+            .set(bearer(owner.token)).expect(200);
+        expect(history.body.data.revisions.map((v) => v.definition.title))
+            .toEqual(['Fermentation lente', 'Fermentation']);
+        const actions = await BusinessActivityEvent.find({
+            workspace: owner.workspace._id,
+            entityId: created.id,
+        }).lean();
+        expect(actions.map(({ action }) => action).sort()).toEqual([
+            BUSINESS_ACTIVITY_ACTION.PROCESS_LIBRARY_CREATED,
+            BUSINESS_ACTIVITY_ACTION.PROCESS_LIBRARY_REVISED,
+        ].sort());
+    });
+
+    it('refuse une publication sur modèle archivé et garantit le rollback sur doublon', async () => {
+        const localPath = dossierPath() + '/steps';
+        const globalPath = workspacePath() + '/steps';
+        const source = (await request(app).post(localPath)
+            .set(bearer(owner.token))
+            .send({ definition: step('Pétrissage') }).expect(201)
+        ).body.data.template;
+        await request(app).post(globalPath)
+            .set(bearer(owner.token))
+            .send({ definition: step('Pétrissage') }).expect(201);
+        await request(app).post(localPath + '/' + source.id + '/publish')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 0 }).expect(409);
+        const unchanged = await ProcessLibraryTemplate.findById(source.id);
+        expect(unchanged.assignmentVersion).toBe(0);
+        expect(unchanged.revision).toBe(0);
+        expect(await ProcessLibraryTemplate.countDocuments({
+            workspace: owner.workspace._id,
+        })).toBe(2);
+        expect(await ProcessLibraryRevision.countDocuments({
+            workspace: owner.workspace._id,
+        })).toBe(2);
+        const archived = (await request(app).post(
+            localPath + '/' + source.id + '/archive',
+        ).set(bearer(owner.token))
+            .send({ expectedRevision: 0 }).expect(200)).body.data.template;
+        await request(app).post(localPath + '/' + source.id + '/publish')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: archived.revision }).expect(409);
+    });
+
+    it('refuse les ressources de bibliothèque locales appartenant à un autre Dossier', async () => {
+        const second = await Dossier.create({
+            workspace: owner.workspace._id,
+            name: 'Dossier second',
+            statusChangedBy: owner.owner._id,
+            createdBy: owner.owner._id,
+            updatedBy: owner.owner._id,
+        });
+        const path = dossierPath() + '/steps';
+        const template = (await request(app).post(path)
+            .set(bearer(owner.token))
+            .send({ definition: step('Découpe') }).expect(201)
+        ).body.data.template;
+        const otherPath = dossierPath(second._id) + '/steps/' + template.id;
+        await request(app).get(otherPath)
+            .set(bearer(owner.token)).expect(404);
+        await request(app).get(otherPath + '/revisions')
+            .set(bearer(owner.token)).expect(404);
+        await request(app).put(otherPath)
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 0, definition: step('Intrusion') })
+            .expect(409);
+        await request(app).get(path + '/' + template.id)
+            .set(bearer(owner.token)).expect(200);
     });
 
     it('refuse la lecture cross-Workspace', async () => {

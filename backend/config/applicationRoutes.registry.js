@@ -147,6 +147,7 @@ const mountApplicationRoutes = (
         mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/process-library',
         router: processLibraryDossierRouter,
     }),
+
  *     Object.freeze({
  *         key: 'catalog',
  *         mountPath: '/api/workspaces/:workspaceId/catalog',
