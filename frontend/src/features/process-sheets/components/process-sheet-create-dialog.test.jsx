@@ -67,7 +67,11 @@ describe('M-006 — modale de création', () => {
     expect(mocks.list).toHaveBeenCalledWith({
       ...args, page: 1, limit: 10, search: undefined,
     }, { skip: false });
-    expect(screen.getByText('Tartine validée')).toBeInTheDocument();
+    await userEvent.setup().click(screen.getByRole('combobox', {
+      name: 'Fiche technique associée',
+    }));
+    expect(screen.getByRole('option', { name: 'Tartine validée' }))
+      .toBeInTheDocument();
   });
 
   it('n’autorise pas la soumission sans titre ni sélection M-004', async () => {

@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   marginQuery: vi.fn(),
   metadataQuery: vi.fn(),
   activeSheetsQuery: vi.fn(),
+  processCountQuery: vi.fn(),
   location: vi.fn(),
   params: vi.fn(),
   workspaceContext: vi.fn(),
@@ -37,6 +38,10 @@ vi.mock('react-router', async (importOriginal) => {
 vi.mock('@/features/dossiers/api/dossiers-api', () => ({
   useGetDossierByIdQuery: mocks.detailQuery,
   useGetDossierMetadataQuery: mocks.metadataQuery,
+}));
+
+vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
+  useListProcessSheetsQuery: mocks.processCountQuery,
 }));
 
 vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
@@ -107,6 +112,10 @@ describe('DossierWorkspacePage', () => {
     mocks.marginQuery.mockReturnValue(queryResult({
       defaultTargetMarginBasisPoints: 3000,
     }));
+    mocks.processCountQuery.mockReturnValue(queryResult({
+      processes: [],
+      pagination: { page: 1, limit: 1, total: 2, totalPages: 2 },
+    }));
     mocks.activeSheetsQuery.mockReturnValue(queryResult({
       sheets: [],
       pagination: {
@@ -159,7 +168,7 @@ describe('DossierWorkspacePage', () => {
       'href',
       '/workspaces/workspace-1/dossiers/dossier-1/suppliers',
     );
-    expect(screen.getByRole('link', { name: 'Fiches process' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Fiches process (2)' })).toHaveAttribute(
       'href',
       '/workspaces/workspace-1/dossiers/dossier-1/process-sheets',
     );
@@ -218,6 +227,7 @@ describe('DossierWorkspacePage', () => {
   it.each([
     '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets/sheet-1',
     '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets/sheet-1/optimization',
+    '/workspaces/workspace-1/dossiers/dossier-1/process-sheets/process-1',
   ])(
     'masque le shell Dossier volumineux dans le poste de travail d’une Fiche (%s)',
     (pathname) => {
@@ -289,7 +299,7 @@ describe('DossierWorkspacePage', () => {
       workspace: { id: 'workspace-1', name: 'Acme' },
     });
     const view = renderPage();
-    expect(screen.queryByRole('link', { name: 'Fiches process' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Fiches process (2)' })).not.toBeInTheDocument();
     view.unmount();
 
     mocks.workspaceContext.mockReturnValue({
@@ -298,7 +308,7 @@ describe('DossierWorkspacePage', () => {
       workspace: { id: 'workspace-1', name: 'Acme' },
     });
     renderPage();
-    expect(screen.queryByRole('link', { name: 'Fiches process' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Fiches process (2)' })).not.toBeInTheDocument();
   });
 
   it('masque la recherche de prix et l’édition de marge sans permissions', () => {

@@ -93,9 +93,9 @@ describe('application backend route composition', () => {
         }
     });
 
-    it('enregistre le contexte de composition M-006 en lecture seule', () => {
+    it('monte le module process avec liste, création et composition M-004', () => {
         const module = APPLICATION_BACKEND_ROUTE_MODULES.find(
-            ({ key }) => key === 'process-sheets-composition',
+            ({ key }) => key === 'process-sheets',
         );
         expect(module).toMatchObject({
             mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets',

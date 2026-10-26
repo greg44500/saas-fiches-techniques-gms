@@ -67,6 +67,7 @@ import {
   useListTechnicalSheetsQuery,
 } from '@/features/technical-sheets/api/technical-sheets-api';
 import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/process-sheet-permissions';
+import { useListProcessSheetsQuery } from '@/features/process-sheets/api/process-sheets-api';
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 import { cn } from '@/lib/utils';
 
@@ -108,19 +109,18 @@ function DossierWorkspacePage() {
   const [marginDialogOpen, setMarginDialogOpen] = useState(false);
   const isTechnicalSheetDetail = new RegExp(
     '/dossiers/' + dossierId
-    + '/technical-sheets/[^/]+(?:/optimization)?/?$',
-  ).test(location.pathname);
+    + '/technical-sheets/[^/]+(?:/optimization)?/?
 
   const dossierQuery = useGetDossierByIdQuery(
     {
       workspaceId: workspace.id,
       dossierId,
     },
-    { skip: isTechnicalSheetDetail },
+    { skip: isFocusedDetail },
   );
   const metadataQuery = useGetDossierMetadataQuery(
     workspace.id,
-    { skip: isTechnicalSheetDetail },
+    { skip: isFocusedDetail },
   );
   const activeSheetsQuery = useListTechnicalSheetsQuery(
     {
@@ -132,7 +132,277 @@ function DossierWorkspacePage() {
     },
     {
       skip: (
-        isTechnicalSheetDetail
+        isFocusedDetail
+        || !can(TECHNICAL_SHEET_PERMISSION.READ)
+      ),
+    },
+  );
+  const processCountQuery = useListProcessSheetsQuery(
+    { workspaceId: workspace.id, dossierId, page: 1, limit: 1 },
+    { skip: isFocusedDetail || !can(PROCESS_SHEET_PERMISSION.READ) },
+  );
+  const marginQuery = useGetDossierTechnicalSheetSettingsQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+    },
+    {
+      skip: (
+        isFocusedDetail
+        || !can(TECHNICAL_SHEET_PERMISSION.READ)
+      ),
+    },
+  );
+
+  if (isFocusedDetail) {
+    return <Outlet />;
+  }
+
+  if (
+    (dossierQuery.isLoading && dossierQuery.data === undefined)
+    || (metadataQuery.isLoading && metadataQuery.data === undefined)
+  ) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Chargement du dossier…
+      </p>
+    );
+  }
+
+  if (dossierQuery.isError || metadataQuery.isError || !dossierQuery.data) {
+    return (
+      <div className="space-y-4">
+        <Button asChild variant="outline">
+          <Link to={`/workspaces/${workspace.id}/dossiers`}>
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Dossiers
+          </Link>
+        </Button>
+        <ErrorState
+          description="Le dossier demandé n’est pas accessible ou n’a pas pu être chargé."
+          onRetry={() => {
+            dossierQuery.refetch();
+            metadataQuery.refetch();
+          }}
+          title="Dossier indisponible"
+        />
+      </div>
+    );
+  }
+
+  const dossier = dossierQuery.data;
+  const operational = dossier.status === 'ACTIVE';
+  const canReadSuppliers = canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS);
+  const canReadTechnicalSheets = can(TECHNICAL_SHEET_PERMISSION.READ);
+  // The current process preview uses the M-004 list, so both permissions
+  // are required. This is not a process creation or process count.
+  const canReadProcessComposition = can(PROCESS_SHEET_PERMISSION.READ)
+    && canReadTechnicalSheets;
+  const canManageMargin = can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE);
+  const activeSheetCount = activeSheetsQuery.data?.pagination?.total;
+  const activeProcessCount = processCountQuery.data?.pagination?.total;
+  const marginBasisPoints = marginQuery.data?.defaultTargetMarginBasisPoints;
+  const marginLabel = Number.isInteger(marginBasisPoints)
+    ? 'Marge cible ' + formatBasisPoints(marginBasisPoints)
+    : 'Marge cible';
+  const hasLocation = Boolean(
+    dossier.location?.address
+    || dossier.location?.postalCode
+    || dossier.location?.city,
+  );
+  const locationLabel = hasLocation ? formatDossierLocation(dossier) : null;
+  const hasContactDetails = Boolean(
+    locationLabel || dossier.contactName || dossier.documentEmail || dossier.phone,
+  );
+  const showApplicablePriceCard = can(
+    SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
+  );
+
+  return (
+    <div className="space-y-5">
+      <header className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border pb-4">
+        <Button asChild size="sm" variant="ghost">
+          <Link to={`/workspaces/${workspace.id}/dossiers`}>
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Dossiers
+          </Link>
+        </Button>
+        <div aria-hidden="true" className="hidden h-6 w-px bg-border sm:block" />
+        <h1 className="min-w-0 max-w-[min(19rem,60vw)]">
+          <Popover>
+            <PopoverTrigger
+              render={(
+                <Button
+                  className="h-auto max-w-full px-1 py-1 text-xl font-semibold tracking-tight text-foreground"
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                />
+              )}
+            >
+              <span className="block truncate">{dossier.name}</span>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="w-80 max-w-[calc(100vw-2rem)] p-4"
+            >
+              <p className="mb-3 text-sm font-semibold">Informations du Dossier</p>
+              {hasContactDetails ? (
+                <DossierContactDetails dossier={dossier} locationLabel={locationLabel} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Aucune coordonnée complémentaire renseignée.
+                </p>
+              )}
+            </PopoverContent>
+          </Popover>
+        </h1>
+        <StatusBadge tone={getDossierStatusTone(dossier.status)}>
+          {getDossierStatusLabel(dossier.status, metadataQuery.data)}
+        </StatusBadge>
+        {canManageMargin && (
+          <Tooltip>
+            <TooltipTrigger render={(
+              <Button
+                aria-label="Modifier la marge cible par défaut des nouvelles Fiches"
+                onClick={() => setMarginDialogOpen(true)}
+                size="sm"
+                type="button"
+                variant="outline"
+              />
+            )}>
+              <SlidersHorizontal aria-hidden="true" className="size-4" />
+              {marginLabel}
+            </TooltipTrigger>
+            <TooltipContent>
+              Modifier la marge cible par défaut des nouvelles Fiches.
+            </TooltipContent>
+          </Tooltip>
+        )}
+        {!canManageMargin && canReadTechnicalSheets
+        && Number.isInteger(marginBasisPoints) && (
+          <span className="text-sm font-medium text-muted-foreground">
+            {marginLabel}
+          </span>
+        )}
+        {showApplicablePriceCard && (
+          <DossierApplicablePriceCard
+            dossierId={dossier.id}
+            workspaceId={workspace.id}
+          />
+        )}
+      </header>
+
+      {!operational && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Dossier non opérationnel</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              La consultation reste disponible selon vos droits, mais les actions métier courantes exigent un Dossier actif.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {(canReadSuppliers || canReadTechnicalSheets || canReadProcessComposition) && (
+        <nav
+          aria-label="Navigation du Dossier"
+          className={SECTION_TAB_NAV_CLASS_NAME}
+        >
+          <div className={SECTION_TAB_LIST_CLASS_NAME}>
+            {canReadSuppliers && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/suppliers`}
+              >
+                Fournisseurs et prix
+              </NavLink>
+            )}
+            {canReadTechnicalSheets && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/technical-sheets`}
+              >
+                Fiches techniques
+                {Number.isInteger(activeSheetCount)
+                  ? ' (' + activeSheetCount + ')'
+                  : ''}
+              </NavLink>
+            )}
+            {canReadProcessComposition && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/process-sheets`}
+              >
+                Fiches process
+                {Number.isInteger(activeProcessCount)
+                  ? ' (' + activeProcessCount + ')'
+                  : ''}
+              </NavLink>
+            )}
+          </div>
+        </nav>
+      )}
+
+      <Outlet />
+
+      {marginDialogOpen && (
+        <DossierTechnicalSheetMarginDialog
+          dossierId={dossier.id}
+          onClose={() => setMarginDialogOpen(false)}
+          open={marginDialogOpen}
+          workspaceId={workspace.id}
+        />
+      )}
+    </div>
+  );
+}
+
+export { DossierWorkspacePage };
+,
+  ).test(location.pathname);
+  const isProcessSheetDetail = new RegExp(
+    '/dossiers/' + dossierId + '/process-sheets/[^/]+/?
+
+  const dossierQuery = useGetDossierByIdQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+    },
+    { skip: isFocusedDetail },
+  );
+  const metadataQuery = useGetDossierMetadataQuery(
+    workspace.id,
+    { skip: isFocusedDetail },
+  );
+  const activeSheetsQuery = useListTechnicalSheetsQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+      page: 1,
+      limit: 1,
+      status: 'ACTIVE',
+    },
+    {
+      skip: (
+        isFocusedDetail
         || !can(TECHNICAL_SHEET_PERMISSION.READ)
       ),
     },
@@ -144,7 +414,268 @@ function DossierWorkspacePage() {
     },
     {
       skip: (
-        isTechnicalSheetDetail
+        isFocusedDetail
+        || !can(TECHNICAL_SHEET_PERMISSION.READ)
+      ),
+    },
+  );
+
+  if (isTechnicalSheetDetail) {
+    return <Outlet />;
+  }
+
+  if (
+    (dossierQuery.isLoading && dossierQuery.data === undefined)
+    || (metadataQuery.isLoading && metadataQuery.data === undefined)
+  ) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Chargement du dossier…
+      </p>
+    );
+  }
+
+  if (dossierQuery.isError || metadataQuery.isError || !dossierQuery.data) {
+    return (
+      <div className="space-y-4">
+        <Button asChild variant="outline">
+          <Link to={`/workspaces/${workspace.id}/dossiers`}>
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Dossiers
+          </Link>
+        </Button>
+        <ErrorState
+          description="Le dossier demandé n’est pas accessible ou n’a pas pu être chargé."
+          onRetry={() => {
+            dossierQuery.refetch();
+            metadataQuery.refetch();
+          }}
+          title="Dossier indisponible"
+        />
+      </div>
+    );
+  }
+
+  const dossier = dossierQuery.data;
+  const operational = dossier.status === 'ACTIVE';
+  const canReadSuppliers = canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS);
+  const canReadTechnicalSheets = can(TECHNICAL_SHEET_PERMISSION.READ);
+  // The current process preview uses the M-004 list, so both permissions
+  // are required. This is not a process creation or process count.
+  const canReadProcessComposition = can(PROCESS_SHEET_PERMISSION.READ)
+    && canReadTechnicalSheets;
+  const canManageMargin = can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE);
+  const activeSheetCount = activeSheetsQuery.data?.pagination?.total;
+  const marginBasisPoints = marginQuery.data?.defaultTargetMarginBasisPoints;
+  const marginLabel = Number.isInteger(marginBasisPoints)
+    ? 'Marge cible ' + formatBasisPoints(marginBasisPoints)
+    : 'Marge cible';
+  const hasLocation = Boolean(
+    dossier.location?.address
+    || dossier.location?.postalCode
+    || dossier.location?.city,
+  );
+  const locationLabel = hasLocation ? formatDossierLocation(dossier) : null;
+  const hasContactDetails = Boolean(
+    locationLabel || dossier.contactName || dossier.documentEmail || dossier.phone,
+  );
+  const showApplicablePriceCard = can(
+    SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
+  );
+
+  return (
+    <div className="space-y-5">
+      <header className="relative z-10 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border pb-4">
+        <Button asChild size="sm" variant="ghost">
+          <Link to={`/workspaces/${workspace.id}/dossiers`}>
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Dossiers
+          </Link>
+        </Button>
+        <div aria-hidden="true" className="hidden h-6 w-px bg-border sm:block" />
+        <h1 className="min-w-0 max-w-[min(19rem,60vw)]">
+          <Popover>
+            <PopoverTrigger
+              render={(
+                <Button
+                  className="h-auto max-w-full px-1 py-1 text-xl font-semibold tracking-tight text-foreground"
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                />
+              )}
+            >
+              <span className="block truncate">{dossier.name}</span>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              className="w-80 max-w-[calc(100vw-2rem)] p-4"
+            >
+              <p className="mb-3 text-sm font-semibold">Informations du Dossier</p>
+              {hasContactDetails ? (
+                <DossierContactDetails dossier={dossier} locationLabel={locationLabel} />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Aucune coordonnée complémentaire renseignée.
+                </p>
+              )}
+            </PopoverContent>
+          </Popover>
+        </h1>
+        <StatusBadge tone={getDossierStatusTone(dossier.status)}>
+          {getDossierStatusLabel(dossier.status, metadataQuery.data)}
+        </StatusBadge>
+        {canManageMargin && (
+          <Tooltip>
+            <TooltipTrigger render={(
+              <Button
+                aria-label="Modifier la marge cible par défaut des nouvelles Fiches"
+                onClick={() => setMarginDialogOpen(true)}
+                size="sm"
+                type="button"
+                variant="outline"
+              />
+            )}>
+              <SlidersHorizontal aria-hidden="true" className="size-4" />
+              {marginLabel}
+            </TooltipTrigger>
+            <TooltipContent>
+              Modifier la marge cible par défaut des nouvelles Fiches.
+            </TooltipContent>
+          </Tooltip>
+        )}
+        {!canManageMargin && canReadTechnicalSheets
+        && Number.isInteger(marginBasisPoints) && (
+          <span className="text-sm font-medium text-muted-foreground">
+            {marginLabel}
+          </span>
+        )}
+        {showApplicablePriceCard && (
+          <DossierApplicablePriceCard
+            dossierId={dossier.id}
+            workspaceId={workspace.id}
+          />
+        )}
+      </header>
+
+      {!operational && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Dossier non opérationnel</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              La consultation reste disponible selon vos droits, mais les actions métier courantes exigent un Dossier actif.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {(canReadSuppliers || canReadTechnicalSheets || canReadProcessComposition) && (
+        <nav
+          aria-label="Navigation du Dossier"
+          className={SECTION_TAB_NAV_CLASS_NAME}
+        >
+          <div className={SECTION_TAB_LIST_CLASS_NAME}>
+            {canReadSuppliers && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/suppliers`}
+              >
+                Fournisseurs et prix
+              </NavLink>
+            )}
+            {canReadTechnicalSheets && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/technical-sheets`}
+              >
+                Fiches techniques
+                {Number.isInteger(activeSheetCount)
+                  ? ' (' + activeSheetCount + ')'
+                  : ''}
+              </NavLink>
+            )}
+            {canReadProcessComposition && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/process-sheets`}
+              >
+                Fiches process
+              </NavLink>
+            )}
+          </div>
+        </nav>
+      )}
+
+      <Outlet />
+
+      {marginDialogOpen && (
+        <DossierTechnicalSheetMarginDialog
+          dossierId={dossier.id}
+          onClose={() => setMarginDialogOpen(false)}
+          open={marginDialogOpen}
+          workspaceId={workspace.id}
+        />
+      )}
+    </div>
+  );
+}
+
+export { DossierWorkspacePage };
+,
+  ).test(location.pathname);
+  const isFocusedDetail = isTechnicalSheetDetail || isProcessSheetDetail;
+
+  const dossierQuery = useGetDossierByIdQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+    },
+    { skip: isFocusedDetail },
+  );
+  const metadataQuery = useGetDossierMetadataQuery(
+    workspace.id,
+    { skip: isFocusedDetail },
+  );
+  const activeSheetsQuery = useListTechnicalSheetsQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+      page: 1,
+      limit: 1,
+      status: 'ACTIVE',
+    },
+    {
+      skip: (
+        isFocusedDetail
+        || !can(TECHNICAL_SHEET_PERMISSION.READ)
+      ),
+    },
+  );
+  const marginQuery = useGetDossierTechnicalSheetSettingsQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+    },
+    {
+      skip: (
+        isFocusedDetail
         || !can(TECHNICAL_SHEET_PERMISSION.READ)
       ),
     },
