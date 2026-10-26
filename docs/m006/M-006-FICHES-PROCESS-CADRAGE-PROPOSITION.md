@@ -1,6 +1,6 @@
 # M-006 — Fiches process — Proposition de contrat fonctionnel
 
-**Statut : RECOMMANDATIONS 21–35 APPROUVÉES — CONTRAT CONSOLIDÉ EN ATTENTE DE VALIDATION FINALE POUR IMPLÉMENTATION**  
+**Statut : CONTRAT FONCTIONNEL M-006 VALIDÉ — IMPLÉMENTATION AUTORISÉE LE 2026-10-26, LIVRAISON PARTIELLE EN COURS**  
 **Date : 2026-10-26**  
 **Branche de travail :** feature/m006-fiches-process  
 **Dépôt :** greg44500/saas-fiches-techniques-gms  
@@ -291,7 +291,7 @@ Le propriétaire du produit **approuve les recommandations fonctionnelles 21 à 
 
 ### Condition de passage à la conception et au code
 
-**La validation des recommandations est acquise ; la validation explicite de la version finale du contrat consolidé et l'autorisation de commencer le développement sont encore distinctes et non accordées dans cette conversation.** Jusqu'à cette autorisation : documentation uniquement, pas de modèle, migration, endpoint, frontend M-006 ou test métier nouvellement implémenté.
+**Le propriétaire du produit a validé explicitement le contrat consolidé M-006 et autorisé l'implémentation le 2026-10-26.** Le développement est désormais permis, par lots cohérents sur la branche dédiée, sans introduire d'hypothèses métier supplémentaires. Les inconnues techniques doivent être résolues et testées avant l'activation des parcours concernés.
 
 ## 17. Ordre d'implémentation proposé — SOUS RÉSERVE DE VALIDATION
 
@@ -325,4 +325,4 @@ Le propriétaire du produit **approuve les recommandations fonctionnelles 21 à 
 
 **Rappel :** le code réel et les tests qui seront exécutés restent prioritaires sur les propositions de ce document. Les règles à confirmer ne sont pas présentées comme déjà implémentées.
 
-**Décision de suspension maintenue :** les recommandations 21–35 et le report des illustrations ont été approuvés le 2026-10-26. La validation formelle du contrat final, ainsi que l'autorisation distincte de commencer le code, restent nécessaires. Aucun modèle, migration, route, test métier ou écran M-006 avant ces accords.
+**État actualisé le 2026-10-26 :** le contrat complet est validé et l'implémentation autorisée. Lot backend des bibliothèques de fabrication engagé (voir `docs/m006/M-006-TECHNICAL-DESIGN.md`). **M-006 n'est pas livré dans son ensemble :** les Fiches process, leur intégration transactionnelle à M-004, le frontend et l'impression restent à réaliser/tester. Aucun résultat de gate n'est revendiqué.
