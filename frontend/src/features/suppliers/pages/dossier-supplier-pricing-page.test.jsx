@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   listInvoiced: vi.fn(),
   listIndicative: vi.fn(),
   listWorkspaceIndicative: vi.fn(),
+  addReference: vi.fn(),
   removeReference: vi.fn(),
 }));
 
@@ -46,7 +47,7 @@ vi.mock('@/features/suppliers/api/supplier-api', () => ({
   useListDossierIndicativePricesQuery: mocks.listIndicative,
   useListWorkspaceIndicativePricesQuery: mocks.listWorkspaceIndicative,
   useAddDossierSupplierReferenceMutation: () => [
-    vi.fn(),
+    mocks.addReference,
     { isLoading: false },
   ],
   useRemoveDossierSupplierReferenceMutation: () => [
@@ -131,6 +132,9 @@ describe('normalizeArticle', () => {
 describe('DossierSupplierPricingPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.addReference.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({}),
+    });
     mocks.removeReference.mockReturnValue({
       unwrap: vi.fn().mockResolvedValue({}),
     });
@@ -141,6 +145,7 @@ describe('DossierSupplierPricingPage', () => {
     mocks.listReferences.mockReturnValue(queryResult([]));
     mocks.listArticles.mockReturnValue(queryResult({
       articles: [],
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
     }));
     mocks.listCatalogs.mockReturnValue(queryResult({
       catalogs: [],
@@ -157,44 +162,108 @@ describe('DossierSupplierPricingPage', () => {
     mocks.listWorkspaceIndicative.mockReturnValue(queryResult([]));
   });
 
-  it('recherche les Articles pour les Références du Dossier sans liste de 100 éléments', async () => {
+  it('affiche les Articles du Workspace et identifie les favoris propres au Dossier', async () => {
     const user = userEvent.setup();
     mocks.workspaceContext.mockReturnValue({
       workspace: { id: 'workspace-1', name: 'Acme' },
       can: (permission) => [
+        SUPPLIER_PERMISSION.ARTICLE_READ,
         SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ,
         SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE,
-        SUPPLIER_PERMISSION.ARTICLE_READ,
       ].includes(permission),
     });
-    mocks.listArticles.mockImplementation((args, opts) => queryResult({
-      articles: opts?.skip || args.search !== '43279' ? [] : [{
-        id: 'article-43279',
-        supplierReference: '43279',
-        supplierDesignation: 'Croissant pur beurre',
-        supplier: { id: 'supplier-bridor', name: 'BRIDOR' },
-      }],
+    mocks.listReferences.mockReturnValue(queryResult([{
+      id: 'favorite-1',
+      supplierArticle: {
+        id: 'article-34171',
+        supplierReference: '34171',
+        supplierName: 'BRIDOR',
+        supplierDesignation: 'Plaque feuilletée',
+        productVariantName: 'Pâte feuilletée pur beurre',
+      },
+    }]));
+    mocks.listArticles.mockImplementation((args) => queryResult({
+      articles: args.limit === 1 ? [] : [
+        {
+          id: 'article-34171', supplierReference: '34171',
+          supplierDesignation: 'Plaque feuilletée',
+          supplier: { name: 'BRIDOR' },
+          productVariant: { name: 'Pâte feuilletée pur beurre' },
+        },
+        {
+          id: 'article-43279', supplierReference: '43279',
+          supplierDesignation: 'Croissant pur beurre',
+          supplier: { name: 'BRIDOR' },
+          associationStatus: 'PENDING',
+        },
+      ],
+      pagination: { page: args.page ?? 1, limit: args.limit, total: 2, totalPages: 1 },
     }));
 
     renderPage();
-    const input = screen.getByRole('combobox', {
+    expect(screen.getByRole('tab', { name: 'Articles fournisseur (2)' }))
+      .toBeInTheDocument();
+    expect(screen.getByText('Plaque feuilletée')).toBeInTheDocument();
+    expect(screen.getByText('Croissant pur beurre')).toBeInTheDocument();
+    expect(screen.getByText('Non associé')).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', {
       name: 'Référence à ajouter au Dossier',
-    });
-    expect(screen.getByRole('button', { name: 'Ajouter' })).toBeDisabled();
-    await user.type(input, '43279');
+    })).not.toBeInTheDocument();
 
-    const suggestion = await screen.findByRole('option', {
-      name: 'Croissant pur beurre · BRIDOR · 43279',
+    const add = screen.getByRole('button', {
+      name: 'Ajouter aux favoris : 43279',
     });
-    await user.click(suggestion);
-    expect(screen.getByRole('button', { name: 'Ajouter' })).toBeEnabled();
+    await user.click(add);
+    expect(mocks.addReference).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      dossierId: 'dossier-1',
+      articleId: 'article-43279',
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Favoris (1)' }));
+    expect(screen.getByText('Plaque feuilletée')).toBeInTheDocument();
+    expect(screen.queryByText('Croissant pur beurre')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ajouter aux favoris : 43279' }))
+      .not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Retirer des favoris : 34171' }));
+    expect(mocks.removeReference).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1',
+      dossierId: 'dossier-1',
+      articleId: 'article-34171',
+    });
+  });
+
+  it('recherche et pagine les Articles côté serveur sans plafond de 100 éléments', async () => {
+    const user = userEvent.setup();
+    mocks.workspaceContext.mockReturnValue({
+      workspace: { id: 'workspace-1', name: 'Acme' },
+      can: (permission) => permission === SUPPLIER_PERMISSION.ARTICLE_READ,
+    });
+    mocks.listArticles.mockImplementation((args) => queryResult({
+      articles: [],
+      pagination: {
+        page: args.page ?? 1, limit: args.limit,
+        total: 125, totalPages: Math.ceil(125 / args.limit),
+      },
+    }));
+    renderPage();
+    expect(screen.getByRole('tab', { name: 'Articles fournisseur (125)' }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Favoris \(/ }))
+      .not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ajouter aux favoris/ }))
+      .not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Suivant' }));
     expect(mocks.listArticles).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceId: 'workspace-1',
-        search: '43279',
-        page: 1,
-        limit: 10,
-      }),
+      expect.objectContaining({ page: 2, limit: 10 }),
+      { skip: false },
+    );
+    await user.type(screen.getByRole('searchbox', {
+      name: 'Rechercher un Article fournisseur',
+    }), 'BRIDOR');
+    expect(mocks.listArticles).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 1, search: 'BRIDOR', limit: 10 }),
       { skip: false },
     );
   });
@@ -439,7 +508,7 @@ describe('DossierSupplierPricingPage', () => {
   });
 
   it.each([
-    ['Références (0)', 'Lignes des références fournisseurs', 'Référence'],
+    ['Articles fournisseur (0)', 'Lignes des Articles fournisseur du Dossier', 'Article fournisseur'],
     ['Catalogues (0)', 'Lignes des catalogues fournisseurs', 'Catalogue'],
     ['Tarifs négociés (0)', 'Lignes des tarifs négociés', 'Article'],
     ['Prix facturés (0)', 'Lignes des prix facturés', 'Article'],
@@ -463,6 +532,29 @@ describe('DossierSupplierPricingPage', () => {
       .closest('thead')).toHaveClass('sticky', 'top-0');
   });
 
+  it('conserve la consultation des favoris sans ouvrir le catalogue sans droit Article', () => {
+    mocks.workspaceContext.mockReturnValue({
+      workspace: { id: 'workspace-1', name: 'Acme' },
+      can: (permission) => permission === SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ,
+    });
+    mocks.listReferences.mockReturnValue(queryResult([{
+      id: 'favorite-1',
+      supplierArticle: {
+        id: 'article-34171', supplierReference: '34171',
+        supplierName: 'BRIDOR', supplierDesignation: 'Plaque feuilletée',
+        productVariantName: 'Pâte feuilletée pur beurre',
+      },
+    }]));
+    renderPage();
+    expect(screen.getByRole('tab', { name: 'Articles favoris (1)' }))
+      .toBeInTheDocument();
+    expect(screen.getByText('Plaque feuilletée')).toBeInTheDocument();
+    expect(mocks.listArticles.mock.calls.every(([,options]) => options?.skip === true))
+      .toBe(true);
+    expect(screen.queryByRole('button', { name: /Ajouter aux favoris/ }))
+      .not.toBeInTheDocument();
+  });
+
   it('ne propose pas Retirer du Dossier sans permission de gestion', () => {
     mocks.workspaceContext.mockReturnValue({
       workspace: { id: 'workspace-1', name: 'Acme' },
@@ -482,43 +574,30 @@ describe('DossierSupplierPricingPage', () => {
       .not.toBeInTheDocument();
   });
 
-  it('utilise une action Retirer dédiée plutôt qu’une suppression', async () => {
-    const user = userEvent.setup();
+  it('n’offre pas de mutation de favoris avec la seule permission de lecture', () => {
     mocks.workspaceContext.mockReturnValue({
-      workspace: {
-        id: 'workspace-1',
-        name: 'Acme',
-      },
+      workspace: { id: 'workspace-1', name: 'Acme' },
       can: (permission) => [
+        SUPPLIER_PERMISSION.ARTICLE_READ,
         SUPPLIER_PERMISSION.DOSSIER_REFERENCE_READ,
-        SUPPLIER_PERMISSION.DOSSIER_REFERENCE_MANAGE,
       ].includes(permission),
     });
     mocks.listReferences.mockReturnValue(queryResult([{
-      id: 'dossier-reference-1',
-      supplierArticle: {
-        id: 'article-1',
-        supplierReference: 'Ali321',
-        supplierName: 'Sysco',
-        productVariantName: 'Ail',
-      },
+      id: 'favorite-1',
+      supplierArticle: { id: 'article-1', supplierReference: 'Ali321',
+        supplierName: 'Sysco', productVariantName: 'Ail' },
     }]));
-
+    mocks.listArticles.mockImplementation((args) => queryResult({
+      articles: args.limit === 1 ? [] : [{
+        id: 'article-1', supplierReference: 'Ali321',
+        supplierDesignation: 'Ail entier', supplier: { name: 'Sysco' },
+      }],
+      pagination: { page: 1, limit: args.limit, total: 1, totalPages: 1 },
+    }));
     renderPage();
-
-    const remove = screen.getByRole('button', {
-      name: 'Retirer du Dossier : Ali321',
-    });
-    expect(remove).toHaveClass('hover:text-destructive', 'focus-visible:text-destructive');
-    expect(remove).not.toHaveClass('text-destructive');
-    expect(screen.queryByRole('button', {
-      name: 'Actions de Ali321',
-    })).not.toBeInTheDocument();
-    await user.click(remove);
-    expect(mocks.removeReference).toHaveBeenCalledWith({
-      workspaceId: 'workspace-1',
-      dossierId: 'dossier-1',
-      articleId: 'article-1',
-    });
+    expect(screen.getByText('Ail entier')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ajouter aux favoris|Retirer des favoris/ }))
+      .not.toBeInTheDocument();
+    expect(screen.getByText('Favori', { exact: true })).toBeInTheDocument();
   });
 });

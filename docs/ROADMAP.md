@@ -1,4 +1,17 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
+
+## Complément UX M-003 joint au lot Gammes M-004 — 2026-10-26
+
+- Travail uniquement sur `feature/m004-gammes-fiches-techniques`, intégré
+  à la future PR des Gammes après tests et approbation.
+- Dossier / Fournisseurs et prix : remplacer le premier onglet « Références »
+  par la consultation des Articles fournisseur avec filtre Tous / Favoris
+  et action favori en ligne, sans toucher aux autres onglets ni aux
+  invariants M-003.
+- Cadrage détaillé : `docs/ux/M-003-DOSSIER-ARTICLES-UX-2026-10-26.md`.
+  Recette UI, tests ciblés, E2E et gate `release:check` à confirmer.
+
+
 ## Lot courant — Gammes M-004 (2026-10-24)
 
 - PR #49 UI/UX fusionnée dans `main` au commit `ac0145bd`.

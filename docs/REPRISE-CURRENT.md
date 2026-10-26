@@ -1,5 +1,30 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
 
+## UX M-003 dans la branche Gammes M-004 — 2026-10-26 (recette à exécuter)
+
+- Décision utilisateur : conserver la branche `feature/m004-gammes-fiches-techniques`
+  pour la correction UX et la future PR des Gammes. Aucune branche
+  ni PR additionnelle dédiée à ce complément.
+- Dans « Dossier → Fournisseurs et prix », le premier onglet consulte les
+  Articles fournisseur actifs visibles du Workspace, avec compteur,
+  recherche et pagination serveur ; « Tous les articles / Favoris »
+  change la liste sans créer un catalogue magasin.
+- Le choix de favori devient une action sur chaque ligne. La liste des
+  favoris est toujours la relation existante Dossier/Article, sans
+  duplication de Produit ou prix ; les Articles non associés restent
+  consultables et ne deviennent pas valorisables par simple affichage.
+- Permissions : lecture catalogue via `supplier:article:read`, lecture
+  favoris via `supplier:dossier-reference:read`, mutation via
+  `supplier:dossier-reference:manage`. Les utilisateurs sans lecture
+  d'Articles conservent leur ancienne lecture des favoris ; aucune
+  permission n'est accordée implicitement.
+- Aucun changement d'API, de MongoDB, de résolution de prix, de Core ou
+  des quatre autres onglets. Tests RTL et scénario Playwright M-003
+  ajoutés/actualisés, **non exécutés localement pour ce commit**.
+  Gate `npm run release:check` et recette Windows à réaliser avant PR.
+
+
+
 ## Finition UX — filtre des Gammes dans les Fiches (2026-10-26)
 
 - Dans le tableau des Fiches d'un Dossier : une seule recherche par
