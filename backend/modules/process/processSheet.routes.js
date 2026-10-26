@@ -16,6 +16,7 @@ import {
     TECHNICAL_SHEET_PERMISSION,
 } from '../technicalSheet/technicalSheetPermission.registry.js';
 import { PROCESS_SHEET_PERMISSION } from './processSheetPermission.registry.js';
+import { processSheetCompositionRouter } from './processSheetComposition.routes.js';
 import { create, eligible, get, list } from './processSheet.controller.js';
 import {
     dossierParamsSchema, eligibleTechnicalSheetQuerySchema,
@@ -59,5 +60,9 @@ processSheetRouter.get('/:processSheetId',
     authenticate,
     validateRequest({ params: processParamsSchema }),
     ...readChain, get);
+
+// Backward-compatible composition endpoint under the same process route
+// mount. Register after exact /eligible and /:processSheetId handlers.
+processSheetRouter.use(processSheetCompositionRouter);
 
 export { processSheetRouter };

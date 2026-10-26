@@ -528,7 +528,7 @@ const createDraftFromValidatedState = async ({
         });
 
         const sheet =
-            await TechnicalSheet.findOne(
+            await TechnicalSheet.findOneAndUpdate(
                 mongoose.trusted({
                     _id: technicalSheetId,
                     workspace: workspaceId,
@@ -538,7 +538,9 @@ const createDraftFromValidatedState = async ({
                     revision:
                         expectedSheetRevision,
                 }),
-            ).session(session);
+                { $inc: { processEligibilityRevision: 1 } },
+                { session, returnDocument: 'after', timestamps: false },
+            );
 
         if (!sheet) {
             throw new AppError(

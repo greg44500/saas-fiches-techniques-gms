@@ -31,6 +31,7 @@ const BUSINESS_ACTIVITY_ACTION_REGISTRY = Object.freeze({
         value: 'PRODUCT_CATALOG_REACTIVATED',
         label: 'Produit réactivé dans le catalogue',
     }),
+    PROCESS_SHEET_CREATED: Object.freeze({ value: 'PROCESS_SHEET_CREATED', label: 'Fiche process créée' }),
     PROCESS_LIBRARY_CREATED: Object.freeze({ value: 'PROCESS_LIBRARY_CREATED', label: 'Modèle de fabrication créé' }),
     PROCESS_LIBRARY_REVISED: Object.freeze({ value: 'PROCESS_LIBRARY_REVISED', label: 'Modèle de fabrication révisé' }),
     PROCESS_LIBRARY_ARCHIVED: Object.freeze({ value: 'PROCESS_LIBRARY_ARCHIVED', label: 'Modèle de fabrication archivé' }),
@@ -137,6 +138,7 @@ const BUSINESS_ACTIVITY_ENTITY_TYPE = Object.freeze({
     TECHNICAL_SHEET: 'TECHNICAL_SHEET',
     TECHNICAL_SHEET_RANGE: 'TECHNICAL_SHEET_RANGE',
     PROCESS_LIBRARY_TEMPLATE: 'PROCESS_LIBRARY_TEMPLATE',
+    PROCESS_SHEET: 'PROCESS_SHEET',
     WORKSPACE_BUSINESS_SETTINGS: 'WORKSPACE_BUSINESS_SETTINGS',
 });
 

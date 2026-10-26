@@ -206,6 +206,14 @@
       "dependsOn": [
         "m006-process-library"
       ]
+    },
+    {
+      "id": "m006-process-sheets",
+      "script": "migration:m006-process-sheets",
+      "runner": "backend/migrations/runEnsureM006ProcessSheetMigration.js",
+      "dependsOn": [
+        "m006-process-composition-permission"
+      ]
     }
   ]
 }

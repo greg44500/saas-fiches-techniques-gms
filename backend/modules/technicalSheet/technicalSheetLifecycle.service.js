@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 
 import {
+    purgeProcessForTechnicalSheet,
+    synchronizeProcessWithTechnicalSheet,
+} from '../process/processSheetLifecycle.service.js';
+
+import {
     BUSINESS_ACTIVITY_ACTION,
 } from '../businessActivity/businessActivity.registry.js';
 import {
@@ -80,6 +85,12 @@ const transitionTechnicalSheet = async ({
                 409,
             );
         }
+
+        await synchronizeProcessWithTechnicalSheet({
+            workspaceId, dossierId,
+            technicalSheetId: sheet._id,
+            status: toStatus, actorId, session,
+        });
 
         await createTechnicalSheetEvent({
             workspaceId,
@@ -178,6 +189,12 @@ const deleteTechnicalSheet = async ({
         sheet.revision += 1;
 
         await sheet.save({ session });
+        await synchronizeProcessWithTechnicalSheet({
+            workspaceId, dossierId,
+            technicalSheetId: sheet._id,
+            status: TECHNICAL_SHEET_STATUS.DELETED,
+            actorId, session,
+        });
 
         await createTechnicalSheetEvent({
             workspaceId,
@@ -251,6 +268,12 @@ const restoreTechnicalSheet = async ({
         sheet.revision += 1;
 
         await sheet.save({ session });
+        await synchronizeProcessWithTechnicalSheet({
+            workspaceId, dossierId,
+            technicalSheetId: sheet._id,
+            status: restoredStatus,
+            actorId, session,
+        });
 
         await createTechnicalSheetEvent({
             workspaceId,
@@ -327,6 +350,10 @@ const purgeTechnicalSheet = async ({
                     requireExpired,
             },
             session,
+        });
+
+        await purgeProcessForTechnicalSheet({
+            workspaceId, technicalSheetId: sheet._id, session,
         });
 
         await Promise.all([
