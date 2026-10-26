@@ -29,7 +29,7 @@ Usages retenus : rédaction sur ordinateur dans le Dossier, consultation sur ord
 - éléments propres au process distingués de la composition économique M-004 ;
 - bibliothèque commune Workspace et modèles locaux Dossier (étapes et phases), avec publication contrôlée ;
 - brouillons, validation explicite, historique immuable et adoption contrôlée des évolutions de bibliothèque ;
-- RBAC, ownership, audit, copie inter-Dossier, cycle de vie lié à celui de la Fiche technique ;
+- RBAC, ownership, audit, copie inter-Dossier, cycle de vie lié à celui de la Fiche technique, et suppression autonome irréversible du process après confirmation explicite ;
 - consultation adaptée aux supports d'atelier et impression lisible.
 
 **Hors périmètre ou différé :**
@@ -144,11 +144,13 @@ Le rejet de la proposition n'est **pas** une mise à jour silencieuse du process
 
 ## 9. Cycle de vie dépendant de M-004 — DÉCISIONS NOUVELLES VALIDÉES
 
-La Fiche process **ne survit pas indépendamment** de la Fiche technique qui la porte.
+La Fiche process **ne peut pas survivre à la purge de sa Fiche technique**. Elle ne peut pas être archivée indépendamment de sa Fiche technique. En revanche, elle peut être supprimée seule de manière **physique et définitive**, après confirmation explicite de l'utilisateur autorisé ; cela laisse la Fiche technique intacte.
 
 | Action M-004 | Règle métier pour M-006 |
 | --- | --- |
 | Création d'une Fiche technique | Ne crée pas automatiquement de Fiche process. |
+| Suppression autonome d'une Fiche process | Suppression **immédiate et définitive** de l'agrégat M-006 (brouillon, historique, usages associés) après confirmation ; la Fiche technique M-004 et les modèles de bibliothèque restent intacts ; l'association 1:1 est libérée. |
+| Archivage autonome d'une Fiche process | **Interdit** ; l'archivage est exclusivement provoqué par la Fiche technique. |
 | Archivage de la Fiche technique | Archive automatiquement la Fiche process associée ; versions et bibliothèques conservées. |
 | Réactivation de la Fiche technique | **Proposition de cohérence** : remettre en activité le process archivé du fait de son parent, sans réactiver arbitrairement un process préalablement archivé volontairement. |
 | Suppression M-004 vers corbeille | Supprime **logiquement** la Fiche process associée dans la même opération métier, sans purge physique précoce. |
@@ -158,7 +160,7 @@ La Fiche process **ne survit pas indépendamment** de la Fiche technique qui la 
 
 **Garantie de cohérence visée :** ces transitions doivent être transactionnelles, avec contrôles de tenancy, concurrence, permissions et audit, et sans altérer les documents de bibliothèque partagés par d'autres Fiches process. Une purge M-004 existante ne doit pas laisser de données M-006 orphelines.
 
-**Arbitrage résiduel important :** possibilité et règles d'archivage ou de suppression *indépendante* d'une Fiche process alors que sa Fiche technique reste ACTIVE. Le comportement demandé couvre sans ambiguïté les cascades depuis M-004 ; le comportement autonome M-006 doit encore être tranché avant implémentation. Dans tous les cas, l'association 1:1 doit rester protégée.
+**Décision du propriétaire du produit (2026-10-26) :** aucune commande d'archivage autonome de Fiche process ; suppression autonome physique et définitive avec confirmation explicite. Cette destruction est distincte de la mise en corbeille par cascade depuis M-004. Une nouvelle Fiche process peut ensuite être créée pour la Fiche technique encore éligible. **À préciser :** rôles autorisés, conditions lorsque la Fiche technique est archivée/en corbeille, contenu minimal de la confirmation et exigences d'audit de la destruction (sans conserver de données censées être purgées).
 
 **Preuve de code à prendre en compte :** technicalSheetLifecycle.service.js distingue ACTIVE / ARCHIVED / DELETED, calcule purgeScheduledAt, restaure depuis preDeleteStatus et purge TechnicalSheet, Draft et Validations dans une transaction. Il faudra brancher la cascade M-006 sur ces services effectifs plutôt que simuler une suppression immédiate.
 
@@ -193,6 +195,7 @@ GET    /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/:processS
 PUT    /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/:processSheetId/draft
 POST   /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/:processSheetId/validate
 GET    /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/:processSheetId/history
+DELETE /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/:processSheetId   # suppression physique explicitement confirmée, contrôle serveur strict
 
 Workspace :
 GET/POST /api/workspaces/:workspaceId/process-library/steps
@@ -206,7 +209,7 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 ## 13. Frontend et ergonomie — DÉCISIONS VALIDÉES ET PROPOSITIONS
 
 - Ajouter **Fiches process (N)** au niveau des onglets du Dossier, sous réserve du droit de lecture.
-- Liste : nom, Fiche technique associée, statut, date de modification, recherche/filtre, accès au brouillon ou à la version validée, indicateur d'une évolution à revoir le cas échéant.
+- Liste : nom, Fiche technique associée, statut, date de modification, recherche/filtre, accès au brouillon ou à la version validée, indicateur d'une évolution à revoir le cas échéant, action de suppression autonome uniquement selon permission et avec confirmation explicite.
 - Création : sélecteur **Fiches techniques actives sans Fiche process**, alimenté par l'API éligible ; sélectionner puis ouvrir directement un brouillon.
 - Point d'entrée depuis une Fiche technique existante selon sa situation : créer/ouvrir le process.
 - Éditeur : colonne/zone des ingrédients M-004, phases ordonnées, étapes réutilisables paramétrables, association des ingrédients à la phase et/ou à l'étape, indicateur des non-affectés, ajout de consignes et éléments propres au process.
@@ -230,7 +233,7 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 
 **Frontend RTL :** onglet et compteur selon droits, sélection d'une Fiche technique éligible, état vide, création guidée, affectation des ingrédients, phases/étapes, messages de conflit, badges, avertissement de révision, imprimabilité, accessibilité.
 
-**E2E Playwright :** création depuis le Dossier et depuis M-004 ; réutilisation de bibliothèque ; prévention d'un deuxième process ; archivage et suppression/restauration du parent ; copie inter-Dossier ; non-divulgation entre Dossiers/Workspaces ; consultation sur différents formats d'écran ; historique immuable.
+**E2E Playwright :** création depuis le Dossier et depuis M-004 ; réutilisation de bibliothèque ; prévention d'un deuxième process ; archivage et suppression/restauration du parent ; suppression définitive autonome (confirmation/refus/permission, absence de cascade vers M-004, nouvelle création) ; copie inter-Dossier ; non-divulgation entre Dossiers/Workspaces ; consultation sur différents formats d'écran ; historique immuable sauf suppression physique explicitement autorisée.
 
 **Critères d'acceptation indispensables :**
 1. impossible de créer une Fiche process sans Fiche technique ;
@@ -244,14 +247,16 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 9. purge M-004 efface aussi le process enfant sans laisser d'orphelin ;
 10. la restauration et la copie respectent les règles explicitement finalisées ;
 11. les droits et la séparation Workspace/Dossier sont assurés par le serveur ;
-12. l'impression correspond à la version réellement consultée, sans altérer le contenu officiel.
+12. l'impression correspond à la version réellement consultée, sans altérer le contenu officiel ;
+13. aucune archive autonome du process n'est possible ;
+14. supprimer définitivement un process exige autorisation + confirmation, préserve M-004 et les modèles réutilisés, efface son historique et libère l'association 1:1.
 
 **Gates avant PR d'implémentation :** tests unitaires, Supertest/intégration MongoDB, RTL, E2E critiques, puis npm run release:check. Aucun test ni gate M-006 n'est déclaré exécuté à la date de cette proposition.
 
 ## 16. Risques, inconnues et arbitrages à clore
 
 **À trancher avant tout code métier :**
-1. archivage/suppression indépendants du process quand la Fiche technique reste ACTIVE ; restauration exacte et gestion des états antérieurs ;
+1. règles de permissions et confirmation pour la **suppression autonome définitive** du process ; cas de Fiche technique archivée/en corbeille ; restauration/réactivation synchronisée et traçabilité de destruction ;
 2. création process si M-004 ne possède qu'un DRAFT ; sources des ingrédients et rattachement à une validation M-004 ;
 3. identité stable d'ingrédient entre lignes DRAFT, snapshots VALIDATED, copies et doublons de ProductVariant ;
 4. règle de copie d'un process uniquement brouillon, archivé ou utilisant des modèles locaux du Dossier source ;
@@ -293,3 +298,5 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 - Core v1.2.1 : docs/derived-saas/DERIVED-SAAS.md et EXTENSION-POINTS.md.
 
 **Rappel :** le code réel et les tests qui seront exécutés restent prioritaires sur les propositions de ce document. Les règles à confirmer ne sont pas présentées comme déjà implémentées.
+
+**Décision de suspension :** le propriétaire du produit a explicitement demandé de **finir le cadrage avant toute implémentation**. Ne pas créer de models, migrations, routes, tests métier ou interfaces M-006 tant que les arbitrages de la section 16 et le contrat final n'ont pas été validés.
