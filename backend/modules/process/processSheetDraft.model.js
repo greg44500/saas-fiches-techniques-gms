@@ -9,6 +9,7 @@ const processSheetDraftSchema = new Schema({
     sourceValidation: { type: Schema.Types.ObjectId, ref: 'TechnicalSheetValidation', required: true, immutable: true },
     revision: { type: Number, default: 0, min: 0, required: true },
     phases: { type: [Schema.Types.Mixed], default: [] },
+    unassignedReasons: { type: [Schema.Types.Mixed], default: [] },
     createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true, immutable: true },
     updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 }, { timestamps: true });

@@ -1,3 +1,4 @@
+import { updateProcessSheetDraft } from './processSheetDraft.service.js';
 import {
     createProcessSheet, getProcessSheet,
     listEligibleTechnicalSheets, listProcessSheets,
@@ -34,4 +35,14 @@ const create = async (req, res) => {
     res.status(201).json({ status: 'success', data: { process } });
 };
 
-export { create, eligible, get, list };
+const saveDraft = async (req, res) => {
+    const draft = await updateProcessSheetDraft({
+        ...scope(req),
+        processSheetId: req.validated.params.processSheetId,
+        actorId: req.user._id,
+        ...req.validated.body,
+    });
+    res.status(200).json({ status: 'success', data: { draft } });
+};
+
+export { create, eligible, get, list, saveDraft };

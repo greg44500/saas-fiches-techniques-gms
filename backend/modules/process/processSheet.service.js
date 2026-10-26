@@ -14,6 +14,7 @@ import { TechnicalSheetValidation } from '../technicalSheet/technicalSheetValida
 import { TECHNICAL_SHEET_STATUS } from '../technicalSheet/technicalSheet.registry.js';
 import { ProcessSheet } from './processSheet.model.js';
 import { ProcessSheetDraft } from './processSheetDraft.model.js';
+import { toIngredientProjection } from './processSheetIngredientProjection.js';
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -66,6 +67,19 @@ const getProcessSheet = async ({
     })).populate({ path: 'technicalSheet', select: '_id name' });
     if (!process) throw new AppError('Fiche process introuvable.', 404);
 
+    const source = await TechnicalSheetValidation.findOne(mongoose.trusted({
+        _id: process.sourceValidation,
+        workspace: workspaceId,
+        dossier: dossierId,
+        technicalSheet: process.technicalSheet._id ?? process.technicalSheet,
+    }));
+    if (!source) throw new AppError('Validation source M-004 indisponible.', 409);
+    const ingredients = toIngredientProjection({ sourceKind: 'VALIDATION', source });
+    const parent = await TechnicalSheet.findOne(mongoose.trusted({
+        _id: process.technicalSheet._id ?? process.technicalSheet,
+        workspace: workspaceId, dossier: dossierId,
+    })).select('currentValidatedState').lean();
+
     const draft = await ProcessSheetDraft.findOne(mongoose.trusted({
         processSheet: process._id, workspace: workspaceId, dossier: dossierId,
     })).lean();
@@ -75,7 +89,13 @@ const getProcessSheet = async ({
             id: draft._id.toString(),
             revision: draft.revision,
             phases: draft.phases,
+            unassignedReasons: draft.unassignedReasons ?? [],
         } : null,
+        sourceIngredients: ingredients,
+        compositionOutdated: Boolean(
+            parent?.currentValidatedState
+            && parent.currentValidatedState.toString() !== process.sourceValidation.toString()
+        ),
     };
 };
 

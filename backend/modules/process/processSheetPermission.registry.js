@@ -3,6 +3,7 @@ import { SYSTEM_ROLE_KEY } from '../../constants/role.constants.js';
 const PROCESS_SHEET_PERMISSION = Object.freeze({
     READ: 'process-sheet:read',
     CREATE: 'process-sheet:create',
+    EDIT: 'process-sheet:edit',
 });
 
 const PROCESS_SHEET_ROLE_PERMISSION_MODULE = Object.freeze({

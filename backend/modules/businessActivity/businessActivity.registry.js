@@ -32,6 +32,7 @@ const BUSINESS_ACTIVITY_ACTION_REGISTRY = Object.freeze({
         label: 'Produit réactivé dans le catalogue',
     }),
     PROCESS_SHEET_CREATED: Object.freeze({ value: 'PROCESS_SHEET_CREATED', label: 'Fiche process créée' }),
+    PROCESS_SHEET_DRAFT_SAVED: Object.freeze({ value: 'PROCESS_SHEET_DRAFT_SAVED', label: 'Brouillon de Fiche process enregistré' }),
     PROCESS_LIBRARY_CREATED: Object.freeze({ value: 'PROCESS_LIBRARY_CREATED', label: 'Modèle de fabrication créé' }),
     PROCESS_LIBRARY_REVISED: Object.freeze({ value: 'PROCESS_LIBRARY_REVISED', label: 'Modèle de fabrication révisé' }),
     PROCESS_LIBRARY_ARCHIVED: Object.freeze({ value: 'PROCESS_LIBRARY_ARCHIVED', label: 'Modèle de fabrication archivé' }),

@@ -28,6 +28,8 @@ const processCreateSchema = z.strictObject({
     technicalSheetId: objectIdSchema,
 });
 
+export { saveProcessSheetDraftSchema } from './processSheetDraft.validation.js';
+
 export {
     dossierParamsSchema,
     processParamsSchema,

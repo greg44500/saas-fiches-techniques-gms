@@ -17,10 +17,11 @@ import {
 } from '../technicalSheet/technicalSheetPermission.registry.js';
 import { PROCESS_SHEET_PERMISSION } from './processSheetPermission.registry.js';
 import { processSheetCompositionRouter } from './processSheetComposition.routes.js';
-import { create, eligible, get, list } from './processSheet.controller.js';
+import { create, eligible, get, list, saveDraft } from './processSheet.controller.js';
 import {
     dossierParamsSchema, eligibleTechnicalSheetQuerySchema,
     processCreateSchema, processListQuerySchema, processParamsSchema,
+    saveProcessSheetDraftSchema,
 } from './processSheet.validation.js';
 
 const processSheetRouter = Router({ mergeParams: true });
@@ -56,6 +57,17 @@ processSheetRouter.post('/',
     authenticate,
     validateRequest({ params: dossierParamsSchema, body: processCreateSchema }),
     ...createChain, create);
+processSheetRouter.put('/:processSheetId/draft',
+    authenticate,
+    validateRequest({
+        params: processParamsSchema, body: saveProcessSheetDraftSchema,
+    }),
+    loadWorkspaceContext,
+    authorizePermission(PROCESS_SHEET_PERMISSION.EDIT),
+    enforceWorkspaceAccessMode(),
+    loadAuthorizedDossierContext,
+    enforceTechnicalSheetDossierOperational,
+    saveDraft);
 processSheetRouter.get('/:processSheetId',
     authenticate,
     validateRequest({ params: processParamsSchema }),
