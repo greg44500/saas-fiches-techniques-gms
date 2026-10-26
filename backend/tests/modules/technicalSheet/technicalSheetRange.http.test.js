@@ -197,6 +197,19 @@ describe('M-004 Gammes — HTTP, permissions et isolation', () => {
         expect(result.body.data.ranges).not.toContainEqual(
             expect.objectContaining({ name: 'Étrangère' }),
         );
+
+        const filterOptions = await request(app).get(rangesPath() + '/options')
+            .query({ includeArchived: 'true' }).set(bearer(owner.token)).expect(200);
+        expect(filterOptions.body.data.ranges).toHaveLength(106);
+        expect(filterOptions.body.data.ranges).toContainEqual(
+            expect.objectContaining({ name: 'Gamme archivée', status: 'ARCHIVED' }),
+        );
+        expect(filterOptions.body.data.ranges).not.toContainEqual(
+            expect.objectContaining({ name: 'Étrangère' }),
+        );
+
+        await request(app).get(rangesPath() + '/options')
+            .query({ includeArchived: 'invalid' }).set(bearer(owner.token)).expect(400);
     });
 
     it('classe une Fiche sans générer de brouillon supplémentaire ni nouveau quota', async () => {

@@ -13,6 +13,7 @@ import {
     createRangeSchema,
     deleteRangeSchema,
     rangeListQuerySchema,
+    rangeOptionsQuerySchema,
     rangeParamsSchema,
     rangeRevisionSchema,
     rangeSuggestionsQuerySchema,
@@ -34,7 +35,7 @@ technicalSheetRangeRouter.get(
 technicalSheetRangeRouter.get(
     '/options',
     authenticate,
-    validateRequest({ params: workspaceRangeParamsSchema }),
+    validateRequest({ params: workspaceRangeParamsSchema, query: rangeOptionsQuerySchema }),
     loadWorkspaceContext,
     authorizePermission(TECHNICAL_SHEET_PERMISSION.READ),
     options,

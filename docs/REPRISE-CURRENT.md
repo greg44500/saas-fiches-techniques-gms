@@ -1,4 +1,22 @@
 # Reprise courante — lot transversal UI/UX (2026-10-23)
+
+## Finition UX — filtre des Gammes dans les Fiches (2026-10-26)
+
+- Dans le tableau des Fiches d'un Dossier : une seule recherche par
+  nom/description, placée à côté du filtre Gamme sur écrans assez larges ;
+  sur petit écran, les deux contrôles se superposent sans débordement.
+- Suppression du champ distinct « Chercher une gamme » et du raccourci
+  « Gérer les gammes » dans l'en-tête du Dossier. L'administration
+  reste accessible au premier niveau de navigation du Workspace.
+- Le filtre utilise le catalogue complet des Gammes actives et archivées
+  du Workspace via `/ranges/options?includeArchived=true`, sans la
+  limite de pagination du tableau de gestion. Le comportement par défaut
+  de `/ranges/options` reste actif uniquement pour les affectations
+  et les créations de Fiche.
+- Tests RTL, HTTP et Playwright adaptés. **Aucun résultat d'exécution
+  locale ni gate globale n'est encore disponible pour cette révision.**
+  Pas de PR ou de fusion sans validation.
+
 ## État courant — M-004 Gammes, 2026-10-24
 
 ### Ajustement demandé — création de Fiche et champs outlined (2026-10-24)

@@ -14,6 +14,9 @@ const rangeListQuerySchema = z.strictObject({
     status: z.enum(['ACTIVE', 'ARCHIVED']).optional(),
     search: z.string().trim().min(1).max(100).optional(),
 });
+const rangeOptionsQuerySchema = z.strictObject({
+    includeArchived: z.literal('true').optional(),
+});
 const rangeNameSchema = z.string().trim().min(1).max(100);
 const reviewedCandidateIdsSchema = z.array(objectIdSchema).max(100).optional().default([]);
 const rangeSuggestionsQuerySchema = z.strictObject({
@@ -43,6 +46,7 @@ export {
     createRangeSchema,
     deleteRangeSchema,
     rangeListQuerySchema,
+    rangeOptionsQuerySchema,
     rangeParamsSchema,
     rangeRevisionSchema,
     rangeSuggestionsQuerySchema,

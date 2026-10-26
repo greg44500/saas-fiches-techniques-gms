@@ -327,6 +327,12 @@ tableaux, menus de ligne, dialogues, champs et notifications.
 - Filtre Gamme combinable avec recherche, statut et pagination serveur.
   Les Gammes archivées encore utilisées peuvent être sélectionnées comme
   filtre ; une Gamme sans Fiche produit un état vide intelligible.
+  La recherche de Fiches et le filtre Gamme partagent une même ligne
+  sur desktop, avec empilement sur petit écran ; aucun champ supplémentaire
+  de recherche de Gamme ni bouton d'administration des Gammes dans
+  l'en-tête du Dossier. Le filtre récupère toutes les Gammes du Workspace
+  (actives et archivées), tandis que la sélection pour une nouvelle
+  affectation continue de n'exposer que les Gammes actives.
 - Action « Changer de gamme » sur les Fiches ACTIVE si l'utilisateur
   possède `technical-sheet:update`. Sélecteur de Gammes ACTIVE avec
   choix « Sans gamme ».

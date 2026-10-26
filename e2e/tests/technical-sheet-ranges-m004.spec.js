@@ -8,7 +8,8 @@ test('M-004 Gammes : un référentiel Workspace classe les Fiches du Dossier san
   await loginWithIdentity(page, context.identity);
 
   await page.goto(context.dossierATechnicalSheetsUrl);
-  await page.getByRole('button', { name: 'Gérer les gammes' }).click();
+  await expect(page.getByRole('button', { name: 'Gérer les gammes' })).toHaveCount(0);
+  await page.goto('/workspaces/' + context.workspaceId + '/technical-sheets/ranges');
   await expect(page.getByRole('heading', { name: 'Gamme de produits finis' }))
     .toBeVisible();
 
@@ -36,7 +37,7 @@ test('M-004 Gammes : un référentiel Workspace classe les Fiches du Dossier san
   await rangeDialog.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.getByRole('row', { name: /Fiche Gammes E2E/ })).toContainText('Snacking');
 
-  await page.getByRole('button', { name: 'Gérer les gammes' }).click();
+  await page.goto('/workspaces/' + context.workspaceId + '/technical-sheets/ranges');
   await page.getByRole('button', { name: 'Actions de Snacking' }).click();
   await page.getByRole('button', { name: 'Archiver' }).click();
   await expect(page.getByText('Archivée', { exact: true })).toBeVisible();

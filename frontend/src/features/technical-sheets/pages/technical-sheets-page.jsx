@@ -1,6 +1,5 @@
 import {
   Plus,
-  Tags,
   Search,
   WandSparkles,
 } from 'lucide-react';
@@ -30,7 +29,7 @@ import {
   useGetDossierTechnicalSheetSettingsQuery,
   useGetTechnicalSheetCapacityQuery,
   useGetTechnicalSheetMetadataQuery,
-  useListTechnicalSheetRangesQuery,
+  useListTechnicalSheetRangeOptionsQuery,
   useListTechnicalSheetsQuery,
   useStartTechnicalSheetDraftMutation,
 } from '@/features/technical-sheets/api/technical-sheets-api';
@@ -82,7 +81,6 @@ function TechnicalSheetsPage() {
   } = useWorkspaceContext();
   const [search, setSearch] = useState('');
   const [rangeFilter, setRangeFilter] = useState('all');
-  const [rangeSearch, setRangeSearch] = useState('');
   const [sheetToClassify, setSheetToClassify] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [optimizerPickerOpen, setOptimizerPickerOpen] = useState(false);
@@ -110,9 +108,9 @@ function TechnicalSheetsPage() {
     search: search.trim() || undefined,
     rangeId: rangeFilter === 'all' ? undefined : rangeFilter,
   });
-  const rangesQuery = useListTechnicalSheetRangesQuery({
-    workspaceId: workspace.id, page: 1, limit: 100,
-    search: rangeSearch.trim() || undefined,
+  const rangesQuery = useListTechnicalSheetRangeOptionsQuery({
+    workspaceId: workspace.id,
+    includeArchived: true,
   });
   const viewport = useTableViewport({
     dependency: listQuery.data?.sheets?.length,
@@ -462,19 +460,6 @@ function TechnicalSheetsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {can(TECHNICAL_SHEET_PERMISSION.READ) && (
-            <Button
-              onClick={() => navigate(
-                '/workspaces/' + workspace.id + '/technical-sheets/ranges'
-              )}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <Tags aria-hidden="true" className="size-4" />
-              Gérer les gammes
-            </Button>
-          )}
           {canOptimize && (
             <Button
               disabled={
@@ -541,21 +526,32 @@ function TechnicalSheetsPage() {
 
       <section className="min-h-0 overflow-hidden rounded-xl border border-border bg-card">
         <div className="border-b border-border p-4">
-          <div className="flex flex-wrap gap-2">
-            <div className="min-w-48 max-w-xl flex-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:max-w-xl sm:flex-1">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground"
+              />
               <Input
-                aria-label="Rechercher une gamme pour le filtre"
-                onChange={(event) => setRangeSearch(event.target.value)}
-                placeholder="Chercher une gamme…"
-                value={rangeSearch}
+                aria-label="Rechercher une Fiche technique"
+                className="pl-9"
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                  viewport.resetScroll();
+                }}
+                placeholder="Rechercher par nom ou description…"
+                value={search}
               />
             </div>
             <Select
+              disabled={rangesQuery.isLoading || rangesQuery.isError}
               items={[
                 { value: 'all', label: 'Toutes les gammes' },
                 { value: 'unassigned', label: 'Sans gamme' },
-                ...(rangesQuery.data?.ranges ?? []).map((range) => ({
-                  value: range.id, label: range.name,
+                ...(rangesQuery.data ?? []).map((range) => ({
+                  value: range.id,
+                  label: range.name + (range.status === 'ARCHIVED' ? ' (archivée)' : ''),
                 })),
               ]}
               onValueChange={(next) => {
@@ -565,13 +561,16 @@ function TechnicalSheetsPage() {
               }}
               value={rangeFilter}
             >
-              <SelectTrigger aria-label="Filtrer les Fiches par gamme" className="min-w-48">
+              <SelectTrigger
+                aria-label="Filtrer les Fiches par gamme"
+                className="w-full sm:w-64"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les gammes</SelectItem>
                 <SelectItem value="unassigned">Sans gamme</SelectItem>
-                {(rangesQuery.data?.ranges ?? []).map((range) => (
+                {(rangesQuery.data ?? []).map((range) => (
                   <SelectItem key={range.id} value={range.id}>
                     {range.name}{range.status === 'ARCHIVED' ? ' (archivée)' : ''}
                   </SelectItem>
@@ -580,29 +579,10 @@ function TechnicalSheetsPage() {
             </Select>
           </div>
           {rangesQuery.isError && (
-            <p role="alert" className="text-sm text-destructive">
+            <p role="alert" className="mt-2 text-sm text-destructive">
               Impossible de charger le filtre des Gammes.
             </p>
           )}
-          <div className="relative max-w-xl">
-            <Search
-              aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground"
-            />
-            <Input
-              aria-label="Rechercher une Fiche technique"
-              className="pl-9"
-              onChange={(event) => {
-                setSearch(
-                  event.target.value,
-                );
-                setPage(1);
-                viewport.resetScroll();
-              }}
-              placeholder="Rechercher par nom ou description…"
-              value={search}
-            />
-          </div>
         </div>
 
         <div
@@ -621,8 +601,8 @@ function TechnicalSheetsPage() {
               <EmptyState
                 className="p-0"
                 description={
-                  search.trim()
-                    ? 'Aucune Fiche ne correspond à cette recherche.'
+                  search.trim() || rangeFilter !== 'all'
+                    ? 'Aucune Fiche ne correspond aux filtres sélectionnés.'
                     : 'Créez la première Fiche technique de ce Dossier.'
                 }
                 title="Aucune Fiche technique"

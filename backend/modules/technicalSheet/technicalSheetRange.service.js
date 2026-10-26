@@ -71,13 +71,17 @@ const listRanges = async ({ workspaceId, page = 1, limit = 50, status, search })
     };
 };
 
-const listActiveRangeOptions = async ({ workspaceId }) => {
-    const ranges = await TechnicalSheetRange.find(
-        mongoose.trusted({ workspace: workspaceId, status: 'ACTIVE' }),
-    ).select('_id name').sort({ name: 1, _id: 1 }).lean();
+const listRangeOptions = async ({ workspaceId, includeArchived = false }) => {
+    const filter = mongoose.trusted({
+        workspace: workspaceId,
+        ...(!includeArchived ? { status: 'ACTIVE' } : {}),
+    });
+    const ranges = await TechnicalSheetRange.find(filter)
+        .select('_id name status').sort({ name: 1, _id: 1 }).lean();
     return ranges.map((range) => ({
         id: range._id.toString(),
         name: range.name,
+        status: range.status,
     }));
 };
 
@@ -231,7 +235,7 @@ export {
     createRange,
     deleteRange,
     listRanges,
-    listActiveRangeOptions,
+    listRangeOptions,
     lockActiveRangeForAssignment,
     normalizeRangeName,
     reactivateRange,

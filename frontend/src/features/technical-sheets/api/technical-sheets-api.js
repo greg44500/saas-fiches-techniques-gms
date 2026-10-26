@@ -73,8 +73,9 @@ const technicalSheetsApi = technicalSheetsApiBase.injectEndpoints({
     }),
 
     listTechnicalSheetRangeOptions: builder.query({
-      query: ({ workspaceId }) => ({
+      query: ({ workspaceId, includeArchived = false }) => ({
         url: '/workspaces/' + workspaceId + '/technical-sheets/ranges/options',
+        params: includeArchived ? { includeArchived: 'true' } : undefined,
       }),
       transformResponse: (response) => response.data.ranges,
       providesTags: (_result, _error, { workspaceId }) => [
