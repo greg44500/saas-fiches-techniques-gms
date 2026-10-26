@@ -159,21 +159,23 @@ const createProcessSheet = async ({
             }, { session, returnDocument: 'after', timestamps: false });
             if (!sheet) throw creationConflict();
 
-            const [draft, existingProcess, validation] = await Promise.all([
-                TechnicalSheetDraft.exists(mongoose.trusted({
-                    technicalSheet: sheet._id, workspace: workspaceId, dossier: dossierId,
-                })).session(session),
-                ProcessSheet.exists(mongoose.trusted({
-                    technicalSheet: sheet._id, workspace: workspaceId, dossier: dossierId,
-                })).session(session),
-                TechnicalSheetValidation.findOne(mongoose.trusted({
-                    _id: sheet.currentValidatedState,
-                    technicalSheet: sheet._id,
-                    workspace: workspaceId,
-                    dossier: dossierId,
-                })).select('_id').session(session),
-            ]);
-            if (draft || existingProcess || !validation) throw creationConflict();
+            // Queries inside the same MongoDB transaction are sequential:
+            // Promise.all() with a shared session is unsupported by Mongoose.
+            const draft = await TechnicalSheetDraft.exists(mongoose.trusted({
+                technicalSheet: sheet._id, workspace: workspaceId, dossier: dossierId,
+            })).session(session);
+            if (draft) throw creationConflict();
+            const existingProcess = await ProcessSheet.exists(mongoose.trusted({
+                technicalSheet: sheet._id, workspace: workspaceId, dossier: dossierId,
+            })).session(session);
+            if (existingProcess) throw creationConflict();
+            const validation = await TechnicalSheetValidation.findOne(mongoose.trusted({
+                _id: sheet.currentValidatedState,
+                technicalSheet: sheet._id,
+                workspace: workspaceId,
+                dossier: dossierId,
+            })).select('_id').session(session);
+            if (!validation) throw creationConflict();
 
             const [process] = await ProcessSheet.create([{
                 workspace: workspaceId, dossier: dossierId,
