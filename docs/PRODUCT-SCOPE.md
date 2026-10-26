@@ -1707,7 +1707,7 @@ L'édition est privilégiée sur ordinateur, la consultation sur tablette/télé
 
 **Hors M-006 V1 :** illustrations et photographies des étapes (cadrage reporté), galerie/stockage photo, infographie, assistant IA, journal de contrôles exécutés en production, qualification automatique de conformité HACCP, partage inter-Workspace et exports documentaires avancés.
 
-**Statut :** recommandations fonctionnelles 21–35 approuvées, **contrat final et développement non encore autorisés**. Référence de cadrage : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`. Les choix de représentation des ingrédients, de durée, de permissions techniques, d'API et de transitions transactionnelles restent à formaliser avant code.
+**Statut :** contrat fonctionnel final M-006 **validé** et implémentation **autorisée** le 2026-10-26. Premier lot backend « bibliothèques de fabrication » engagé ; la majeure partie du module reste à livrer et tester. Référence : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`. Les détails de représentation des ingrédients, de durée, d'API et de transactions parent/enfant restent à concevoir pour les lots suivants.
 
 ---
 
