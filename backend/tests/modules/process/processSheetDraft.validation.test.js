@@ -52,12 +52,19 @@ describe('M-006 — contrat fermé de sauvegarde des phases et étapes', () => {
         ).success).toBe(false);
     });
     it('accepte la même ligne M-004 dans une phase et plusieurs étapes, sans fusionner les occurrences', () => {
-        expect(saveProcessSheetDraftSchema.safeParse(draft({
-            phases: [phase({
-                ingredientLineKeys: ['line:a'],
-                steps: [step(), step({ id: id('step2') })],
-            })],
-        })).toMatchObject({ success: true });
+        const candidate = draft({
+            phases: [
+                phase({
+                    ingredientLineKeys: ['line:a'],
+                    steps: [
+                        step(),
+                        step({ id: id('step2') }),
+                    ],
+                }),
+            ],
+        });
+        const result = saveProcessSheetDraftSchema.safeParse(candidate);
+        expect(result.success).toBe(true);
     });
     it('exige une révision optimiste entière et un motif non vide', () => {
         expect(saveProcessSheetDraftSchema.safeParse(draft({
