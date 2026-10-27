@@ -1,5 +1,14 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Reprise M-006 — incident RTL et audit intégral (2026-10-27)
+
+Le log utilisateur montre 48/48 tests backend process réussis et 42/43 tests frontend process réussis **avant** le correctif ; échec sur `Édition : oui` dans le test de la page de détail. Cause confirmée : fixture de process sans `status` alors que l'API réelle le renvoie (`ACTIVE` en situation nominale). Un audit de chaîne a aussi identifié l'écart entre le contrôle frontend du seul statut process et le contrôle backend du Dossier ACTIVE. Correctif complet sur `feature/m006-fiches-process` : booléen `dossierOperational` sur le GET détail calculé depuis `req.dossier` déjà autorisé ; gating de l'éditeur par permission EDIT + process ACTIVE + `dossierOperational === true` ; cas brouillon nul explicitement refusé ; tests de page, test d'intégration page + éditeur réel, Supertest GET/PUT couvrant les rôles contributeurs sans `dossier:read`, Dossier PAUSED, archivage, révision et refus d'écriture. Option Mongoose obsolète `new: true` remplacée sur le PUT draft M-006.
+
+**Gates post-correctif : non exécutées et statut inconnu.** Vérification statique du code et de la cohérence des points de contrôle effectuée, sans prétention de test automatisé vert. Demander exécution locale des tests M-006 backend + frontend, lint, build et release:check avant QA visuelle ou PR. Aucun changement de Core, permission, modèle métier ou migration. La modification de contrat GET est additive ; le backend reste autoritatif pour le PUT.
+
+---
+
+
 ## Reprise du 2026-10-27 — refonte UX du phasage M-006
 
 Développement commencé et commité sur `feature/m006-fiches-process` après validation du cas d'usage dominant : assemblages courts, plusieurs petites phases de une ou deux étapes. L'éditeur a été transformé en cartes de phases repliables et étapes compactes, détails contextuels, affectation d'ingrédients à la demande et revue différée des ingrédients non affectés. Un aperçu chronologique de lecture est disponible sans perdre les modifications locales. Les composants ont été séparés en édition métier, orchestration/sauvegarde et aperçu.
