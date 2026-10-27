@@ -652,6 +652,31 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     expect(mocks.save).not.toHaveBeenCalled();
   });
 
+  it('valide explicitement via la révision process sans enregistrer automatiquement', async () => {
+    const user = userEvent.setup();
+    view({ canValidate: true, processRevision: 0 });
+    const button = screen.getByRole('button', { name: 'Valider la Fiche process' });
+    expect(button).toBeEnabled();
+    mocks.validate.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({
+      id: 'process-1', editorialState: 'VALIDATED',
+    }) });
+    mocks.reload.mockResolvedValue({ data: { draft: props.initialDraft } });
+    await user.click(button);
+    expect(mocks.validate).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1', dossierId: 'dossier-1',
+      processSheetId: 'process-1', expectedRevision: 0,
+    });
+    expect(mocks.save).not.toHaveBeenCalled();
+    expect(mocks.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('bloque la validation en présence de changements locaux ou de M-004 décalée', async () => {
+    const user = userEvent.setup();
+    view({ canValidate: true, processRevision: 0, compositionOutdated: true });
+    expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toBeDisabled();
+    expect(mocks.validate).not.toHaveBeenCalled();
+  });
+
   it('signale les identifiants historiques sans association automatique', async () => {
     const user = userEvent.setup();
     view({ sourceIngredients: { ...ingredients, hasLegacyLineIdentity: true } });
