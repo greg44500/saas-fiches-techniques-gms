@@ -2,7 +2,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
 import { ErrorState } from '@/components/shared/error-state';
-import { useGetDossierByIdQuery } from '@/features/dossiers/api/dossiers-api';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,7 +21,6 @@ function ProcessSheetWorkspacePage() {
   const detail = useGetProcessSheetQuery({
     workspaceId: workspace.id, dossierId, processSheetId,
   });
-  const dossier = useGetDossierByIdQuery({ workspaceId: workspace.id, dossierId });
   const backPath = '/workspaces/' + workspace.id
     + '/dossiers/' + dossierId + '/process-sheets';
 
@@ -39,13 +37,11 @@ function ProcessSheetWorkspacePage() {
     );
   }
 
-  const { process, draft, sourceIngredients, compositionOutdated } = detail.data;
-  // Match the backend PUT prerequisites: edit permission, active process and
-  // active Dossier. Unknown/failed Dossier state must never imply ACTIVE.
+  const { process, draft, sourceIngredients, compositionOutdated, dossierOperational } = detail.data;
+  // GET shares the already-authorized Dossier operational state from the
+  // backend, so edit roles do not require a second dossier:read permission.
   const canEdit = Boolean(can?.(PROCESS_SHEET_PERMISSION.EDIT))
-    && process?.status === 'ACTIVE'
-    && !dossier.isLoading && !dossier.isFetching && !dossier.isError
-    && dossier.data?.status === 'ACTIVE';
+    && process?.status === 'ACTIVE' && dossierOperational === true;
 
   if (!process || !draft) {
     return (
