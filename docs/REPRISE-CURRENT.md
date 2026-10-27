@@ -1,5 +1,21 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## QA visuelle — corrections de modales et liste M-006 (2026-10-27)
+
+Suite aux captures du propriétaire, un lot de présentation a été appliqué sur `feature/m006-fiches-process` :
+
+- Dans les deux modales d'options des étapes, la description auparavant visible est remplacée par le `InfoTooltip` placé après le titre. Une `DialogDescription` `sr-only` conserve la description accessible. Aucun changement sur la validation locale et la sauvegarde explicite.
+- Dans la création M-006, seul le `(i)` du titre demeure ; les deux `ProductVariantField` conservent leurs labels Outlined mais sans `helpContent` ni `helpLabel`. Si la liste des Fiches techniques éligibles est chargée et vide, le message exact « Aucune fiche technique éligible » apparaît en `text-destructive`. Le contrôle d'éligibilité serveur et la pagination demeurent inchangés.
+- Dans la liste, la colonne technique « Statut » est masquée, sans modifier `ProcessSheet.status` ni les cascades M-004. La colonne « État » conserve Brouillon/Validée (le backend ne délivre actuellement pas de validation M-006). Un bouton `…` ouvre un Popover/Base UI avec actions iconographiques : Ouvrir (navigation effective) et Prévisualiser (GET réel, aperçu non modifiant du **brouillon enregistré**). L'entrée Supprimer est présentée en rouge **mais désactivée et explicitement indisponible** : elle ne doit pas être considérée fonctionnelle avant une implémentation backend réelle.
+- Les labels courts de durées « Repos (min) » et « Cuisson (min) » évitent la troncature visuelle de la capture ; leurs noms accessibles conservent « Repos / attente (min) » et « Cuisson / traitement (min) ».
+- Les tests RTL de modale de création, édition d'étape et liste ont été adaptés aux changements, notamment lecture serveur du preview, absence de colonne statut, absence de (i) dans les deux champs, présence des (i) des modales, affichage du message vide et action Supprimer désactivée.
+
+**Distinction avec les lots métier NON livrés :** la validation officielle M-006, ses versions immuables, son historique et la suppression physique autonome sont inscrits au contrat fonctionnel `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md` mais aucun endpoint `POST .../:id/validate` ni `DELETE .../:id` n'existe dans `backend/modules/process/processSheet.routes.js`. Ne pas simuler ces commandes dans React, ni changer le statut technique miroir de M-004 pour simuler une validation. Une implémentation réelle impose cadrage de la concurrence `expectedRevision`, cohérence M-004, modèle de versions officielles, permissions dédiées, audit, transactions et effets de purge sur les brouillons/validations/usages sans altérer la Fiche technique ni la bibliothèque. Avant suppression, préserver la règle parent M-004 ACTIVE et vérifier ses transitions concurrentes, plus le relâchement de l'index d'unicité.
+
+**État des preuves :** dernier log utilisateur disponible sur le lot précédent : 31 tests réussis sur 32 avec une erreur de syntaxe de requête Testing Library, corrigée depuis ; aucun nouveau log local de ce lot n'a été reçu. Aucun test, lint, build, Supertest, gate `release:check` ni QA mobile/clair/sombre exécutés depuis GitHub. Après récupération, lancer les tests de `process-sheet-create-dialog.test.jsx`, `process-sheet-draft-editor.test.jsx`, `process-sheets-page.test.jsx`, puis la suite M-006, lint, build et gates applicables. Pas de PR ou de merge sans preuves et validation.
+
+---
+
 ## Correctif RTL — sélecteur dans le groupe Qualité (2026-10-27)
 
 **Log utilisateur Vitest 4.1.11 :** `process-sheet-draft-editor.test.jsx` : 31 tests réussis sur 32. L'unique échec est une erreur JavaScript dans le test « bloque les lignes facultatives incomplètes avant de les placer dans le brouillon » : `within(dialog).getByRole('group', { name: 'Qualité' }).getByRole(...)`. `getByRole` retourne un élément DOM, qui ne possède pas cette méthode. Correctif limité au test : stocker le groupe puis appeler `within(quality).getByRole('button', { name: 'Ajouter un contrôle' })`. Aucun code métier, Core, schéma ou migration modifié. **Exécution après correction non encore communiquée** ; relancer le fichier de 32 tests et les gates applicables avant de conclure.
