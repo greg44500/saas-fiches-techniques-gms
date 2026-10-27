@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import {
   ProcessSheetCreateDialog,
 } from '@/features/process-sheets/components/process-sheet-create-dialog';
+import { ProcessSheetRowActions } from '@/features/process-sheets/components/process-sheet-row-actions';
 import { useListProcessSheetsQuery } from '@/features/process-sheets/api/process-sheets-api';
 import {
   PROCESS_SHEET_PERMISSION,
@@ -65,11 +66,6 @@ function ProcessSheetsPage() {
       cell: (process) => process.editorialState === 'VALIDATED' ? 'Validée' : 'Brouillon',
     },
     {
-      id: 'status',
-      header: 'Statut',
-      cell: (process) => process.status === 'ARCHIVED' ? 'Archivée' : 'Active',
-    },
-    {
       id: 'updatedAt',
       header: 'Dernière modification',
       cell: (process) => new Date(process.updatedAt).toLocaleString('fr-FR'),
@@ -78,18 +74,15 @@ function ProcessSheetsPage() {
       id: 'actions',
       header: 'Actions',
       cell: (process) => (
-        <Button
-          aria-label={'Ouvrir la Fiche process ' + process.title}
-          onClick={() => navigate(
+        <ProcessSheetRowActions
+          dossierId={dossierId}
+          onOpen={() => navigate(
             '/workspaces/' + workspace.id + '/dossiers/' + dossierId
               + '/process-sheets/' + process.id,
           )}
-          size="sm"
-          type="button"
-          variant="outline"
-        >
-          Ouvrir
-        </Button>
+          process={process}
+          workspaceId={workspace.id}
+        />
       ),
     },
   ];
