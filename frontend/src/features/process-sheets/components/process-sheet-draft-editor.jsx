@@ -8,7 +8,7 @@ import {
   DialogOverlay, DialogPortal, DialogRoot, DialogTitle,
 } from '@/components/ui/dialog';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { useSaveProcessSheetDraftMutation } from '@/features/process-sheets/api/process-sheets-api';
+import { useSaveProcessSheetDraftMutation, useValidateProcessSheetMutation } from '@/features/process-sheets/api/process-sheets-api';
 import { ProcessIngredientRail } from '@/features/process-sheets/components/process-ingredient-rail';
 import { ProcessSheetPhaseEditor } from '@/features/process-sheets/components/process-sheet-phase-editor';
 import { ProcessSheetPhaseTree } from '@/features/process-sheets/components/process-sheet-phase-tree';
@@ -53,7 +53,8 @@ const MOBILE_VIEWS = [
 ];
 
 function ProcessSheetDraftEditor({
-  initialDraft, sourceIngredients, canEdit, canReadPhaseLibrary = false,
+  initialDraft, sourceIngredients, canEdit, canValidate = false,
+  editorialState = 'DRAFT', compositionOutdated = false, canReadPhaseLibrary = false,
   dossierId, processSheetId, workspaceId,
   onReload,
 }) {
@@ -71,6 +72,8 @@ function ProcessSheetDraftEditor({
   const [danger, setDanger] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [saveDraft, saving] = useSaveProcessSheetDraftMutation();
+  const [validateSheet, validating] = useValidateProcessSheetMutation();
+  const [validationError, setValidationError] = useState('');
   const editable = canEdit && !saving.isLoading;
 
   // A background RTK Query refetch must never erase local unsaved work.
@@ -99,6 +102,7 @@ function ProcessSheetDraftEditor({
     if (!editable) return;
     setForm((current) => typeof updater === 'function' ? updater(current) : updater);
     setDirty(true);
+    setValidationError('');
     if (!conflict) {
       setMessage('');
       setSaveError(false);
@@ -213,7 +217,8 @@ function ProcessSheetDraftEditor({
       setDirty(false);
       setConflict(false);
       setSaveError(false);
-      setMessage('Brouillon enregistré.');
+      setMessage('');
+      setValidationError('');
     } catch (error) {
       const isConflict = error?.status === 409;
       setConflict(isConflict);
@@ -221,6 +226,20 @@ function ProcessSheetDraftEditor({
       setMessage(isConflict
         ? 'Une autre modification ou un changement de statut empêche la sauvegarde. Le brouillon local reste affiché.'
         : error?.data?.message ?? 'Échec de sauvegarde. Votre travail reste affiché.');
+    }
+  };
+  const validate = async () => {
+    if (!canValidate || dirty || conflict || saving.isLoading || validating.isLoading
+      || editorialState === 'VALIDATED' || compositionOutdated) return;
+    setValidationError('');
+    try {
+      await validateSheet({
+        workspaceId, dossierId, processSheetId,
+        expectedRevision: initialDraft?.processRevision ?? revision,
+      }).unwrap();
+      await onReload();
+    } catch (error) {
+      setValidationError(error?.data?.message ?? 'Impossible de valider la Fiche process.');
     }
   };
   const reload = async () => {
@@ -237,6 +256,7 @@ function ProcessSheetDraftEditor({
       setConflict(false);
       setSaveError(false);
       setMessage('');
+      setValidationError('');
       setActivePhaseId(fresh.data.draft.phases?.[0]?.id ?? null);
       setActiveStepId(fresh.data.draft.phases?.[0]?.steps?.[0]?.id ?? null);
       setExpandedPhaseIds(fresh.data.draft.phases?.[0]?.id ? [fresh.data.draft.phases[0].id] : []);
@@ -312,6 +332,13 @@ function ProcessSheetDraftEditor({
             size="sm" type="button" variant="outline">
             {showPreview ? 'Revenir à l’édition' : 'Aperçu du process'}
           </Button>
+          {canValidate && (
+            <Button disabled={dirty || saving.isLoading || validating.isLoading || conflict
+              || editorialState === 'VALIDATED' || compositionOutdated}
+              onClick={validate} size="sm" type="button" variant="outline">
+              {validating.isLoading ? 'Validation…' : 'Valider la Fiche process'}
+            </Button>
+          )}
           {canEdit && (
             <Button disabled={!dirty || saving.isLoading || conflict}
               onClick={save} size="sm" type="button">
@@ -326,12 +353,12 @@ function ProcessSheetDraftEditor({
           Consultation uniquement : droits d’édition ou Dossier actif requis.
         </p>
       )}
-      {message && (
-        <p className={'text-sm ' + (saveError ? 'text-destructive' : 'text-success')}
-          role={saveError ? 'alert' : 'status'}>
-          {message}
-        </p>
+      {message && saveError && (
+        <p className="text-sm text-destructive" role="alert">{message}</p>
       )}
+      {validationError && <p className="text-sm text-destructive" role="alert">
+        {validationError}
+      </p>}
       {conflict && (
         <Button onClick={() => setDanger({ kind: 'reload' })} type="button" variant="outline">
           Recharger le brouillon
