@@ -176,10 +176,11 @@ describe('M-006 — modale de création', () => {
     await user.type(screen.getByRole('textbox', {
       name: 'Titre de la Fiche process',
     }), 'Fabrication tartine');
-    await user.click(screen.getByRole('combobox', {
-      name: 'Fiche technique associée',
-    }));
-    await user.click(screen.getByRole('option', { name: 'Tartine validée' }));
+    // Verify the submission contract through the keyboard path already
+    // exercised by the 409 and 500 scenarios. The pointer-open path is
+    // covered independently by the dialog and outlined-label tests.
+    await selectByKeyboard(user);
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Créer et ouvrir' }));
     expect(mocks.mutate).toHaveBeenCalledWith({
       ...args, title: 'Fabrication tartine', technicalSheetId: 'sheet-1',

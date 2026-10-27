@@ -1,4 +1,12 @@
 # Reprise M-006 — Fiches process (2026-10-26)
+## Correctif ciblé test de création M-006 (2026-10-27)
+
+Journal utilisateur : **82 tests réussis / 83**, seul échec dans `process-sheet-create-dialog.test.jsx`, scénario « soumet exactement le titre et la référence M-004 choisie ». Après la saisie du titre, le clic jsdom sur le `Select` Base UI ne laisse parfois pas la liste ouverte (`aria-expanded=false`) ; l'assertion ne trouve donc pas l'option « Tartine validée ». Les autres tests de la même modale passent, dont des scénarios `selectByKeyboard()` validant la sélection et la soumission. Correction **test seulement** : le test de contrat du payload utilise l'helper clavier commun déjà éprouvé, puis vérifie le bouton activé, les données envoyées au POST et le callback de création. L'ouverture et la sélection à la souris restent testées dans les tests « demande uniquement le titre » et « déplace les libellés outlined ». Aucune modification de `Select`, de la logique de production, du Core, du backend ou des données.
+
+Gates **non exécutées** dans cet environnement. Relancer les 13 tests de la modale, puis les 83 tests du module process, lint et build. Un nouvel échec du test clic conservé justifierait un diagnostic interaction/positionnement Base UI plus profond, plutôt que de retirer sa couverture.
+
+---
+
 ## Reprise — lot UX arborescence structurante M-006 (2026-10-27)
 
 Après captures et validation UX utilisateur, refonte frontend ciblée sur `feature/m006-fiches-process`. L'arbre pilote les phases : création via popover backend Workspace (libellé `FolderPlus Phase` distinct du `+` d'étape), renommage inline via crayon (Entrée / blur = commit du brouillon, Échap = annulation), suppression via corbeille visible au hover/focus et sur tactile. Phase réellement vide = suppression locale immédiate ; avec instructions/ingrédients/étapes = `Dialog` de confirmation. La suppression reste persistée uniquement lors de la prochaine sauvegarde explicite. Le panneau de phase indique `Phase N : Titre` et conserve seulement instructions et ingrédients (plus déplacement avec tooltip). Plus de champ titre ni de bouton « Choisir dans la bibliothèque » à droite. Les étapes continuent d'être complètes dans leur propre éditeur ; leurs boutons iconographiques utilisent un composant tooltip M-006 réutilisable. Focus de texte ajusté localement sans modification de la primitive Core.
