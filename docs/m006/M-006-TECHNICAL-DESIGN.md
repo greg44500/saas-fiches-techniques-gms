@@ -1,5 +1,24 @@
 # M-006 — Conception technique et séquencement de l'implémentation
 
+## Lot UX — Atelier de fabrication sans glassy (2026-10-27)
+
+**Décision produit :** remplacer la disposition en cartes imbriquées par une interface Desktop à deux surfaces fonctionnelles, **sans effet glassy, backdrop blur, palette spécifique ni thème dans le thème**. Conserver exclusivement les tokens, modes clair/sombre, contrôles shadcn/ui et Tailwind existants. La bibliothèque de modèles (noms de phase/étape) et les parcours de publication sont hors de ce lot.
+
+**Structure livrée sur `feature/m006-fiches-process` :**
+- À gauche, un rail `ProcessIngredientRail` visible durant l'édition : lignes M-004 non affectées, justifications facultativement ouvertes, lignes déjà affectées, et nombre réel d'associations. Une ligne peut toujours être affectée à plusieurs phases/étapes ; les occurrences répétées restent distinguées par leur `lineKey` et leur position de source. Aucun déplacement/consommation automatique.
+- À droite, navigation horizontale compacte des phases (boutons sélectionnés), liste d'étapes en lignes simples et **un seul éditeur contextuel de l'étape active**. Les champs de phase et leur association directe sont toujours accessibles via le volet secondaire, sans perdre les instructions.
+- Deux surfaces bordées seulement, sans cartes successives pour chaque niveau. Sur Desktop, la zone est limitée à une hauteur relative au viewport et chacun des panneaux dispose de son propre défilement si le contenu déborde. Sur petits écrans, l'ordre est vertical pour rester accessible : aucune promesse d'absence absolue de scrolling quand la hauteur est insuffisante.
+- `ProcessSheetDisclosure` anime l'ouverture/fermeture des propriétés facultatives via une transition CSS de grille et opacité sur environ 200 ms. Contenu conservé dans le DOM mais rendu `inert` et `aria-hidden` lorsqu'il est fermé. L'arrivée du panneau phase/étape sélectionné utilise une animation discrète d'environ 190 ms et respecte `prefers-reduced-motion`. Le sélecteur d'ingrédients adopte aussi une transition fluide.
+- L'orchestrateur conserve `expectedRevision`, la sauvegarde explicite, le 409 bloquant sans écrasement du brouillon, le mode lecture, les commandes de réordonnancement/suppression, l'aperçu chronologique et les identifiants des objets. Pas d'API, de migration, de schéma Mongoose, de modèle de bibliothèque ou d'invariant métier modifié.
+- Les titres « Nouvelle phase » et « Nouvelle étape » restent des valeurs initiales **librement modifiables**. L'insertion depuis les bibliothèques locales/Workspace demeure un lot distinct validé fonctionnellement mais non intégré à cet éditeur.
+
+**Recette à exécuter :** la suite RTL M-006 de l'éditeur a été adaptée aux nouveaux repères (sidebar, navigation, éditeur unique, rôles/aria), avec scénarios de duplication des lignes M-004, affectations non exclusives, réordonnancement, suppression et repli, préservation de tous les champs M-006, lecture seule, aperçu et 409. Le test d'intégration de page vérifie désormais la visibilité du rail et sa réaction à l'affectation avant POST.
+
+**État de preuve :** commits GitHub présents et code inspecté statiquement ; **aucune exécution locale post-refonte de Vitest, ESLint, Vite build, Playwright ou `release:check` n'a été réalisée dans cette intervention**. Ces gates doivent être exécutées sur un environnement Node 24.x + MongoDB approprié avant PR/merge et avant de déclarer le lot stable. La QA visuelle doit confirmer les transitions, le contraste clair/sombre, les hauteurs Desktop, le clavier, l'ordre de navigation et les cas de fortes listes d'ingrédients.
+
+---
+
+
 ## Stabilisation de la modale de création M-006 — conflit 409 et sélecteur (2026-10-27)
 
 **Incident observé en test local AVANT ce correctif :** Vitest frontend M-006 affiche 8 suites, 55 tests : **54 réussis, 1 en échec** (`process-sheet-create-dialog.test.jsx` : scénario « refuse la création sur un conflit serveur et maintient le formulaire »). Au moment de l'échec, l'option « Tartine validée » n'est pas présente et le Select Base UI a `aria-expanded="false"`. La requête de création n'a donc pas encore été soumise ; ce log ne démontre pas un échec de la gestion HTTP 409.
