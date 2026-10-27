@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -54,8 +55,8 @@ function StringListFields({ idPrefix, title, placeholder, items, maxLength, disa
           {!disabled && (
             <Button aria-label={'Supprimer ' + title + ' ' + (index + 1)}
               onClick={() => onChange(items.filter((_, i) => i !== index))}
-              size="sm" type="button" variant="ghost">
-              Supprimer
+              size="icon" type="button" variant="ghost">
+              <Trash2 aria-hidden="true" className="size-4" />
             </Button>
           )}
         </div>
@@ -245,7 +246,7 @@ function ProcessStepDetails({ step, disabled, onChange }) {
                 <div className="min-h-0 flex-1 space-y-5 overflow-y-auto py-3 pr-1">
                   {kind === 'times' ? (
                     <>
-                      <div className="grid gap-3 sm:grid-cols-3">
+                      <div className="grid max-w-[30rem] gap-3 sm:grid-cols-3">
                         {DURATION_FIELDS.map(({ key, label, placeholder }) => (
                           <OutlinedDetailInput
                             disabled={disabled} id={'step-' + step.id + '-' + key}
@@ -257,7 +258,7 @@ function ProcessStepDetails({ step, disabled, onChange }) {
                         ))}
                       </div>
                       <OutlinedDetailInput
-                        className="max-w-44" disabled={disabled}
+                        className="max-w-40" disabled={disabled}
                         id={'step-' + step.id + '-temperature'}
                         label="Température (°C)" max={350} min={-100}
                         onChange={(value) => change('temperatureCelsius', value)}
