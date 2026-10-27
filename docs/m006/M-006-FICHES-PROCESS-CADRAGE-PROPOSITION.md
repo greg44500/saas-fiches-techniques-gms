@@ -1,7 +1,7 @@
 # M-006 — Fiches process — Proposition de contrat fonctionnel
 
 **Statut : CONTRAT FONCTIONNEL M-006 VALIDÉ — IMPLÉMENTATION AUTORISÉE LE 2026-10-26, LIVRAISON PARTIELLE EN COURS**  
-**Date : 2026-10-26**  
+**Date : 2026-10-26 — cycle de validation rectifié le 2026-10-27**  
 **Branche de travail :** feature/m006-fiches-process  
 **Dépôt :** greg44500/saas-fiches-techniques-gms  
 **Base contrôlée au démarrage :** main@190962a68086b151b50b82d05cf133f915c5c0ea, branche identique lors du contrôle préalable  
@@ -10,6 +10,18 @@
 > **Discipline :** ce document consolide les décisions exprimées par le propriétaire du produit, y compris l'approbation des recommandations 21 à 35 du 2026-10-26. Les détails de conception explicitement mentionnés restent à résoudre avant implémentation. Il ne remplace pas M-004 et n'autorise aucun modèle Mongoose, endpoint ou écran métier avant validation du contrat final.
 >
 > Terminologie : « fiche process » est un document de fabrication lié à une Fiche technique M-004 ; « bibliothèque » est le référentiel de phases et d'étapes réutilisables.
+
+### Rectification de cycle M-006 — décision du propriétaire du 2026-10-27 (prioritaire)
+
+Cette décision **remplace** les anciennes mentions de « versions officielles immuables », d'« historique des versions validées » et de « brouillon de révision d'une version officielle » de la **Fiche process**, uniquement. Elle ne modifie **ni** le versionnement officiel des Fiches techniques M-004, **ni** les révisions/snapshots des modèles de bibliothèques de fabrication.
+
+- **Une seule Fiche process courante par Fiche technique M-004**, avec identité persistante et propriété Workspace/Dossier inchangées, indépendamment de son état éditorial.
+- **États éditoriaux M-006 :** `Brouillon` et `Validée`. La création démarre en Brouillon ; une validation explicite, autorisée et contrôlée côté serveur rend le **contenu courant** Validé.
+- Une Fiche process validée est **modifiable à volonté**. Les changements locaux non enregistrés n'affectent pas l'état serveur ; **une modification réelle du contenu enregistrée côté serveur** invalide la validation et repasse la **même** Fiche process en Brouillon. Une sauvegarde sans différence métier n'invalide pas la validation. La revalidation explicite est nécessaire après les modifications enregistrées.
+- **Aucun historique des anciennes versions de Fiches process** et aucune collection de snapshots officiels M-006 à créer. Seul le contenu métier courant est conservé. Les compteurs de révision purement techniques (`expectedRevision`, concurrence) et l'audit minimal des événements sont distincts d'un historique de versions métier : ils n'ont pas à archiver les contenus successifs.
+- Il n'existe **aucune** action d'archivage autonome M-006. La suppression physique autonome après confirmation et contrôle serveur conserve M-004 et libère l'unicité, selon les règles déjà approuvées.
+
+**À résoudre dans le lot technique avant implémentation** : mode de représentation persistée de l'état Validée/Brouillon et de la date/auteur de validation, migration ou compatibilité des champs déjà présents (dont `currentValidatedState`), normalisation des comparaisons pour distinguer un vrai changement métier d'un PUT identique, verrouillage de concurrence et cohérence de la référence M-004. **Ne pas réutiliser le versionnement métier M-004** pour créer un historique M-006. Le code actuel ne dispose d'aucun endpoint de validation officielle : cette rectification n'annonce aucune fonctionnalité livrée.
 
 ## 1. Objectif, utilisateurs et valeur métier
 
@@ -28,7 +40,7 @@ Usages retenus : rédaction sur ordinateur dans le Dossier, consultation sur ord
 - organisation en phases et étapes, affectation des ingrédients M-004 aux phases et/ou étapes ;
 - éléments propres au process distingués de la composition économique M-004 ;
 - bibliothèque commune Workspace et modèles locaux Dossier (étapes et phases), avec publication contrôlée ;
-- brouillons, validation explicite, historique immuable et adoption contrôlée des évolutions de bibliothèque ;
+- contenu courant en Brouillon ou Validée, modification puis revalidation explicite sans historique de versions M-006, et adoption contrôlée des évolutions de bibliothèque ;
 - RBAC, ownership, audit, copie inter-Dossier, cycle de vie lié à celui de la Fiche technique, et suppression autonome irréversible du process après confirmation explicite ;
 - consultation adaptée aux supports d'atelier et impression lisible.
 
@@ -47,7 +59,7 @@ Usages retenus : rédaction sur ordinateur dans le Dossier, consultation sur ord
 - Chaque Fiche process doit avoir exactement une Fiche technique M-004 existante.
 - Une Fiche technique possède **zéro ou une** Fiche process, jamais deux.
 - La Fiche process appartient au **même Workspace et au même Dossier** que sa Fiche technique.
-- Les fiches et leurs historiques restent propres au Dossier, même si les modèles de phases/étapes sont partagés dans le Workspace.
+- Les Fiches process courantes et leurs événements d'audit restent propres au Dossier, même si les modèles de phases/étapes et leurs révisions sont partagés dans le Workspace. Aucune archive des anciennes versions de Fiches process.
 - Les champs createdBy / updatedBy sont destinés à l'audit et ne déterminent jamais l'ownership.
 - Une Fiche technique peut être créée et validée sans Fiche process (validations M-004 et M-006 indépendantes).
 - La Fiche technique M-004 demeure la source de vérité de la composition, des quantités, fournisseurs et calculs économiques.
@@ -94,7 +106,7 @@ Autre entrée validée : depuis la Fiche technique, afficher « Créer la Fiche 
 - Il existe une bibliothèque commune au Workspace, et des modèles locaux à un Dossier. La publication d'un élément local vers le Workspace est une opération explicite et soumise aux autorisations.
 - Les éléments de bibliothèque sont **paramétrables à l'utilisation** : instructions spécifiques, ingrédients, temps, températures et équipements peuvent varier selon la recette et le Dossier.
 - **Création rapide validée (25) :** une étape créée depuis l'éditeur est initialement un modèle local au Dossier ; sa publication ultérieure vers la bibliothèque Workspace est explicite et autorisée.
-- Réorganisation des phases et des étapes retenue dans l'éditeur de brouillon, sans perturber les versions officielles.
+- Réorganisation des phases et des étapes dans l'éditeur, sans modifier le serveur avant enregistrement explicite. Après enregistrement d'un changement réel sur une Fiche process validée, son état redevient Brouillon.
 
 ### Mise à jour contrôlée — DÉCISION VALIDÉE
 
@@ -102,7 +114,7 @@ Lorsqu'une étape ou un modèle de phase réutilisé est modifié dans la biblio
 - aucune mise à jour automatique des Fiches process qui l'utilisent ;
 - la Fiche process conserve ses paramètres et sa définition effectivement adoptée ;
 - une nouvelle révision disponible est signalée à l'utilisateur autorisé ;
-- l'adoption est une action explicite dans le brouillon ; elle ne réécrit jamais les versions VALIDATED ;
+- l'adoption est une action explicite sur le contenu en cours ; son enregistrement, s'il modifie une Fiche process Validée, la fait repasser en Brouillon ; les révisions immuables concernent les **modèles de bibliothèque**, pas les anciennes Fiches process ;
 - archiver un modèle ne détruit ni les utilisations ni les états historiques.
 
 **À concevoir :** gestion des versions des modèles, provenance de l'adoption, conservation des personnalisations locales et effet d'une modification de phase sur ses étapes composantes. Ne pas introduire de couplage implicite entre une bibliothèque et les process officiels.
@@ -126,13 +138,13 @@ La question de la saisie des résultats des contrôles réalisés pendant une pr
 
 ## 8. Validation et cohérence des versions — DÉCISIONS ET POINTS OUVERTS
 
-- Cycle M-006 retenu : brouillon modifiable, validation explicite, version officielle immuable, historique consultable.
+- **Cycle M-006 rectifié le 2026-10-27 :** contenu courant Brouillon → validation explicite → Validée → modification réelle enregistrée → Brouillon → revalidation. Même identité persistante, sans historique des contenus M-006 successifs. Une simple consultation ou une saisie locale non sauvegardée ne change pas l'état serveur.
 - Une Fiche technique peut être officielle sans process ; les validations sont indépendantes.
-- La Fiche process validée doit pouvoir identifier la composition / validation M-004 à laquelle elle se rapporte.
+- Le contenu courant de la Fiche process conserve une référence explicite à la composition/validation officielle M-004 à laquelle il se rapporte, à vérifier à chaque validation M-006. Les versions **M-004** restent immuables ; la Fiche process ne crée pas de version métier distincte.
 - La **création initiale** d'un brouillon process nécessite une M-004 ACTIVE, officiellement validée, sans brouillon de révision ouvert ; après création, un brouillon process existant peut évoluer parallèlement à M-004. La validation M-006 exige une composition M-004 validée et une vérification de cohérence avec la composition de référence.
 - **Décisions 22 et 31 rectifiées par le propriétaire le 2026-10-27 :** signaler discrètement les ingrédients non affectés par les compteurs, **sans exiger ni proposer de justification** pour leur non-utilisation. Pour valider, exiger au minimum une phase et une étape documentée ; durées, températures et contrôles demeurent facultatifs. La validation M-006 future ne devra pas réintroduire l'ancienne obligation de justification.
 - La gestion de concurrence doit refuser les écrasements silencieux, comme M-004.
-- Les évolutions de bibliothèque sont adoptées uniquement dans le brouillon, jamais appliquées en place à une version officielle.
+- Les évolutions de bibliothèque ne sont jamais appliquées automatiquement ; leur adoption explicite modifie le contenu courant et exige revalidation de la Fiche process si elle était Validée et si le changement est effectivement enregistré.
 
 ### Changement de la Fiche technique — DÉCISION VALIDÉE
 
@@ -141,7 +153,7 @@ Après validation d'une évolution de **composition** de M-004, proposer à l'ut
 - **Non** : terminer ce parcours sans mutation ni obligation de validation du process.
 - Une simple revalorisation tarifaire ne doit pas déclencher le même dialogue.
 
-Le rejet de la proposition n'est **pas** une mise à jour silencieuse du process ni une suppression de l'historique. **Décision approuvée (32) :** conserver un indicateur non bloquant de décalage entre la composition M-004 courante et la composition de référence du process ; répondre « Non » à la révision ne mute pas le process.
+Le rejet de la proposition n'est **pas** une mise à jour silencieuse du contenu courant de la Fiche process et n'en change pas l'état éditorial. **Décision approuvée (32) :** conserver un indicateur non bloquant de décalage entre la composition M-004 courante et la composition de référence du process ; répondre « Non » à la révision ne mute pas le process.
 
 **Intégration à vérifier :** M-004 calcule des catégories de changement de validation (dont COMPOSITION), mais il faut vérifier les différences réelles pertinentes pour le process, sans assimiler tous les événements M-004 à un changement de fabrication.
 
@@ -152,14 +164,14 @@ La Fiche process **ne peut pas survivre à la purge de sa Fiche technique**. Ell
 | Action M-004 | Règle métier pour M-006 |
 | --- | --- |
 | Création d'une Fiche technique | Ne crée pas automatiquement de Fiche process. |
-| Suppression autonome d'une Fiche process | Suppression **immédiate et définitive** de l'agrégat M-006 (brouillon, historique, usages associés) après confirmation ; la Fiche technique M-004 et les modèles de bibliothèque restent intacts ; l'association 1:1 est libérée. |
+| Suppression autonome d'une Fiche process | Suppression **immédiate et définitive** de l'agrégat M-006 (contenu courant, données propres au process, usages associés) après confirmation ; la Fiche technique M-004 et les modèles de bibliothèque restent intacts ; l'association 1:1 est libérée. |
 | Archivage autonome d'une Fiche process | **Interdit** ; l'archivage est exclusivement provoqué par la Fiche technique. |
-| Archivage de la Fiche technique | Archive automatiquement la Fiche process associée ; versions et bibliothèques conservées. |
+| Archivage de la Fiche technique | Archive automatiquement la Fiche process associée ; son contenu courant et les bibliothèques restent conservés. |
 | Réactivation de la Fiche technique | **Décision approuvée (29)** : réactiver le process conservé lorsque le parent est réactivé, selon l'état de référence enregistré, sans ressusciter un process supprimé définitivement. |
 | Suppression M-004 vers corbeille | Supprime **logiquement** la Fiche process associée dans la même opération métier, sans purge physique précoce. |
 | Restauration M-004 | **Décision approuvée (29)** : restaurer le process associé et son état antérieur approprié avec le parent, s'il est restaurable ; ne jamais recréer un process supprimé définitivement. |
-| Purge définitive de M-004 | Purge aussi l'agrégat M-006 correspondant (brouillon, validations, liens d'utilisation) sans laisser d'orphelin. |
-| Copie de M-004 entre Dossiers | La cible M-004 est créée en brouillon : **ne pas créer automatiquement la Fiche process cible** tant que la Fiche technique copiée n'a pas été validée officiellement. La reprise des phases/étapes source pourra être proposée après validation, via remappage explicite, sans historique officiel importé. |
+| Purge définitive de M-004 | Purge aussi l'agrégat M-006 correspondant (contenu courant, état de validation, liens d'utilisation) sans laisser d'orphelin. |
+| Copie de M-004 entre Dossiers | La cible M-004 est créée en brouillon : **ne pas créer automatiquement la Fiche process cible** tant que la Fiche technique copiée n'a pas été validée officiellement. La reprise éventuelle du **contenu courant** source pourra être proposée après validation M-004 cible, via remappage explicite, dans une nouvelle Fiche process Brouillon, sans historique M-006. |
 
 **Garantie de cohérence visée :** ces transitions doivent être transactionnelles, avec contrôles de tenancy, concurrence, permissions et audit, et sans altérer les documents de bibliothèque partagés par d'autres Fiches process. Une purge M-004 existante ne doit pas laisser de données M-006 orphelines.
 
@@ -174,7 +186,7 @@ La Fiche process **ne peut pas survivre à la purge de sa Fiche technique**. Ell
 - Les affectations des ingrédients doivent être **reliées aux lignes de composition réellement copiées** ; jamais conserver aveuglément les identifiants de sous-documents source.
 - Les modèles Workspace actifs peuvent être référencés selon les règles de version adoptées, les étapes locales du Dossier source ne doivent pas devenir visibles au Dossier cible par simple copie. Proposition : matérialiser des définitions/snapshots nécessaires en préservant le contenu et la provenance sans autorisation indue.
 - Aucun historique de validation, contexte économique ou donnée propre au magasin source ne doit être répliqué comme historique officiel du magasin cible.
-- **Décision amendée (28, 2026-10-26) :** privilégier la dernière version officielle du process source lorsqu'elle existe ; en son absence, examiner le brouillon source cohérent. La reprise n'intervient **qu'après validation M-004 de la copie**, et toujours en nouveau brouillon M-006 sans historique validé source. La Fiche technique M-004 source doit toujours respecter ses propres préconditions de copie ; ne pas les contourner. Pour les modèles locaux indisponibles dans le Dossier cible, conserver le contenu nécessaire sous forme réutilisable localement sans exposer la bibliothèque source ; modalités techniques à concevoir.
+- **Décision 28 actualisée le 2026-10-27 :** examiner uniquement le **contenu courant** de la Fiche process source, qu'elle soit Brouillon ou Validée, pour une éventuelle reprise guidée. La reprise n'intervient **qu'après validation M-004 de la copie**, et toujours en nouvelle Fiche process Brouillon, sans historique M-006. La Fiche technique M-004 source doit toujours respecter ses propres préconditions de copie ; ne pas les contourner. Pour les modèles locaux indisponibles dans le Dossier cible, conserver le contenu nécessaire sous forme réutilisable localement sans exposer la bibliothèque source ; modalités techniques à concevoir.
 
 ## 11. Tenancy, RBAC et capabilities
 
@@ -197,7 +209,6 @@ POST   /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets
 GET    /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/:processSheetId
 PUT    /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/:processSheetId/draft
 POST   /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/:processSheetId/validate
-GET    /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/:processSheetId/history
 DELETE /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/:processSheetId   # suppression physique explicitement confirmée, contrôle serveur strict
 
 Workspace :
@@ -212,7 +223,7 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 ## 13. Frontend et ergonomie — DÉCISIONS VALIDÉES ET PROPOSITIONS
 
 - Ajouter **Fiches process (N)** au niveau des onglets du Dossier, sous réserve du droit de lecture.
-- Liste : nom, Fiche technique associée, statut, date de modification, recherche/filtre, accès au brouillon ou à la version validée, indicateur d'une évolution à revoir le cas échéant, action de suppression autonome uniquement selon permission et avec confirmation explicite.
+- Liste : nom, Fiche technique associée, **état éditorial** (Brouillon ou Validée), dernière modification, recherche/filtre, accès au contenu courant, indicateur d'une évolution M-004 à revoir le cas échéant, suppression autonome uniquement selon permission et après confirmation. Le statut technique miroir de M-004 n'a pas à être affiché en colonne.
 - **Liste principale : uniquement les Fiches process réellement créées**, avec Fiche technique associée, état, dernière modification, recherche/pagination et actions autorisées. Jamais une table des Fiches techniques sur cette page.
 - **Création en modale :** titre obligatoire + liste déroulante des Fiches techniques du Dossier **ACTIVE, validées, sans brouillon M-004 ouvert et sans process**, filtrée par le backend (recherche/pagination). Confirmation : création 1:1 en transaction puis ouverture de la Fiche process brouillon. Les explications des champs et sections sont placées dans les infobulles (i), pas en longs sous-titres.
 - Point d'entrée depuis une Fiche technique existante selon sa situation : créer/ouvrir le process.
@@ -225,7 +236,7 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 ## 14. Audit, corbeille, rétention, migrations
 
 - Tracer la création, édition, validation, archivage, réactivation, suppression, restauration, purge, copie, publication des modèles et adoption de révision ; inclure les références métier nécessaires, sans exposer les données des autres Dossiers.
-- Déterminer la politique de conservation des versions/process liée à M-004 ; **pas de politique de rétention inventée**.
+- Aucune politique de conservation de versions métier M-006 : pas d'historique du contenu courant. Le journal d'audit minimal et la rétention des autres données M-004 / bibliothèques suivent leurs propres contrats, sans politique inventée.
 - La purge de la Fiche technique doit supprimer l'agrégat enfant M-006 dans la même transaction ; les éléments partagés de bibliothèque utilisés ailleurs restent conservés.
 - Prévoir migrations/index M-006, évolution éventuelle de service M-004 pour cascades, backfill RBAC des rôles système et inventaire des migrations ; ne pas modifier la DB sans contrat validé.
 - Ne pas créer de nouvelle instance MongoDB ou nouveau replica set.
@@ -233,18 +244,18 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 
 ## 15. Tests et critères d'acceptation envisagés
 
-**Backend :** création 1:1 et sélection éligible ; exclusion des Fiches archivées, supprimées, déjà associées ; concurrence de deux créations ; accès Dossier/Workspace ; scoping bibliothèque ; snapshots validés ; adoption de révision ; associations ingrédients/phase/étape ; doublons de Référence Produit ; cohérence parent-enfant ; sauvegardes concurrentes ; mutations de recette ; copie avec reconstruction de correspondances ; cascade archiver/réactiver/delete/restore/purge ; transactions rollback ; audit, quotas/capabilities selon contrat.
+**Backend :** création 1:1 et sélection éligible ; exclusion des Fiches archivées, supprimées, déjà associées ; concurrence de deux créations ; accès Dossier/Workspace ; scoping bibliothèque ; état courant validé sans snapshot historique M-006 ; transition Validée → Brouillon à l'enregistrement d'un vrai changement ; revalidation, PUT identique sans invalidation ; adoption de révision de bibliothèque ; associations ingrédients/phase/étape ; doublons de Référence Produit ; cohérence parent-enfant ; sauvegardes concurrentes ; mutations de recette ; copie avec reconstruction de correspondances ; cascade archiver/réactiver/delete/restore/purge ; transactions rollback ; audit, quotas/capabilities selon contrat.
 
 **Frontend RTL :** onglet et compteur selon droits, sélection d'une Fiche technique éligible, état vide, création guidée, affectation des ingrédients, phases/étapes, messages de conflit, badges, avertissement de révision, imprimabilité, accessibilité.
 
-**E2E Playwright :** création depuis le Dossier et depuis M-004 ; réutilisation de bibliothèque ; prévention d'un deuxième process ; archivage et suppression/restauration du parent ; suppression définitive autonome (confirmation/refus/permission, absence de cascade vers M-004, nouvelle création) ; copie inter-Dossier ; non-divulgation entre Dossiers/Workspaces ; consultation sur différents formats d'écran ; historique immuable sauf suppression physique explicitement autorisée.
+**E2E Playwright :** création depuis le Dossier et depuis M-004 ; réutilisation de bibliothèque ; prévention d'un deuxième process ; archivage et suppression/restauration du parent ; suppression définitive autonome (confirmation/refus/permission, absence de cascade vers M-004, nouvelle création) ; copie inter-Dossier ; non-divulgation entre Dossiers/Workspaces ; consultation sur différents formats d'écran ; validation puis modification/revalidation du même process sans historique ;
 
 **Critères d'acceptation indispensables :**
 1. impossible de créer une Fiche process sans Fiche technique ;
 2. impossible d'en créer deux pour une même Fiche technique, même sous concurrence ;
 3. le sélecteur de création montre seulement les Fiches techniques actives **officiellement validées, sans brouillon M-004 ouvert**, non associées du Dossier autorisé ;
 4. les ingrédients M-004 peuvent être liés aux phases et/ou aux étapes, sans dupliquer ni recalculer la recette ;
-5. les versions validées ne changent jamais silencieusement ;
+5. une Fiche process Validée repasse en Brouillon seulement après un changement métier effectivement enregistré ; une simple consultation, saisie locale ou sauvegarde sans différence métier ne déclenche pas cette transition ;
 6. les mises à jour de modèles partagés n'altèrent pas les process existants ;
 7. archivage M-004 entraîne archivage M-006 ;
 8. suppression logique M-004 entraîne suppression logique M-006, avec conservation du contenu en corbeille ;
@@ -253,7 +264,7 @@ Validation Zod stricte et fermée, ObjectId et scopes vérifiés, expectedRevisi
 11. les droits et la séparation Workspace/Dossier sont assurés par le serveur ;
 12. l'impression correspond à la version réellement consultée, sans altérer le contenu officiel ;
 13. aucune archive autonome du process n'est possible ;
-14. supprimer définitivement un process exige autorisation + confirmation, préserve M-004 et les modèles réutilisés, efface son historique et libère l'association 1:1.
+14. supprimer définitivement un process exige autorisation + confirmation, préserve M-004 et les modèles réutilisés, supprime le contenu courant M-006 et libère l'association 1:1.
 
 **Gates avant PR d'implémentation :** tests unitaires, Supertest/intégration MongoDB, RTL, E2E critiques, puis npm run release:check. Aucun test ni gate M-006 n'est déclaré exécuté à la date de cette proposition.
 
