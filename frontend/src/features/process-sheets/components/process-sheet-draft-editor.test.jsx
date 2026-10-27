@@ -319,6 +319,11 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     const step = await addStep(user);
     await user.click(within(step).getByRole('button', { name: /Temps, température et équipements/ }));
     const dialog = screen.getByRole('dialog', { name: 'Temps, température et équipements' });
+    expect(within(dialog).getByRole('button', {
+      name: 'À propos de Temps, température et équipements',
+    })).toBeInTheDocument();
+    expect(within(dialog).queryByText(/Informations facultatives de l’étape/))
+      .not.toBeInTheDocument();
     const active = within(dialog).getByRole('spinbutton', { name: 'Temps actif (min)' });
     expect(active).toHaveAttribute('placeholder', 'Ex. 15');
     expect(within(dialog).getByText('Temps actif (min)')).toHaveAttribute('for', active.id);
@@ -377,6 +382,11 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     const dialog = screen.getByRole('dialog', {
       name: 'Vigilance, qualité et maîtrise sanitaire',
     });
+    expect(within(dialog).getByRole('button', {
+      name: 'À propos de Vigilance, qualité et maîtrise sanitaire',
+    })).toBeInTheDocument();
+    expect(within(dialog).queryByText(/Informations facultatives de l’étape/))
+      .not.toBeInTheDocument();
     expect(within(dialog).queryByRole('spinbutton')).not.toBeInTheDocument();
     await user.click(within(dialog).getByRole('button', { name: 'Ajouter' }));
     await user.type(within(dialog).getByRole('textbox', { name: 'Points de vigilance 1' }),
