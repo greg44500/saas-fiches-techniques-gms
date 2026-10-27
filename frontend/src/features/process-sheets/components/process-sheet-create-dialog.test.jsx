@@ -120,10 +120,9 @@ describe('M-006 — modale de création', () => {
       refetch: vi.fn(),
     });
     renderDialog();
-    expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
-      'Aucune fiche technique éligible',
-    );
-    expect(screen.getByText('Aucune fiche technique éligible')).toHaveClass('text-destructive');
+    const emptyMessage = screen.getByText('Aucune fiche technique éligible');
+    expect(emptyMessage).toHaveAttribute('role', 'status');
+    expect(emptyMessage).toHaveClass('text-destructive');
     expect(screen.queryByText(/validation M-004 sans brouillon/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeDisabled();
   });
