@@ -60,14 +60,14 @@ function DetailsSummary({ step }) {
     </div>
   );
 }
-function ProcessSheetPreview({ phases, ingredients }) {
+function ProcessSheetPreview({ phases, ingredients, description = 'Aperçu de lecture du brouillon local. Ce mode n’enregistre ni ne valide le document.' }) {
   if (phases.length === 0) {
     return <p className="text-sm text-muted-foreground">Aucune phase à afficher.</p>;
   }
   return (
     <section className="space-y-4" aria-label="Aperçu du process">
       <p className="text-xs text-muted-foreground">
-        Aperçu de lecture du brouillon local. Ce mode n’enregistre ni ne valide le document.
+        {description}
       </p>
       <ol className="space-y-4">
         {phases.map((phase, i) => {
