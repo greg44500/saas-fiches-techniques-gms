@@ -670,8 +670,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     expect(mocks.reload).toHaveBeenCalledTimes(1);
   });
 
-  it('bloque la validation en présence de changements locaux ou de M-004 décalée', async () => {
-    const user = userEvent.setup();
+  it('bloque la validation en présence de changements locaux ou de M-004 décalée', () => {
     view({ canValidate: true, processRevision: 0, compositionOutdated: true });
     expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toBeDisabled();
     expect(mocks.validate).not.toHaveBeenCalled();
