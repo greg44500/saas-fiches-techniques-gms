@@ -178,6 +178,7 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
             id: created.id, title: 'Fabrication du plat',
             status: 'ACTIVE', editorialState: 'DRAFT',
         });
+        expect(detail.body.data.dossierOperational).toBe(true);
         expect(detail.body.data.draft).toMatchObject({ revision: 0, phases: [] });
         const eligible = await request(app).get(base + '/eligible-technical-sheets')
             .set(bearer(owner.token)).expect(200);
@@ -309,6 +310,38 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
         });
         expect(await ProcessSheet.countDocuments({ _id: created.id })).toBe(0);
         expect(await ProcessSheetDraft.countDocuments({ processSheet: created.id })).toBe(0);
+    });
+
+    it('aligne le détail et PUT sur le Dossier actif, sans imposer dossier:read au contributeur', async () => {
+        const valid = await createValidated();
+        const created = (await createProcess(valid.created.sheet.id).expect(201))
+            .body.data.process;
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: owner.workspace._id,
+            actorId: owner.owner._id,
+            permissions: [PROCESS_SHEET_PERMISSION.READ, PROCESS_SHEET_PERMISSION.EDIT],
+        });
+        await grantDossierAccess({
+            workspaceId: owner.workspace._id, dossierId: dossier._id,
+            membershipId: member.membership._id, actorId: owner.owner._id,
+        });
+        const uri = base + '/' + created.id;
+        const active = (await request(app).get(uri)
+            .set(bearer(member.token)).expect(200)).body.data;
+        expect(active.process.status).toBe('ACTIVE');
+        expect(active.dossierOperational).toBe(true);
+        expect(active.draft.revision).toBe(0);
+
+        await Dossier.updateOne({ _id: dossier._id }, { $set: { status: 'PAUSED' } });
+        const paused = (await request(app).get(uri)
+            .set(bearer(member.token)).expect(200)).body.data;
+        expect(paused.process.status).toBe('ACTIVE');
+        expect(paused.dossierOperational).toBe(false);
+        await request(app).put(uri + '/draft')
+            .set(bearer(member.token))
+            .send({ expectedRevision: 0, phases: [], unassignedReasons: [] })
+            .expect(409);
+        expect((await ProcessSheetDraft.findOne({ processSheet: created.id })).revision).toBe(0);
     });
 
     it('protège la création 1:1 concurrente', async () => {
