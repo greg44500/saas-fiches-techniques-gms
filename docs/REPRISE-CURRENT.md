@@ -1,4 +1,10 @@
 # Reprise M-006 — Fiches process (2026-10-26)
+## Test frontend M-006 — modal 409 et navigation inert (2026-10-27)
+
+Dernier log local : **20 tests réussis sur 21** dans `process-sheet-draft-editor.test.jsx`. L'unique échec concerne l'assertion du test « ne crée pas de phase dans le brouillon si la création serveur échoue » : après HTTP 409, le `Dialog` « Nouvel intitulé de phase » reste ouvert, ce qui est attendu, et Base UI rend le contenu derrière le modal `aria-hidden` / `inert`. La fonction de test `navigation()` utilisait `getByRole` sans `hidden` et ne pouvait donc pas trouver l'arbre tant que le modal était actif. Le test a été corrigé sans toucher à la production : il vérifie le message 409 et la conservation de la saisie **dans le dialogue**, le ferme via « Annuler », puis vérifie l'absence de phase, le statut « À jour » et l'absence de PUT. Cela préserve le comportement accessible de Base UI et les invariants métier. Exécution des tests après correctif encore à confirmer localement.
+
+---
+
 ## Correctif M-006 — erreurs en cascade à l'ouverture du menu (2026-10-27)
 
 Le propriétaire a fourni une nouvelle exécution locale du fichier \`process-sheet-draft-editor.test.jsx\` : **6 échecs, 15 réussites (21 tests)**. Les traces disponibles documentent de nouveau l'absence de l'option « Autre phase… » après clic, avec \`aria-expanded=false\` sur le \`Select\`. Les six échecs ne démontrent pas six anomalies métier distinctes ; ils peuvent découler du même helper \`addFreePhase\`.

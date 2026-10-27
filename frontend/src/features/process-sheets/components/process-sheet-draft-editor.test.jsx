@@ -136,8 +136,16 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await user.click(screen.getByRole('button', { name: 'Autre phase…' }));
     await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Cuisson');
     await user.click(screen.getByRole('button', { name: 'Ajouter la phase' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('existe déjà');
-    expect(within(navigation()).queryByText('Cuisson')).not.toBeInTheDocument();
+    const dialog = screen.getByRole('dialog', { name: 'Nouvel intitulé de phase' });
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('existe déjà');
+    expect(within(dialog).getByRole('textbox', { name: 'Intitulé' })).toHaveValue('Cuisson');
+    // Base UI correctly makes the editor inert while the modal is open.
+    // Close it before querying its navigation through accessible roles.
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler' }));
+    const tree = await screen.findByRole('navigation', { name: 'Navigation des phases et étapes' });
+    expect(within(tree).queryByRole('button', { name: /Sélectionner phase/ }))
+      .not.toBeInTheDocument();
+    expect(screen.getByText('À jour')).toBeInTheDocument();
     expect(mocks.save).not.toHaveBeenCalled();
   });
 
