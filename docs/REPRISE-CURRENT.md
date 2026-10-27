@@ -1,5 +1,16 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Reprise M-006 — stabilisation de la création après nouveau log local (2026-10-27)
+
+Log fourni par le propriétaire (avant modification) : suite frontend M-006, **54/55 tests réussis**. L'unique erreur se produit dans `process-sheet-create-dialog.test.jsx` : l'option du Select « Tartine validée » n'est pas affichée, `aria-expanded=false`, avant tout POST et donc avant la réponse 409 simulée. Les 12 tests de la page détail et les 3 tests d'intégration page/éditeur ajoutés précédemment réussissent.
+
+Correctif métier ciblé sur la chaîne complète de création : le formulaire filtre désormais le submit sur une option toujours présente dans la liste actuelle et sur la fin du chargement/rafraîchissement RTK Query ; le conflit 409 préserve le titre, retire la référence périmée et relance les éligibles ; les messages d'erreur s'effacent à la prochaine modification ; les erreurs non-409 conservent la sélection. Tests de modale renforcés pour le clavier Base UI, la création nominale par clic, le conflit 409, la reprise avec nouvelle Fiche source, la disparition d'une éligibilité, le rafraîchissement, les erreurs génériques et la relance de chargement. Aucun backend/Core modifié dans ce sous-lot.
+
+**Vérification encore requise :** exécution réelle post-correctif impossible depuis ce connecteur GitHub ; le résultat du prochain Vitest local, le lint, le build et la gate globale sont inconnus. Recommander répétition de la suite modale 5 fois pour repérer les éventuelles intermittences jsdom, puis toute la feature, lint/build et release:check. Aucun merge dans main.
+
+---
+
+
 ## Reprise M-006 — incident RTL et audit intégral (2026-10-27)
 
 Le log utilisateur montre 48/48 tests backend process réussis et 42/43 tests frontend process réussis **avant** le correctif ; échec sur `Édition : oui` dans le test de la page de détail. Cause confirmée : fixture de process sans `status` alors que l'API réelle le renvoie (`ACTIVE` en situation nominale). Un audit de chaîne a aussi identifié l'écart entre le contrôle frontend du seul statut process et le contrôle backend du Dossier ACTIVE. Correctif complet sur `feature/m006-fiches-process` : booléen `dossierOperational` sur le GET détail calculé depuis `req.dossier` déjà autorisé ; gating de l'éditeur par permission EDIT + process ACTIVE + `dossierOperational === true` ; cas brouillon nul explicitement refusé ; tests de page, test d'intégration page + éditeur réel, Supertest GET/PUT couvrant les rôles contributeurs sans `dossier:read`, Dossier PAUSED, archivage, révision et refus d'écriture. Option Mongoose obsolète `new: true` remplacée sur le PUT draft M-006.
