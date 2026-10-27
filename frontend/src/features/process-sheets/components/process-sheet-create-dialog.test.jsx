@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const mocks = vi.hoisted(() => ({
-  list: vi.fn(), mutate: vi.fn(), close: vi.fn(), created: vi.fn(),
+  list: vi.fn(), mutate: vi.fn(), close: vi.fn(), created: vi.fn(), refetch: vi.fn(),
 }));
 
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
@@ -44,12 +44,24 @@ beforeEach(() => {
       pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
     },
     isError: false, isFetching: false, isLoading: false,
-    refetch: vi.fn(),
+    refetch: mocks.refetch,
   });
   mocks.mutate.mockReturnValue({
     unwrap: vi.fn().mockResolvedValue({ id: 'process-new' }),
   });
 });
+
+// The click path is covered by the normal creation tests. This separate
+// keyboard path verifies accessibility and avoids coupling the 409 contract
+// to Base UI popup positioning in jsdom.
+async function selectByKeyboard(user, name = 'Tartine validée') {
+  const trigger = screen.getByRole('combobox', { name: 'Fiche technique associée' });
+  trigger.focus();
+  await user.keyboard('{ArrowDown}');
+  expect(await screen.findByRole('option', { name })).toBeInTheDocument();
+  await user.keyboard('{Enter}');
+  expect(trigger).toHaveTextContent(name);
+}
 
 describe('M-006 — modale de création', () => {
   it('demande uniquement le titre et la Fiche technique éligible', async () => {
@@ -187,7 +199,7 @@ describe('M-006 — modale de création', () => {
     expect(mocks.mutate).not.toHaveBeenCalled();
   });
 
-  it('refuse la création sur un conflit serveur et maintient le formulaire', async () => {
+  it('sur HTTP 409 conserve le titre, retire le choix obsolète et relance la recherche éligible', async () => {
     mocks.mutate.mockReturnValue({
       unwrap: vi.fn().mockRejectedValue({ status: 409 }),
     });
@@ -196,14 +208,108 @@ describe('M-006 — modale de création', () => {
     await user.type(screen.getByRole('textbox', {
       name: 'Titre de la Fiche process',
     }), 'Fabrication tartine');
-    await user.click(screen.getByRole('combobox', {
-      name: 'Fiche technique associée',
-    }));
-    await user.click(screen.getByRole('option', { name: 'Tartine validée' }));
+    await selectByKeyboard(user);
     await user.click(screen.getByRole('button', { name: 'Créer et ouvrir' }));
-    expect(screen.getByRole('alert')).toHaveTextContent(
+    expect(await screen.findByRole('alert')).toHaveTextContent(
       'Cette Fiche technique n’est plus disponible',
     );
+    expect(mocks.mutate).toHaveBeenCalledTimes(1);
+    expect(mocks.mutate).toHaveBeenCalledWith({
+      ...args, title: 'Fabrication tartine', technicalSheetId: 'sheet-1',
+    });
+    expect(mocks.refetch).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('textbox', { name: 'Titre de la Fiche process' }))
+      .toHaveValue('Fabrication tartine');
+    expect(screen.getByRole('combobox', { name: 'Fiche technique associée' }))
+      .toHaveAttribute('data-placeholder');
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeDisabled();
+    expect(screen.getByRole('dialog', { name: 'Créer une Fiche process' }))
+      .toBeInTheDocument();
     expect(mocks.created).not.toHaveBeenCalled();
+    expect(mocks.close).not.toHaveBeenCalled();
+  });
+
+  it('après conflit actualise les choix, autorise une autre Fiche et termine la création', async () => {
+    let attempt = 0;
+    mocks.mutate.mockImplementation(() => {
+      attempt += 1;
+      return {
+        unwrap: attempt === 1
+          ? vi.fn().mockRejectedValue({ status: 409 })
+          : vi.fn().mockResolvedValue({ id: 'process-retry' }),
+      };
+    });
+    mocks.list.mockImplementation(() => ({
+      data: {
+        technicalSheets: attempt === 0
+          ? [{ id: 'sheet-1', name: 'Tartine validée' }]
+          : [{ id: 'sheet-2', name: 'Salade validée' }],
+        pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
+      },
+      isError: false, isFetching: false, isLoading: false, refetch: mocks.refetch,
+    }));
+    renderDialog();
+    const user = userEvent.setup();
+    await user.type(screen.getByRole('textbox', {
+      name: 'Titre de la Fiche process',
+    }), 'Fabrication tartine');
+    await selectByKeyboard(user);
+    await user.click(screen.getByRole('button', { name: 'Créer et ouvrir' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('n’est plus disponible');
+    expect(mocks.refetch).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeDisabled();
+    await selectByKeyboard(user, 'Salade validée');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Créer et ouvrir' }));
+    expect(mocks.mutate).toHaveBeenCalledTimes(2);
+    expect(mocks.mutate).toHaveBeenLastCalledWith({
+      ...args, title: 'Fabrication tartine', technicalSheetId: 'sheet-2',
+    });
+    expect(mocks.created).toHaveBeenCalledOnce();
+    expect(mocks.created).toHaveBeenCalledWith({ id: 'process-retry' });
+  });
+
+  it('bloque la sélection et la soumission pendant l’actualisation des éligibles', async () => {
+    mocks.list.mockReturnValue({
+      data: {
+        technicalSheets: [{ id: 'sheet-1', name: 'Tartine validée' }],
+        pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
+      },
+      isError: false, isFetching: true, isLoading: false, refetch: mocks.refetch,
+    });
+    renderDialog();
+    const user = userEvent.setup();
+    await user.type(screen.getByRole('textbox', {
+      name: 'Titre de la Fiche process',
+    }), 'Fabrication tartine');
+    expect(screen.getByRole('combobox', { name: 'Fiche technique associée' }))
+      .toBeDisabled();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Actualisation des Fiches techniques éligibles',
+    );
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeDisabled();
+    expect(mocks.mutate).not.toHaveBeenCalled();
+  });
+
+  it('refuse une référence qui a disparu de la nouvelle page éligible', async () => {
+    renderDialog();
+    const user = userEvent.setup();
+    await user.type(screen.getByRole('textbox', {
+      name: 'Titre de la Fiche process',
+    }), 'Fabrication tartine');
+    await selectByKeyboard(user);
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeEnabled();
+    mocks.list.mockReturnValue({
+      data: {
+        technicalSheets: [{ id: 'sheet-2', name: 'Autre recette validée' }],
+        pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
+      },
+      isError: false, isFetching: false, isLoading: false, refetch: mocks.refetch,
+    });
+    await user.type(screen.getByRole('textbox', {
+      name: 'Titre de la Fiche process',
+    }), ' bis');
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeDisabled();
+    expect(mocks.mutate).not.toHaveBeenCalled();
   });
 });
