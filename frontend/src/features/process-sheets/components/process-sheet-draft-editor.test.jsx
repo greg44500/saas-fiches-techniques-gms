@@ -328,6 +328,11 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await user.type(within(dialog).getByRole('textbox', { name: 'Équipements 1' }), 'Four');
     await user.click(within(dialog).getByRole('button', { name: 'Valider' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(within(step).getByRole('button', { name: /Temps, température et équipements/ }))
+      .toHaveTextContent('Renseignés');
+    expect(within(step).getByRole('button', {
+      name: /Vigilance, qualité et maîtrise sanitaire/,
+    })).toHaveTextContent('Facultatifs');
     expect(mocks.save).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
     expect(within(screen.getByRole('dialog')).getByRole('spinbutton', {
@@ -384,6 +389,11 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
       name: 'Maîtrise sanitaire Instruction 1',
     }), 'Contrôler la température');
     await user.click(within(dialog).getByRole('button', { name: 'Valider' }));
+    expect(within(step).getByRole('button', {
+      name: /Vigilance, qualité et maîtrise sanitaire/,
+    })).toHaveTextContent('Renseignés');
+    expect(within(step).getByRole('button', { name: /Temps, température et équipements/ }))
+      .toHaveTextContent('Facultatifs');
     expect(mocks.save).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(mocks.save.mock.calls[0][0].phases[0].steps[0]).toMatchObject({
@@ -579,6 +589,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await renamePhase(user, 1, 'Nouvelle phase modifiée');
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Le brouillon local reste affiché');
+    expect(screen.getByText('Conflit d’enregistrement')).toHaveClass('text-destructive');
     expect(screen.getByRole('heading', { name: 'Phase 1 : Nouvelle phase modifiée' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Recharger le brouillon' }));
