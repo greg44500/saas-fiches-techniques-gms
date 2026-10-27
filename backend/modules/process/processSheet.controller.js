@@ -1,3 +1,4 @@
+import { DOSSIER_STATUS } from '../dossier/dossier.registry.js';
 import { updateProcessSheetDraft } from './processSheetDraft.service.js';
 import {
     createProcessSheet, getProcessSheet,
@@ -25,7 +26,12 @@ const get = async (req, res) => {
     const data = await getProcessSheet({
         ...scope(req), processSheetId: req.validated.params.processSheetId,
     });
-    res.status(200).json({ status: 'success', data });
+    // Context is already scoped and authorized by the read route.
+    // Expose the operational predicate without requiring dossier:read.
+    res.status(200).json({
+        status: 'success',
+        data: { ...data, dossierOperational: req.dossier.status === DOSSIER_STATUS.ACTIVE },
+    });
 };
 
 const create = async (req, res) => {
