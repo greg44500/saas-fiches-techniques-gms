@@ -1,5 +1,20 @@
 # M-006 — Conception technique et séquencement de l'implémentation
 
+## Lot UX M-006 — rail ingrédients minimal (2026-10-27)
+
+**Décision produit la plus récente :** pour cette première finition de la colonne ingrédients, supprimer tout bruit visuel inutile. Une seule liste dans l'ordre M-004, **nom de l'ingrédient uniquement**, sans numéro de ligne affiché, sans traits séparateurs, sans distinction en deux listes, sans justificatif ni informations secondaires visibles. L'en-tête est réduit à « Ingrédients » et à deux compteurs : affectés / à affecter. Une coche **verte** apparaît près du nom dès qu'une occurrence M-004 est affectée. Son infobulle au survol/focus donne le ou les lieux d'utilisation : titre de phase et/ou titre d'étape avec sa phase. Aucune information n'est affichée en permanence dans la ligne au-delà du nom et de la coche.
+
+**Contrat de données :** `lineKey` reste la clé de chaque occurrence M-004, y compris lorsque deux lignes portent exactement le même nom. Le rail marque chaque occurrence individuellement. L'affectation à une phase et à une étape ne consomme pas l'ingrédient, ne change pas le compteur d'occurrences affectées au-delà de 1 et fournit les deux lieux d'utilisation dans l'infobulle. Aucun changement aux méthodes d'affectation ou à la sauvegarde `expectedRevision` / gestion 409.
+
+**Justifications :** le propriétaire retire l'obligation de les renseigner, y compris pour la future validation officielle (rectification des décisions 22/31 du cadrage). La saisie et la présentation de justification ont été supprimées du rail, sans destruction des valeurs historiques déjà présentes dans le brouillon ; le champ `unassignedReasons` est temporairement conservé dans la sérialisation et le schéma pour compatibilité. Le lot de validation officielle, non implémenté, devra respecter l'absence de justification obligatoire. Aucun changement backend, migration ou Core dans ce lot.
+
+**Périmètre :** uniquement `ProcessIngredientRail`, la suppression des props de justification inutilisées dans l'orchestrateur et les tests RTL/intégration/documentation liés. La partie phases/étapes et le thème général restent inchangés. Aucune thématisation glassy.
+
+**Vérification :** les scénarios RTL ont été mis à jour pour compteur, absence de décorations et justification, coche verte, localisation phase/étape, occurrences répétées et préservation du payload M-006. Les tests/lint/build/gates ne sont pas encore exécutés localement après ce lot ; leurs résultats ne peuvent pas être présumés.
+
+---
+
+
 ## Lot UX — Atelier de fabrication sans glassy (2026-10-27)
 
 **Décision produit :** remplacer la disposition en cartes imbriquées par une interface Desktop à deux surfaces fonctionnelles, **sans effet glassy, backdrop blur, palette spécifique ni thème dans le thème**. Conserver exclusivement les tokens, modes clair/sombre, contrôles shadcn/ui et Tailwind existants. La bibliothèque de modèles (noms de phase/étape) et les parcours de publication sont hors de ce lot.
