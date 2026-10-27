@@ -1,5 +1,15 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Correctif RTL ciblé — Select Base UI et label Outlined (2026-10-27)
+
+**Preuve utilisateur :** exécution locale Vitest v4.1.11, suite M-006 : 9 fichiers, 90 tests, **89 réussis et 1 échec**. Seul le test `process-sheet-create-dialog.test.jsx` « déplace les libellés outlined au focus et garde le libellé relevé après sélection » échoue à `getByRole('option', { name: 'Tartine validée' })`. Le DOM montre `aria-expanded="false"` après `user.click(linked)` sous jsdom/Base UI. Les 12 autres tests de création et les 32 tests du brouillon sont verts dans ce log.
+
+**Correctif limité au test** : utiliser l'helper `selectByKeyboard(user)` existant pour réaliser la sélection dans le scénario Outlined, tout en conservant les assertions de focus, de passage à `filled`, de valeur affichée et de disponibilité de « Créer et ouvrir ». L'autre test « demande uniquement le titre et la Fiche technique éligible » conserve le parcours au clic, ce qui préserve une couverture souris. Aucun code de production, Core ou backend modifié.
+
+**Preuves après commit :** Vitest, lint, build et `release:check` non exécutés depuis cet environnement GitHub ; ne pas annoncer 90/90 tant qu'un nouveau log local n'a pas été fourni. Relancer en premier les 13 tests de la modale, puis les 90 tests M-006, lint et build.
+
+---
+
 ## QA visuelle — corrections de modales et liste M-006 (2026-10-27)
 
 Suite aux captures du propriétaire, un lot de présentation a été appliqué sur `feature/m006-fiches-process` :
