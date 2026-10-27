@@ -71,11 +71,14 @@ describe('M-006 — modale de création', () => {
       name: 'Titre de la Fiche process',
     })).toBeInTheDocument();
     expect(screen.getByRole('button', {
+      name: 'À propos de la création d’une Fiche process',
+    })).toBeInTheDocument();
+    expect(screen.queryByRole('button', {
       name: 'À propos du titre de la Fiche process',
-    })).toBeInTheDocument();
-    expect(screen.getByRole('button', {
+    })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', {
       name: 'Critères de disponibilité des Fiches techniques',
-    })).toBeInTheDocument();
+    })).not.toBeInTheDocument();
     expect(mocks.list).toHaveBeenCalledWith({
       ...args, page: 1, limit: 100,
     }, { skip: false });
@@ -107,7 +110,7 @@ describe('M-006 — modale de création', () => {
       .toBeInTheDocument();
   });
 
-  it('explique pourquoi aucune Fiche technique n’est éligible', () => {
+  it('affiche un message rouge et court lorsque aucune Fiche technique n’est éligible', () => {
     mocks.list.mockReturnValue({
       data: {
         technicalSheets: [],
@@ -117,8 +120,11 @@ describe('M-006 — modale de création', () => {
       refetch: vi.fn(),
     });
     renderDialog();
-    expect(screen.getByText(/Les Fiches en brouillon/)).toBeInTheDocument();
-    expect(screen.getByText(/validation M-004 sans brouillon/)).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
+      'Aucune fiche technique éligible',
+    );
+    expect(screen.getByText('Aucune fiche technique éligible')).toHaveClass('text-destructive');
+    expect(screen.queryByText(/validation M-004 sans brouillon/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeDisabled();
   });
 
