@@ -413,8 +413,8 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await addStep(user);
     await user.click(screen.getByRole('button', { name: /Vigilance, qualité et maîtrise sanitaire/ }));
     const dialog = screen.getByRole('dialog', { name: 'Vigilance, qualité et maîtrise sanitaire' });
-    await user.click(within(dialog).getByRole('group', { name: 'Qualité' })
-      .getByRole('button', { name: 'Ajouter un contrôle' }));
+    const quality = within(dialog).getByRole('group', { name: 'Qualité' });
+    await user.click(within(quality).getByRole('button', { name: 'Ajouter un contrôle' }));
     await user.click(within(dialog).getByRole('button', { name: 'Valider' }));
     expect(within(dialog).getByRole('alert')).toHaveTextContent('Renseignez chaque vigilance');
     await user.click(within(dialog).getByRole('button', { name: 'Annuler' }));
