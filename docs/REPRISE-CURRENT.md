@@ -1,5 +1,15 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Correctif RTL intégration validation — 2026-10-27
+
+Log local utilisateur Vitest 4.1.11 : **95 tests M-006, 91 réussis, 4 échoués**, tous dans `process-sheet-workspace-page.integration.test.jsx`. Cause commune : le mock complet de `process-sheets-api` n'expose pas le hook `useValidateProcessSheetMutation` nouvellement requis par le vrai `ProcessSheetDraftEditor` ; tous les cas échouent avant leur parcours métier au rendu React.
+
+Correction limitée au fichier de test d'intégration : ajouter `validate: vi.fn()` à `mocks`, exposer `useValidateProcessSheetMutation: () => [mocks.validate, { isLoading: false }]`, supprimer l'assertion devenue obsolète de présence du message « Brouillon enregistré. » après sauvegarde, puisque le statut « À jour » est déjà affiché. Aucun backend, Core, migration ou composant de production modifié dans ce correctif.
+
+**Résultat attendu après relance, non constaté :** 4 tests d'intégration réussis et 95/95 pour la suite M-006. Aucun Vitest, lint, build ou gate exécuté par cet assistant. Conserver `feature/m006-fiches-process`, sans PR ni merge.
+
+---
+
 ## Lot 2 — Contrat M-006 rectifié : une Fiche process courante et revalidation (2026-10-27)
 
 **Décision du propriétaire confirmée :** pour chaque Fiche technique M-004, zéro ou une Fiche process M-006 ; la Fiche process validée peut être modifiée. Si une **modification métier réelle est enregistrée**, l'état redevient Brouillon et une validation explicite est requise. Une consultation, saisie locale non sauvegardée ou sauvegarde identique ne doit pas invalider. Le process garde son identité et son contenu courant, **sans historique des anciennes versions métier M-006**. Ne pas toucher aux versions officielles immuables M-004 ni aux révisions historiques des modèles de bibliothèque.
