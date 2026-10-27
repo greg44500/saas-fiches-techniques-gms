@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 const captured = vi.hoisted(() => ({
   tags: [], endpoints: {},
-  listTitlesHook: vi.fn(), createTitleHook: vi.fn(),
+  listTitlesHook: vi.fn(), createTitleHook: vi.fn(), validateHook: vi.fn(),
 }));
 
 vi.mock('@/services/api/base-api', () => ({
@@ -19,6 +19,7 @@ vi.mock('@/services/api/base-api', () => ({
             endpoints: captured.endpoints,
             useListProcessPhaseTitlesQuery: captured.listTitlesHook,
             useCreateProcessPhaseTitleMutation: captured.createTitleHook,
+            useValidateProcessSheetMutation: captured.validateHook,
           };
         }),
       };
@@ -31,6 +32,7 @@ import {
   processSheetsApi,
   useListProcessPhaseTitlesQuery,
   useCreateProcessPhaseTitleMutation,
+  useValidateProcessSheetMutation,
 } from '@/features/process-sheets/api/process-sheets-api';
 
 const scope = {
@@ -41,6 +43,7 @@ describe('M-006 — contrats frontend RTK Query', () => {
   it('expose réellement les hooks RTK Query du catalogue aux composants', () => {
     expect(useListProcessPhaseTitlesQuery).toBe(captured.listTitlesHook);
     expect(useCreateProcessPhaseTitleMutation).toBe(captured.createTitleHook);
+    expect(useValidateProcessSheetMutation).toBe(captured.validateHook);
   });
 
   it('déclare les seules routes réelles du backend M-006', () => {
