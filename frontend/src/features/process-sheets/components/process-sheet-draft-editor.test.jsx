@@ -327,6 +327,12 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     const active = within(dialog).getByRole('spinbutton', { name: 'Temps actif (min)' });
     expect(active).toHaveAttribute('placeholder', 'Ex. 15');
     expect(within(dialog).getByText('Temps actif (min)')).toHaveAttribute('for', active.id);
+    expect(within(dialog).getByText('Repos (min)')).toBeInTheDocument();
+    expect(within(dialog).getByRole('spinbutton', { name: 'Repos / attente (min)' }))
+      .toBeInTheDocument();
+    expect(within(dialog).getByText('Cuisson (min)')).toBeInTheDocument();
+    expect(within(dialog).getByRole('spinbutton', { name: 'Cuisson / traitement (min)' }))
+      .toBeInTheDocument();
     await user.type(active, '15');
     await user.type(within(dialog).getByRole('spinbutton', { name: 'Température (°C)' }), '65.5');
     await user.click(within(dialog).getByRole('button', { name: 'Ajouter' }));
