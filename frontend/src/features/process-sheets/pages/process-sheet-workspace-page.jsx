@@ -43,6 +43,8 @@ function ProcessSheetWorkspacePage() {
   const canEdit = Boolean(can?.(PROCESS_SHEET_PERMISSION.EDIT))
     && process?.status === 'ACTIVE' && dossierOperational === true;
   const canReadPhaseLibrary = Boolean(can?.(PROCESS_SHEET_PERMISSION.READ));
+  const canValidate = Boolean(can?.(PROCESS_SHEET_PERMISSION.VALIDATE))
+    && process?.status === 'ACTIVE' && dossierOperational === true;
 
   if (!process || !draft) {
     return (
@@ -82,6 +84,10 @@ function ProcessSheetWorkspacePage() {
       <ProcessSheetDraftEditor
         key={process.id}
         canEdit={canEdit}
+        canValidate={canValidate}
+        editorialState={process.editorialState}
+        processRevision={process.revision}
+        compositionOutdated={compositionOutdated}
         canReadPhaseLibrary={canReadPhaseLibrary}
         dossierId={dossierId}
         initialDraft={draft}
