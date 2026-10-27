@@ -1,5 +1,16 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Reprise M-006 — atelier à deux zones, sans effet glassy (2026-10-27)
+
+**Changement d'orientation explicite du propriétaire :** pas d'effet glassy à ce stade, afin de conserver l'unité du thème existant. Le lot de refonte UX de l'éditeur a été travaillé sur `feature/m006-fiches-process` : rail distinct de suivi des ingrédients à gauche sur Desktop (non affectés, justificatifs, affectés, nombre d'usages multiples), navigation horizontale compacte des phases et liste des étapes à droite, un unique éditeur d'étape sélectionnée ; disparition des bordures imbriquées répétitives. Les champs de phase restent accessibles via un volet secondaire. Les transitions d'ouvertures/fermetures utilisent une grille animée avec `aria-hidden`/`inert` et respect des animations réduites ; entrée discrète du panneau sélectionné. Pas de nouveau thème ni de `backdrop-blur`. Les titres libres ne sont pas reliés automatiquement aux bibliothèques : intégration de modèles différée.
+
+Données et API M-006 inchangées : `lineKey` unique de chaque occurrence M-004, associations multiples, justificatifs, durées, équipements, vigilances, qualité/sanitaire, ordre, CRUD local, sauvegarde par révision, conflit 409, consultation et aperçu préservés. Architecture frontend séparée entre orchestration, rail ingrédients, saisie d'étape et disclosures. Tests RTL adaptés et enrichis, y compris intégration page → éditeur réel → payload de sauvegarde.
+
+**IMPORTANT : non testé après modifications dans cette intervention.** Les tests précédemment communiqués par le propriétaire ne valent pas pour le nouveau rendu. Commandes à exécuter localement : `npm --prefix frontend run test -- src/features/process-sheets`, `npm --prefix frontend run lint`, `npm --prefix frontend run build`, puis `npx vitest run backend/tests/modules/process` et `npm run release:check`. Aucun commit sur `main`, aucune PR ni merge. Avant une nouvelle phase de développement, recueillir la QA visuelle Desktop (scroll local vs page), mobile, thème sombre et navigation clavier.
+
+---
+
+
 ## Reprise M-006 — test de reprise après conflit (2026-10-27)
 
 Dernier log fourni localement : **12/13 tests de la modale passent**, seul « après conflit actualise les choix, autorise une autre Fiche et termine la création » échoue faute d'alerte 409. **Cause du scénario de test identifié dans la fixture** : la liste simulée d'éligibles basculait de sheet-1 à sheet-2 dès l'appel de mutation POST, au lieu d'attendre `eligible.refetch()`; des rendus intermédiaires peuvent alors invalider la sélection avant traitement de la réponse 409. Le mock simule désormais deux états de cache RTK Query stables, avec bascule déclenchée exclusivement par `refetch`, et la suite contrôle explicitement le premier POST/409 puis le second POST réussi. Le dialogue conserve désormais son message 409 face à un `onValueChange(null)` interne de Base UI lors de la mise à jour des options. Aucun changement backend/Core.
