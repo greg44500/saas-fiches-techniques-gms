@@ -1,21 +1,17 @@
-import { ingredientName } from '@/features/process-sheets/components/process-sheet-editor-fields';
-
 // A read-only chronological view of the local draft. It is deliberately
 // independent of browser printing: PDF layout/exports are a separate lot.
-function IngredientSummary({ ingredients, keys, label }) {
+function IngredientSummary({ ingredients, keys }) {
   const selected = ingredients.filter((line) => (keys ?? []).includes(line.lineKey));
-  if (selected.length === 0) return null;
+  if (!selected.length) return null;
+
   return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <div className="flex flex-wrap gap-1">
-        {selected.map((line) => (
-          <span className="rounded border border-border bg-muted/30 px-2 py-1 text-xs" key={line.lineKey}>
-            {ingredientName(line)}
-          </span>
-        ))}
-      </div>
-    </div>
+    <ul className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+      {selected.map((line) => (
+        <li key={line.lineKey}>
+          {line.productVariantName ?? 'Référence indisponible'}
+        </li>
+      ))}
+    </ul>
   );
 }
 function DetailsSummary({ step }) {
@@ -60,45 +56,32 @@ function DetailsSummary({ step }) {
     </div>
   );
 }
-function ProcessSheetPreview({ phases, ingredients, description = 'Aperçu de lecture du brouillon local. Ce mode n’enregistre ni ne valide le document.' }) {
+function ProcessSheetPreview({ phases, ingredients }) {
   if (phases.length === 0) {
     return <p className="text-sm text-muted-foreground">Aucune phase à afficher.</p>;
   }
   return (
-    <section className="space-y-4" aria-label="Aperçu du process">
-      <p className="text-xs text-muted-foreground">
-        {description}
-      </p>
-      <ol className="space-y-4">
-        {phases.map((phase, i) => {
-          const phaseKeys = [...new Set([
-            ...(phase.ingredientLineKeys ?? []),
-            ...(phase.steps ?? []).flatMap((step) => step.ingredientLineKeys ?? []),
-          ])];
-          return (
-            <li className="rounded-lg border border-border p-4" key={phase.id}>
-              <h3 className="text-base font-semibold">{i + 1}. {phase.title || 'Phase sans titre'}</h3>
-              {phase.instructions && <p className="mt-2 whitespace-pre-wrap text-sm">{phase.instructions}</p>}
-              <div className="mt-3">
-                <IngredientSummary ingredients={ingredients} keys={phaseKeys}
-                  label="Ingrédients de la phase (directs et étapes)" />
-              </div>
-              {phase.steps?.length > 0 && (
-                <ol className="mt-3 space-y-3 border-t border-border pt-3">
-                  {phase.steps.map((step, j) => (
-                    <li className="space-y-2" key={step.id}>
-                      <h4 className="text-sm font-semibold">{i + 1}.{j + 1} {step.title || 'Étape sans titre'}</h4>
-                      {step.instructions && <p className="whitespace-pre-wrap text-sm">{step.instructions}</p>}
-                      <IngredientSummary ingredients={ingredients} keys={step.ingredientLineKeys}
-                        label="Ingrédients de l’étape" />
-                      <DetailsSummary step={step} />
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </li>
-          );
-        })}
+    <section aria-label="Aperçu du process">
+      <ol className="divide-y divide-border/50">
+        {phases.map((phase, i) => (
+          <li className="space-y-2 py-4 first:pt-0 last:pb-0" key={phase.id}>
+            <h3 className="text-base font-semibold">{i + 1}. {phase.title || 'Phase sans titre'}</h3>
+            {phase.instructions && <p className="whitespace-pre-wrap text-sm">{phase.instructions}</p>}
+            <IngredientSummary ingredients={ingredients} keys={phase.ingredientLineKeys} />
+            {phase.steps?.length > 0 && (
+              <ol className="ml-4 space-y-4 pt-2">
+                {phase.steps.map((step, j) => (
+                  <li className="space-y-2" key={step.id}>
+                    <h4 className="text-sm font-semibold">{i + 1}.{j + 1} {step.title || 'Étape sans titre'}</h4>
+                    {step.instructions && <p className="whitespace-pre-wrap text-sm">{step.instructions}</p>}
+                    <IngredientSummary ingredients={ingredients} keys={step.ingredientLineKeys} />
+                    <DetailsSummary step={step} />
+                  </li>
+                ))}
+              </ol>
+            )}
+          </li>
+        ))}
       </ol>
     </section>
   );
