@@ -12,8 +12,10 @@ import { ProductVariantField } from '@/features/products/components/product-vari
 
 const DURATION_FIELDS = [
   { key: 'activeMinutes', label: 'Temps actif (min)', placeholder: 'Ex. 15' },
-  { key: 'restMinutes', label: 'Repos / attente (min)', placeholder: 'Ex. 30' },
-  { key: 'treatmentMinutes', label: 'Cuisson / traitement (min)', placeholder: 'Ex. 45' },
+  { key: 'restMinutes', label: 'Repos (min)',
+    ariaLabel: 'Repos / attente (min)', placeholder: 'Ex. 30' },
+  { key: 'treatmentMinutes', label: 'Cuisson (min)',
+    ariaLabel: 'Cuisson / traitement (min)', placeholder: 'Ex. 45' },
 ];
 const TIME_TITLE = 'Temps, température et équipements';
 const QUALITY_TITLE = 'Vigilance, qualité et maîtrise sanitaire';
@@ -258,8 +260,9 @@ function ProcessStepDetails({ step, disabled, onChange }) {
                   {kind === 'times' ? (
                     <>
                       <div className="grid max-w-[30rem] gap-3 sm:grid-cols-3">
-                        {DURATION_FIELDS.map(({ key, label, placeholder }) => (
+                        {DURATION_FIELDS.map(({ key, label, ariaLabel, placeholder }) => (
                           <OutlinedDetailInput
+                            ariaLabel={ariaLabel}
                             disabled={disabled} id={'step-' + step.id + '-' + key}
                             key={key} label={label} max={10080} min={0}
                             onChange={(value) => change('duration', { ...draft.duration, [key]: value })}
