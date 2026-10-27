@@ -31,11 +31,16 @@ function ProcessSheetCreateDialog({
   );
   const [createProcess, state] = useCreateProcessSheetMutation();
   const options = eligible.data?.technicalSheets ?? [];
+  const selectedIsEligible = options.some((sheet) => sheet.id === technicalSheetId);
+  const loadingEligibility = eligible.isLoading || eligible.isFetching;
+  const canSubmit = !state.isLoading && !loadingEligibility && !eligible.isError
+    && Boolean(title.trim()) && selectedIsEligible;
 
   async function submit(event) {
     event.preventDefault();
-    if (state.isLoading) return;
-    if (!title.trim() || !technicalSheetId) {
+    // Client convenience only; the transactional server check remains authoritative.
+    if (state.isLoading || loadingEligibility || eligible.isError) return;
+    if (!title.trim() || !selectedIsEligible) {
       setErrorMessage('Renseignez un titre et sélectionnez une Fiche technique.');
       return;
     }
@@ -91,7 +96,10 @@ function ProcessSheetCreateDialog({
                 className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground"
                 id="process-sheet-title"
                 maxLength={160}
-                onChange={(event) => setTitle(event.target.value)}
+                onChange={(event) => {
+                  setTitle(event.target.value);
+                  setErrorMessage('');
+                }}
                 placeholder="Ex. Fabrication de la tartine auvergnate"
                 required
                 value={title}
@@ -104,7 +112,7 @@ function ProcessSheetCreateDialog({
               helpLabel="Critères de disponibilité des Fiches techniques"
               id="process-sheet-linked"
               label="Fiche technique associée"
-              unavailable={eligible.isLoading || eligible.isError || options.length === 0}
+              unavailable={loadingEligibility || eligible.isError || options.length === 0}
             >
               {eligible.isError ? (
                 <ErrorState
@@ -115,11 +123,14 @@ function ProcessSheetCreateDialog({
               ) : (
                 <>
                   <Select
-                    disabled={eligible.isLoading || options.length === 0}
+                    disabled={loadingEligibility || eligible.isError || options.length === 0}
                     items={options.map((sheet) => ({
                       value: sheet.id, label: sheet.name,
                     }))}
-                    onValueChange={(nextValue) => setTechnicalSheetId(nextValue || '')}
+                    onValueChange={(nextValue) => {
+                      setTechnicalSheetId(nextValue || '');
+                      setErrorMessage('');
+                    }}
                     value={technicalSheetId || null}
                   >
                     <SelectTrigger
@@ -142,7 +153,12 @@ function ProcessSheetCreateDialog({
                       ))}
                     </SelectContent>
                   </Select>
-                  {!eligible.isLoading && options.length === 0 && (
+                  {eligible.isFetching && !eligible.isLoading && (
+                    <p role="status" className="text-xs text-muted-foreground">
+                      Actualisation des Fiches techniques éligibles…
+                    </p>
+                  )}
+                  {!loadingEligibility && options.length === 0 && (
                     <p className="text-sm text-muted-foreground">
                       Aucune Fiche technique éligible. Les Fiches en brouillon,
                       en révision ou déjà liées à un process ne peuvent pas
@@ -170,7 +186,7 @@ function ProcessSheetCreateDialog({
                 Annuler
               </Button>
               <Button
-                disabled={state.isLoading || eligible.isError || !title.trim() || !technicalSheetId}
+                disabled={!canSubmit}
                 type="submit"
               >
                 {state.isLoading ? 'Création…' : 'Créer et ouvrir'}
