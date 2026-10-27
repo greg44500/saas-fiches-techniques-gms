@@ -1,5 +1,17 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Lot 2 — Contrat M-006 rectifié : une Fiche process courante et revalidation (2026-10-27)
+
+**Décision du propriétaire confirmée :** pour chaque Fiche technique M-004, zéro ou une Fiche process M-006 ; la Fiche process validée peut être modifiée. Si une **modification métier réelle est enregistrée**, l'état redevient Brouillon et une validation explicite est requise. Une consultation, saisie locale non sauvegardée ou sauvegarde identique ne doit pas invalider. Le process garde son identité et son contenu courant, **sans historique des anciennes versions métier M-006**. Ne pas toucher aux versions officielles immuables M-004 ni aux révisions historiques des modèles de bibliothèque.
+
+**Modifications du lot : exclusivement documentation.** Contrat fonctionnel `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md` actualisé, conception `docs/m006/M-006-TECHNICAL-DESIGN.md` clarifiée, cohérence `docs/PRODUCT-SCOPE.md`, `docs/ROADMAP.md`, `docs/DEBT.md`, `docs/domain/DOMAIN-MODEL.md`, `docs/domain/GLOSSARY.md`. Les descriptions historiques datées des anciens lots ne sont pas de nouvelles autorisations d'implémenter une version immuable M-006 ; le nouveau contrat prévaut.
+
+**Points de conception bloquants avant lot 3 :** `ProcessSheet.currentValidatedState` ObjectId sans implémentation effective de validation ; `sourceValidation` immutable ; `ProcessSheetDraft` existant ; représentation et comparaison du contenu courant, contrôle d'un PUT identique, concurrence `expectedRevision`, autorisation `process-sheet:validate`, traçabilité sans copie des anciens contenus et vérification de cohérence M-004. **Aucune décision de migration de données n'a été présumée.** La suppression physique autonome est un autre lot, non lancé.
+
+**État des preuves :** le lot 1 d'aperçu est committé mais aucun retour de tests locaux post-lot 1 n'a été fourni ; le dernier log disponible est antérieur au lot 1 (89/90 avec correctif Base UI depuis). Les modifications du lot 2 sont documentaires et n'ont pas été accompagnées d'une exécution de Vitest, lint, build ou `release:check` par l'assistant. Garder la même branche et **ne pas engager le lot 3** avant validation de ce contrat et des vérifications locales applicables. Aucune PR/merge ni modification `main`.
+
+---
+
 ## Lot 1 — Prévisualisation M-006 épurée (2026-10-27)
 
 **Branche conservée :** `feature/m006-fiches-process`. À la demande du propriétaire, les lots suivants attendent chacun la vérification des tests locaux, sans PR ni merge.
