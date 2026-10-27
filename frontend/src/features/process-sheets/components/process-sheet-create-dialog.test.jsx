@@ -229,21 +229,23 @@ describe('M-006 — modale de création', () => {
     expect(mocks.close).not.toHaveBeenCalled();
   });
 
-  it('après conflit actualise les choix, autorise une autre Fiche et termine la création', async () => {
-    let attempt = 0;
-    mocks.mutate.mockImplementation(() => {
-      attempt += 1;
-      return {
-        unwrap: attempt === 1
-          ? vi.fn().mockRejectedValue({ status: 409 })
-          : vi.fn().mockResolvedValue({ id: 'process-retry' }),
-      };
+  it('après conflit recharge les choix, autorise une autre Fiche et termine la création', async () => {
+    // Do not switch eligibility when POST starts: the real RTK Query GET
+    // changes only after refetch. Otherwise the test may disable submit
+    // before the first 409 is even handled.
+    let refreshed = false;
+    mocks.mutate
+      .mockReturnValueOnce({ unwrap: vi.fn().mockRejectedValue({ status: 409 }) })
+      .mockReturnValueOnce({ unwrap: vi.fn().mockResolvedValue({ id: 'process-retry' }) });
+    mocks.refetch.mockImplementation(() => {
+      refreshed = true;
+      return Promise.resolve();
     });
     mocks.list.mockImplementation(() => ({
       data: {
-        technicalSheets: attempt === 0
-          ? [{ id: 'sheet-1', name: 'Tartine validée' }]
-          : [{ id: 'sheet-2', name: 'Salade validée' }],
+        technicalSheets: refreshed
+          ? [{ id: 'sheet-2', name: 'Salade validée' }]
+          : [{ id: 'sheet-1', name: 'Tartine validée' }],
         pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
       },
       isError: false, isFetching: false, isLoading: false, refetch: mocks.refetch,
@@ -254,15 +256,26 @@ describe('M-006 — modale de création', () => {
       name: 'Titre de la Fiche process',
     }), 'Fabrication tartine');
     await selectByKeyboard(user);
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeEnabled();
+
     await user.click(screen.getByRole('button', { name: 'Créer et ouvrir' }));
+    expect(mocks.mutate).toHaveBeenCalledTimes(1);
+    expect(mocks.mutate).toHaveBeenNthCalledWith(1, {
+      ...args, title: 'Fabrication tartine', technicalSheetId: 'sheet-1',
+    });
     expect(await screen.findByRole('alert')).toHaveTextContent('n’est plus disponible');
     expect(mocks.refetch).toHaveBeenCalledTimes(1);
+    expect(refreshed).toBe(true);
+    expect(screen.getByRole('textbox', { name: 'Titre de la Fiche process' }))
+      .toHaveValue('Fabrication tartine');
     expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeDisabled();
+
     await selectByKeyboard(user, 'Salade validée');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Créer et ouvrir' }));
     expect(mocks.mutate).toHaveBeenCalledTimes(2);
-    expect(mocks.mutate).toHaveBeenLastCalledWith({
+    expect(mocks.mutate).toHaveBeenNthCalledWith(2, {
       ...args, title: 'Fabrication tartine', technicalSheetId: 'sheet-2',
     });
     expect(mocks.created).toHaveBeenCalledOnce();
