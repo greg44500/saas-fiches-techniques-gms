@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ import {
   useListProcessPhaseTitlesQuery,
 } from '@/features/process-sheets/api/process-sheets-api';
 
+const EMPTY_PHASES = [];
+
 // Suggestions are server-owned and Workspace-scoped. Selecting an existing
 // title never inserts the model's steps into a process sheet.
 function ProcessPhasePicker({
@@ -29,7 +31,12 @@ function ProcessPhasePicker({
     { skip: !canReadLibrary, refetchOnMountOrArgChange: true },
   );
   const [createTitle, creation] = useCreateProcessPhaseTitleMutation();
-  const phases = list.data?.phases ?? [];
+  const phases = list.data?.phases ?? EMPTY_PHASES;
+  // Keep Base UI's item collection stable while its popup opens.
+  const options = useMemo(() => [
+    ...phases.map((phase) => ({ value: phase.id, label: phase.title })),
+    { value: 'other', label: 'Autre phase…' },
+  ], [phases]);
 
   const choose = (value) => {
     if (!value || disabled) return;
@@ -64,6 +71,7 @@ function ProcessPhasePicker({
     <>
       <Select
         disabled={disabled}
+        items={options}
         onValueChange={choose}
         value={null}
       >
@@ -71,19 +79,22 @@ function ProcessPhasePicker({
           aria-label={mode === 'create' ? 'Ajouter une phase' : 'Choisir un intitulé de phase'}
           className={mode === 'create' ? 'size-8 justify-center border-0 px-1 hover:bg-muted [&_[data-slot=select-value]]:hidden' : 'w-fit max-w-full'}
         >
-          {mode === 'create'
-            ? <Plus aria-hidden="true" className="size-4" />
-            : <SelectValue placeholder="Choisir dans la bibliothèque" />}
+          {mode === 'create' ? (
+            <>
+              <Plus aria-hidden="true" className="size-4" />
+              <SelectValue className="sr-only" placeholder="Ajouter une phase" />
+            </>
+          ) : <SelectValue placeholder="Choisir dans la bibliothèque" />}
         </SelectTrigger>
         <SelectContent>
           {list.isLoading || list.isFetching ? (
-            <SelectItem disabled value="loading">Chargement des phases…</SelectItem>
+            <p role="status" className="px-3 py-2 text-sm text-muted-foreground">Chargement des phases…</p>
           ) : list.isError ? (
-            <SelectItem disabled value="error">Bibliothèque indisponible</SelectItem>
+            <p role="alert" className="px-3 py-2 text-sm text-destructive">Bibliothèque indisponible</p>
           ) : !canReadLibrary ? (
-            <SelectItem disabled value="forbidden">Bibliothèque non autorisée</SelectItem>
+            <p role="status" className="px-3 py-2 text-sm text-muted-foreground">Bibliothèque non autorisée</p>
           ) : phases.length === 0 ? (
-            <SelectItem disabled value="empty">Aucune phase disponible</SelectItem>
+            <p role="status" className="px-3 py-2 text-sm text-muted-foreground">Aucune phase disponible</p>
           ) : phases.map((phase) => (
             <SelectItem key={phase.id} value={phase.id}>{phase.title}</SelectItem>
           ))}

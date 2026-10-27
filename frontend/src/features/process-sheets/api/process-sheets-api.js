@@ -160,6 +160,8 @@ const {
 export {
   compositionScopeId,
   processSheetsApi,
+  useCreateProcessPhaseTitleMutation,
+  useListProcessPhaseTitlesQuery,
   useCreateProcessSheetMutation,
   useGetProcessSheetCompositionQuery,
   useGetProcessSheetQuery,

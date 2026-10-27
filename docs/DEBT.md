@@ -1,4 +1,10 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
+## Qualité M-006 — propagation de tests en cascade et hooks API non exportés (2026-10-27)
+
+Douze échecs RTL observés dans \`process-sheet-draft-editor.test.jsx\` après changement de sélection de phase. Les scénarios partagent le helper de création qui échoue sur le menu Select non ouvert ; les erreurs sont groupées par cause. La conversion d'un Popover testé en Select shadcn/Base UI n'a pas réutilisé entièrement le contrat du composant du dépôt (options \`items\`, \`SelectValue\` dans le trigger icône). Les hooks RTK Query nouvellement créés étaient destructurés mais pas exportés, ce que les mocks de test masquaient. Ajouter une vérification de module API non mockée en build et test de composant autonome avant d'intégrer plusieurs scénarios. Risque à solder avant PR par logs locaux : tests frontend, lint, build, gate backend pertinente.
+
+---
+
 ## Incident évité par gate — route M-006 ajoutée dans un commentaire (2026-10-27)
 
 La branche M-006 a introduit \`processPhaseTitlesRouter\` sans l'enregistrer effectivement dans \`APPLICATION_BACKEND_ROUTE_MODULES\` : le descriptor se trouvait dans le bloc d'exemple commenté. L'appel GET/POST retournait 404. Correction métier ciblée et ajout d'un test de composition du registre, complémentaire aux tests HTTP Supertest de bout en bout. **Aucun constat de succès après correction tant que la gate locale n'est pas exécutée**. Cet incident souligne que la simple présence d'un import et d'un chemin en source ne suffit pas : contrôler l'inscription dans le tableau exécuté et le comportement HTTP avant PR.

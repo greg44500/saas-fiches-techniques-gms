@@ -69,7 +69,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     const user = userEvent.setup();
     view({ canReadPhaseLibrary: true });
     await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
-    expect(screen.getByRole('option', { name: 'Aucune phase disponible' })).toBeInTheDocument();
+    expect(screen.getByText('Aucune phase disponible')).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Cuisson' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('option', { name: 'Autre phase…' }));
     await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Marinade');
@@ -85,7 +85,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     const user = userEvent.setup();
     view({ canReadPhaseLibrary: false });
     await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
-    expect(screen.getByRole('option', { name: 'Bibliothèque non autorisée' })).toBeInTheDocument();
+    expect(screen.getByText('Bibliothèque non autorisée')).toBeInTheDocument();
     expect(mocks.phaseTitles).toHaveBeenCalledWith(expect.anything(),
       expect.objectContaining({ skip: true }));
     await user.click(screen.getByRole('option', { name: 'Autre phase…' }));

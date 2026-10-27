@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const captured = vi.hoisted(() => ({ tags: [], endpoints: {} }));
+const captured = vi.hoisted(() => ({
+  tags: [], endpoints: {},
+  listTitlesHook: vi.fn(), createTitleHook: vi.fn(),
+}));
 
 vi.mock('@/services/api/base-api', () => ({
   baseApi: {
@@ -12,7 +15,11 @@ vi.mock('@/services/api/base-api', () => ({
             query: (definition) => definition,
             mutation: (definition) => definition,
           });
-          return { endpoints: captured.endpoints };
+          return {
+            endpoints: captured.endpoints,
+            useListProcessPhaseTitlesQuery: captured.listTitlesHook,
+            useCreateProcessPhaseTitleMutation: captured.createTitleHook,
+          };
         }),
       };
     }),
@@ -22,6 +29,8 @@ vi.mock('@/services/api/base-api', () => ({
 import {
   compositionScopeId,
   processSheetsApi,
+  useListProcessPhaseTitlesQuery,
+  useCreateProcessPhaseTitleMutation,
 } from '@/features/process-sheets/api/process-sheets-api';
 
 const scope = {
@@ -29,6 +38,11 @@ const scope = {
 };
 
 describe('M-006 — contrats frontend RTK Query', () => {
+  it('expose réellement les hooks RTK Query du catalogue aux composants', () => {
+    expect(useListProcessPhaseTitlesQuery).toBe(captured.listTitlesHook);
+    expect(useCreateProcessPhaseTitleMutation).toBe(captured.createTitleHook);
+  });
+
   it('déclare les seules routes réelles du backend M-006', () => {
     expect(processSheetsApi.endpoints).toBe(captured.endpoints);
     expect(Object.keys(captured.endpoints).sort()).toEqual([
