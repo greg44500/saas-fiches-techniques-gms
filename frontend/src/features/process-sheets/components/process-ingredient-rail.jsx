@@ -45,8 +45,8 @@ function ProcessIngredientRail({ ingredients, phases }) {
         {ingredients.map((line) => {
           const locations = usages.get(line.lineKey) ?? [];
           return (
-            <li className="flex min-w-0 items-center gap-2 rounded-md py-1.5" key={line.lineKey}>
-              <span className="min-w-0 flex-1 text-sm">
+            <li className="flex min-w-0 items-center gap-1.5 rounded-md py-1.5" key={line.lineKey}>
+              <span className="min-w-0 text-sm">
                 {line.productVariantName ?? 'Référence indisponible'}
               </span>
               {locations.length > 0 && (
