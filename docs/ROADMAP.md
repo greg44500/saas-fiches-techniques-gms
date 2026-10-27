@@ -1,4 +1,20 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
+## M-006 — progression lot par lot après décision de validation simplifiée (2026-10-27)
+
+**Branche unique :** `feature/m006-fiches-process`. La PR et le merge sont réservés au propriétaire après réussite des gates locaux et QA. Pas de branche supplémentaire ni de livraison présumée.
+
+| Lot | Périmètre | Avancement |
+| --- | --- | --- |
+| 1 | Prévisualisation épurée, noms d'ingrédients sans numéros de ligne | Code et tests committés ; validation locale non communiquée |
+| 2 | Contrat courant Brouillon ↔ Validée, revalidation après changement enregistré, pas d'historique M-006 | Documentation rectifiée ; aucun code modifié |
+| 3 | Implémentation de la validation officielle, invalidation atomique si modification réelle, droits, audit et tests | À implémenter après contrôle du lot 2 |
+| 4 | Suppression définitive autonome avec confirmation, droits, transaction et réouverture de l'unicité 1:1 | À implémenter séparément |
+| 5 | Gates M-006/globales, QA responsive, PR/merge par le propriétaire | En attente |
+
+La `revision` technique anti-concurrence ne crée pas de version métier conservée. L'absence d'historique M-006 ne modifie ni les versions immuables M-004 ni les révisions des bibliothèques.
+
+---
+
 ## M-006 — ergonomie pilotage phases/étapes (2026-10-27)
 
 Lot frontend : créer / renommer / supprimer des phases dans l'arborescence, titre contextuel « Phase N : Titre » et édition du contenu à droite, actions iconographiques réutilisant le composant Tooltip Base UI, icônes différenciées pour phase et étape, focus harmonisé localement, confirmation conservée pour phases non vides. Aucun changement Core ni persistance Mongoose. QA : clavier, souris, tactile, dark mode, suppression avec contenu, sauvegarde explicite, préservation des identifiants et association ingrédients. Gates/PR à faire après tests locaux.
