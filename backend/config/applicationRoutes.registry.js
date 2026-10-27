@@ -139,12 +139,6 @@ const mountApplicationRoutes = (
  * import { catalogRouter } from '../modules/catalog/catalog.routes.js';
  *
  * const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
-    Object.freeze({
-        key: 'process-phase-titles',
-        mountPath: '/api/workspaces/:workspaceId/process-phase-titles',
-        router: processPhaseTitlesRouter,
-    }),
-
  *     Object.freeze({
  *         key: 'catalog',
  *         mountPath: '/api/workspaces/:workspaceId/catalog',
@@ -153,6 +147,11 @@ const mountApplicationRoutes = (
  * ]);
  */
 const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
+    Object.freeze({
+        key: 'process-phase-titles',
+        mountPath: '/api/workspaces/:workspaceId/process-phase-titles',
+        router: processPhaseTitlesRouter,
+    }),
     Object.freeze({
         key: 'process-sheets',
         mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets',

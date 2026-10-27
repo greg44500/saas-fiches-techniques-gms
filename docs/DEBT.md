@@ -1,4 +1,10 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
+## Incident évité par gate — route M-006 ajoutée dans un commentaire (2026-10-27)
+
+La branche M-006 a introduit \`processPhaseTitlesRouter\` sans l'enregistrer effectivement dans \`APPLICATION_BACKEND_ROUTE_MODULES\` : le descriptor se trouvait dans le bloc d'exemple commenté. L'appel GET/POST retournait 404. Correction métier ciblée et ajout d'un test de composition du registre, complémentaire aux tests HTTP Supertest de bout en bout. **Aucun constat de succès après correction tant que la gate locale n'est pas exécutée**. Cet incident souligne que la simple présence d'un import et d'un chemin en source ne suffit pas : contrôler l'inscription dans le tableau exécuté et le comportement HTTP avant PR.
+
+---
+
 ## Dette de suivi — bootstrap des modèles de phases M-006 (2026-10-27)
 
 **À requalifier après gates et QA :** le Core de création Workspace ne dispose pas d'un hook transactionnel métier dédié au provisionnement du catalogue M-006. Pour ne pas modifier le Core dans le SaaS dérivé, ce lot prévoit un runner de migration explicite pour les Workspaces existants et un provisionnement idempotent lors du premier GET des intitulés pour les Workspaces créés ensuite. Les lectures suivantes ne doivent ni réactiver un modèle archivé ni changer ses dates/révisions ; la concurrence initiale mérite une recette E2E sur MongoDB rs0.

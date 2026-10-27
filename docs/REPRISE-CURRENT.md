@@ -1,4 +1,12 @@
 # Reprise M-006 — Fiches process (2026-10-26)
+## Correctif M-006 — routes du catalogue non montées, 2026-10-27
+
+**Preuve locale fournie par le propriétaire :** commande Vitest ciblée backend : \`processLibrary.http.test.js\` 14/14 verts, \`processLibrary.validation.test.js\` 4/4 verts, \`processPhaseTitles.http.test.js\` 4 échecs/4 ; chacun reçoit HTTP 404 (GET propriétaire, POST contributeur, archivage, cross-Workspace). Diagnostic dans GitHub : la déclaration \`process-phase-titles\` avait été ajoutée PAR ERREUR dans l'exemple commenté de \`backend/config/applicationRoutes.registry.js\`, au lieu du tableau effectif \`APPLICATION_BACKEND_ROUTE_MODULES\`. \`backend/app.js\` n'a donc jamais monté le router. Correction : déplacer la déclaration dans la collection exécutée et réparer le commentaire. Ajouter un test unitaire de composition explicite \`backend/tests/config/applicationRoutes.registry.test.js\` exigeant précisément le montage du chemin \`/api/workspaces/:workspaceId/process-phase-titles\` ; les tests HTTP métier préexistants vérifieront GET/POST, seed et RBAC après récupération Git.
+
+**Statut** : correction versionnée sur la branche de travail, sans exécution locale attestée après correctif. Les 18 tests verts concernent strictement l'état précédent. Relancer le test du registre + les trois fichiers HTTP/validation concernés, puis la feature frontend et la gate ; aucune CI GitHub verte déclarée.
+
+---
+
 ## Reprise M-006 — catalogue Workspace d'intitulés et Select Base UI (2026-10-27)
 
 Lot demandé explicitement : supprimer l'explication « Seul l’intitulé est repris... » et le champ de recherche, passer au Select Base UI (menu déroulant), provisionner par défaut les cinq phases « Préparation du poste », « Préparations initiales », « Cuisson », « Assemblage », « Présentation / dressage » pour chaque Workspace, et persister les intitulés « Autre phase… » via MongoDB afin de les proposer lors des usages suivants. Les phases Workspace sont disponibles dans tous les Dossiers ; les étapes librement ajoutées aux Fiches process ne sont pas enregistrées comme modèles partagés.

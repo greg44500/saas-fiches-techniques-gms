@@ -93,6 +93,26 @@ describe('application backend route composition', () => {
         }
     });
 
+    it('enregistre réellement les routes de titres de phases Workspace', () => {
+        const expectedPath = '/api/workspaces/:workspaceId/process-phase-titles';
+        const phaseTitleModules = APPLICATION_BACKEND_ROUTE_MODULES.filter(
+            ({ key }) => key === 'process-phase-titles',
+        );
+        expect(phaseTitleModules).toHaveLength(1);
+        expect(phaseTitleModules[0]).toMatchObject({
+            key: 'process-phase-titles',
+            mountPath: expectedPath,
+            router: expect.any(Function),
+        });
+
+        const use = vi.fn();
+        mountApplicationRoutes({ use });
+        expect(use).toHaveBeenCalledWith(
+            expectedPath,
+            phaseTitleModules[0].router,
+        );
+    });
+
     it('monte le module process avec liste, création et composition M-004', () => {
         const module = APPLICATION_BACKEND_ROUTE_MODULES.find(
             ({ key }) => key === 'process-sheets',
