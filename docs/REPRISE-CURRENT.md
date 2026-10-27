@@ -1,5 +1,14 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Reprise M-006 — simplification de la colonne ingrédients (2026-10-27)
+
+Sur demande produit accompagnée de captures Desktop, **lot limité à la colonne ingrédients**, dans `feature/m006-fiches-process` : une liste unique en ordre M-004, titre « Ingrédients », compteurs affectés / restant à affecter, nom sans suffixe « ligne N », sans bordures entre les noms, sans liste séparée des ingrédients utilisés, sans champ ni bouton de justification. Une coche verte discrète marque chaque occurrence utilisée ; son infobulle accessible au survol/focus donne le titre de la phase et/ou de l'étape d'affectation. L'identité `lineKey` reste distincte, les affectations multiples restent permises. Anciennes justifications conservées dans le payload pour compatibilité, mais non éditables ; contrat validé rectifié (22/31 : pas de justification obligatoire lors de la validation future). Aucun backend, schéma, Core ou thème modifié.
+
+Tests RTL de l'éditeur et du parcours page → édition → PUT adaptés, avec vérification des doubles occurrences de nom, des localisations phase/étape et de la conservation des anciennes données. Tests post-modification, lint/build et gate encore **non exécutés** ; ne pas annoncer vert avant log local. Aucun merge/PR.
+
+---
+
+
 ## Reprise M-006 — atelier à deux zones, sans effet glassy (2026-10-27)
 
 **Changement d'orientation explicite du propriétaire :** pas d'effet glassy à ce stade, afin de conserver l'unité du thème existant. Le lot de refonte UX de l'éditeur a été travaillé sur `feature/m006-fiches-process` : rail distinct de suivi des ingrédients à gauche sur Desktop (non affectés, justificatifs, affectés, nombre d'usages multiples), navigation horizontale compacte des phases et liste des étapes à droite, un unique éditeur d'étape sélectionnée ; disparition des bordures imbriquées répétitives. Les champs de phase restent accessibles via un volet secondaire. Les transitions d'ouvertures/fermetures utilisent une grille animée avec `aria-hidden`/`inert` et respect des animations réduites ; entrée discrète du panneau sélectionné. Pas de nouveau thème ni de `backdrop-blur`. Les titres libres ne sont pas reliés automatiquement aux bibliothèques : intégration de modèles différée.
