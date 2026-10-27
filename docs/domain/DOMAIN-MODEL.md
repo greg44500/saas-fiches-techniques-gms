@@ -1374,23 +1374,23 @@ Une Fiche process ne peut être créée que depuis une Fiche technique ACTIVE, o
 
 Une Fiche technique M-004 (**composition**) peut posséder **0 ou 1** Fiche process (**fabrication**). La Fiche process dépend d'exactement une Fiche technique du même Workspace et du même Dossier. Le lien est unique y compris si le process possède un brouillon ou se trouve archivé par cascade.
 
-Concepts métier visés, **non encore implémentés** :
+Concepts métier M-006 (certains implémentés, validation et suppression autonome encore à réaliser) :
 - identité durable de Fiche process et lien 1:1 avec M-004 ;
-- brouillon de travail, versions validées immuables, composition M-004 de référence ;
+- **un seul contenu métier courant**, état éditorial Brouillon ou Validée ; un changement réel enregistré après validation retourne ce même process en Brouillon jusqu'à revalidation ; pas d'historique ni de snapshot officiel M-006 ; composition M-004 de référence conservée ;
 - phases ordonnées, étapes ordonnées, associations d'ingrédients issues des lignes de composition M-004 ; aucun moteur économique distinct ;
 - modèles d'étape/de phase et révisions de bibliothèque : scope Dossier ou Workspace, adoption non automatique ;
 - temps actif, attente/repos, cuisson/traitement, possibilité de simultanéité ;
 - consignes, éléments de fabrication, vigilance, qualité et maîtrise sanitaire ; critères et actions correctives facultatifs ;
-- validation minimale d'une phase et d'une étape documentée, justification des ingrédients non affectés ;
+- validation minimale d'une phase et d'une étape documentée, sans justification obligatoire des ingrédients non affectés ;
 - suivi non bloquant du décalage de composition et proposition de révision après changement M-004 ;
 - cascade d'archivage, corbeille, restauration et purge liée à M-004 ; aucun archivage autonome ;
 - suppression autonome physique définitive après permission/confirmation **uniquement lorsque M-004 est ACTIVE** ;
-- copie inter-Dossier : process cible **non créé tant que M-004 cible est en brouillon** ; reprise guidée seulement après validation M-004 cible, sans versions officielles source ;
-- permissions applicatives, accès Dossier, historique, consultation responsive et impression de version/brouillon identifié.
+- copie inter-Dossier : process cible **non créé tant que M-004 cible est en brouillon** ; reprise guidée du contenu courant source seulement après validation M-004 cible, en process cible Brouillon ;
+- permissions applicatives, accès Dossier, audit d'événements sans versions anciennes, consultation responsive et impression du contenu courant identifié Brouillon/Validée.
 
 **Limites V1 :** pas d'illustrations ni photographie, champ image, stockage dédié ou galerie ; pas de journal de production ni certification HACCP automatique ; pas de partage inter-Workspace. Les illustrations feront l'objet d'un cadrage distinct.
 
-**Statut :** contrat final validé et développement autorisé le 2026-10-26 ; premier lot backend Bibliothèque de fabrication engagé, agrégat Fiche process et intégrations M-004 encore non réalisés. Identité technique des ingrédients, transactions, API des Fiches process et permissions détaillées restant à concevoir. Autorité : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`.
+**Statut actualisé le 2026-10-27 :** contrat fonctionnel rectifié : l'agrégat 1:1, les brouillons, l'éligibilité et les liens de cycle de vie M-004 existent dans le code ; la validation explicite sans historique de versions M-006 et la suppression autonome sécurisée restent à implémenter. Les champs techniques existants doivent être audités avant migration. Autorité : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`.
 
 ---
 
