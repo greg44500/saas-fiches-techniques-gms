@@ -1,5 +1,12 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 
+## Lot M-006 — Refonte UX/UI de l'éditeur (2026-10-27)
+
+**En cours, sur `feature/m006-fiches-process`, non livré et sans gate exécutée.** Cas d'usage UX validé : courtes procédures d'assemblage divisées en petites phases (une ou deux étapes par phase). Refonte frontend engagée : cartes repliables, édition contextuelle, ingrédients par sélection à la demande, revue des non-affectés et aperçu chronologique. Pas de changement du contrat métier ni du backend. Les tests ajoutés doivent être exécutés localement ; QA visuelle et E2E restent à confirmer avant PR. Le drag and drop n'est pas une dépendance de la V1 UX. PDF/impression, validation officielle et bibliothèque intégrée demeurent des lots M-006 futurs séparés.
+
+---
+
+
 ## Complément UX M-003 joint au lot Gammes M-004 — 2026-10-26
 
 - Travail uniquement sur `feature/m004-gammes-fiches-techniques`, intégré
