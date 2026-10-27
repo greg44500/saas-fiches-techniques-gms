@@ -80,14 +80,38 @@ describe('M-006 — atelier de fabrication à deux zones', () => {
     expect(rows[1]).toHaveTextContent('Tomate');
     expect(within(sidebar).getByRole('status')).toHaveTextContent('1 affecté · 1 à affecter');
     expect(within(rows[0]).queryByRole('button')).not.toBeInTheDocument();
-    expect(within(rows[1]).getByRole('button', {
+    const checked = within(rows[1]).getByRole('button', {
       name: 'Affecté dans : Étape : Nouvelle étape · Nouvelle phase',
-    })).toBeInTheDocument();
+    });
+    expect(checked).toHaveClass('text-emerald-600');
     expect(list).not.toHaveClass('divide-y');
     await user.click(within(group).getAllByRole('checkbox')[0]);
     expect(within(sidebar).getByRole('status')).toHaveTextContent('2 affectés · 0 à affecter');
     expect(within(rows[0]).getByRole('button', { name: /Affecté dans/ })).toBeInTheDocument();
     expect(within(rows[1]).getByRole('button', { name: /Affecté dans/ })).toBeInTheDocument();
+    await user.click(within(group).getAllByRole('checkbox')[1]);
+    expect(within(sidebar).getByRole('status')).toHaveTextContent('1 affecté · 1 à affecter');
+    expect(within(rows[1]).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('met à jour le lieu d’affectation quand les titres de phase et d’étape changent', async () => {
+    const user = userEvent.setup();
+    view();
+    const step = await addStep(user);
+    const group = within(step).getByRole('group', { name: 'Ingrédients affectés à cette étape' });
+    await user.click(within(group).getByRole('button', { name: 'Associer des ingrédients' }));
+    await user.click(within(group).getAllByRole('checkbox')[0]);
+    const sidebar = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
+    const stepTitle = within(step).getByRole('textbox', { name: 'Titre de l’étape' });
+    const phaseTitle = screen.getByRole('textbox', { name: 'Titre de la phase' });
+    await user.clear(stepTitle);
+    await user.type(stepTitle, 'Découper');
+    await user.clear(phaseTitle);
+    await user.type(phaseTitle, 'Préparation');
+    expect(within(sidebar).getByRole('button', {
+      name: 'Affecté dans : Étape : Découper · Préparation',
+    })).toBeInTheDocument();
+    expect(within(sidebar).getAllByText('Tomate')).toHaveLength(2);
   });
 
   it('conserve le contenu en changeant de phase sans provoquer de sauvegarde', async () => {
