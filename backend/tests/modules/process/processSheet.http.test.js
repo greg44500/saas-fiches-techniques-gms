@@ -174,7 +174,11 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
         expect(listed.body.data.processes[0].technicalSheetName).toBe('Plat validé');
         const detail = await request(app).get(base + '/' + created.id)
             .set(bearer(owner.token)).expect(200);
-        expect(detail.body.data.draft.phases).toEqual([]);
+        expect(detail.body.data.process).toMatchObject({
+            id: created.id, title: 'Fabrication du plat',
+            status: 'ACTIVE', editorialState: 'DRAFT',
+        });
+        expect(detail.body.data.draft).toMatchObject({ revision: 0, phases: [] });
         const eligible = await request(app).get(base + '/eligible-technical-sheets')
             .set(bearer(owner.token)).expect(200);
         expect(eligible.body.data.pagination.total).toBe(0);
@@ -271,6 +275,15 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
             ...params, expectedRevision: await getCurrentRevision(valid.created.sheet.id),
         });
         expect((await ProcessSheet.findById(created.id)).status).toBe('ARCHIVED');
+        const archivedDetail = await request(app).get(base + '/' + created.id)
+            .set(bearer(owner.token)).expect(200);
+        expect(archivedDetail.body.data.process.status).toBe('ARCHIVED');
+        expect(archivedDetail.body.data.draft).toBeTruthy();
+        await request(app).put(base + '/' + created.id + '/draft')
+            .set(bearer(owner.token)).send({
+                expectedRevision: archivedDetail.body.data.draft.revision,
+                phases: [], unassignedReasons: [],
+            }).expect(404);
         await reactivateTechnicalSheet({
             ...params, expectedRevision: await getCurrentRevision(valid.created.sheet.id),
         });
