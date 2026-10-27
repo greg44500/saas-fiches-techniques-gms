@@ -10,7 +10,8 @@ import { DOSSIER_STATUS } from '../dossier/dossier.registry.js';
 import { TechnicalSheet } from '../technicalSheet/technicalSheet.model.js';
 import { TechnicalSheetValidation } from '../technicalSheet/technicalSheetValidation.model.js';
 import { TECHNICAL_SHEET_STATUS } from '../technicalSheet/technicalSheet.registry.js';
-import { ProcessSheet } from './processSheet.model.js';
+import { ProcessSheet, PROCESS_SHEET_EDITORIAL_STATE } from './processSheet.model.js';
+import { hasProcessContentChanged } from './processSheetContent.js';
 import { ProcessSheetDraft } from './processSheetDraft.model.js';
 import { toIngredientProjection } from './processSheetIngredientProjection.js';
 
@@ -76,6 +77,15 @@ const updateProcessSheetDraft = async ({
     const projection = toIngredientProjection({ sourceKind: 'VALIDATION', source });
     assertLineAssignments({ phases, unassignedReasons, projection });
 
+    const stored = await ProcessSheetDraft.findOne(mongoose.trusted({
+        processSheet: process._id, workspace: workspaceId, dossier: dossierId,
+        revision: expectedRevision,
+    })).session(session);
+    if (!stored) throw conflict();
+    const changed = hasProcessContentChanged({
+        phases: stored.phases, unassignedReasons: stored.unassignedReasons ?? [],
+    }, { phases, unassignedReasons });
+
     const draft = await ProcessSheetDraft.findOneAndUpdate(mongoose.trusted({
         processSheet: process._id,
         workspace: workspaceId,
@@ -90,9 +100,18 @@ const updateProcessSheetDraft = async ({
     const parentWrite = await ProcessSheet.updateOne(mongoose.trusted({
         _id: process._id, workspace: workspaceId, dossier: dossierId,
         status: TECHNICAL_SHEET_STATUS.ACTIVE,
+        revision: process.revision,
     }), {
         $inc: { revision: 1 },
-        $set: { updatedBy: actorId },
+        $set: {
+            updatedBy: actorId,
+            ...(changed && process.editorialState === PROCESS_SHEET_EDITORIAL_STATE.VALIDATED
+                ? {
+                    editorialState: PROCESS_SHEET_EDITORIAL_STATE.DRAFT,
+                    validatedAt: null,
+                    validatedBy: null,
+                } : {}),
+        },
     }, { session });
     if (parentWrite.matchedCount !== 1) throw conflict();
     await createBusinessActivityEvent({
