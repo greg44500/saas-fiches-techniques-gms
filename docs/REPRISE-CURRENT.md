@@ -1,5 +1,11 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Correctif ESLint frontend M-006 — 2026-10-27
+
+Log local utilisateur : deux erreurs `no-unused-vars` dans `process-sheets-api.js:169` et `process-sheet-draft-editor.test.jsx:674`. Le hook `useValidateProcessSheetMutation` était destructuré par le module RTK Query mais absent du bloc d'exports, bien qu'utilisé par l'éditeur : correction en l'exportant explicitement. Le test RTL de blocage de validation déclarait un `userEvent.setup()` inutilisé : déclaration retirée et test rendu synchrone. Le test `process-sheets-api.test.js` vérifie désormais également l'export du hook pour prévenir la régression. Correction frontend uniquement ; aucune modification backend, Core, schéma ou migration. Le lint et les tests n'ont pas été relancés dans l'environnement de l'assistant ; résultat vert à confirmer localement. Même branche, aucune PR/merge.
+
+---
+
 ## Correctif RTL intégration validation — 2026-10-27
 
 Log local utilisateur Vitest 4.1.11 : **95 tests M-006, 91 réussis, 4 échoués**, tous dans `process-sheet-workspace-page.integration.test.jsx`. Cause commune : le mock complet de `process-sheets-api` n'expose pas le hook `useValidateProcessSheetMutation` nouvellement requis par le vrai `ProcessSheetDraftEditor` ; tous les cas échouent avant leur parcours métier au rendu React.
