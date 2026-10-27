@@ -182,6 +182,7 @@ export {
   useListEligibleProcessTechnicalSheetsQuery,
   useListProcessSheetsQuery,
   useSaveProcessSheetDraftMutation,
+  useValidateProcessSheetMutation,
   useListWorkspacePhaseTemplatesQuery,
   useListDossierPhaseTemplatesQuery,
 };
