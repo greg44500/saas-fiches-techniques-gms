@@ -230,6 +230,14 @@
       "dependsOn": [
         "m006-process-sheets"
       ]
+    },
+    {
+      "id": "m006-process-validate-permission",
+      "script": "migration:m006-process-validate-permission",
+      "runner": "backend/migrations/runBackfillM006ProcessValidatePermissionMigration.js",
+      "dependsOn": [
+        "m006-process-editor-permission"
+      ]
     }
   ]
 }
