@@ -61,6 +61,7 @@ function ProcessSheetDraftEditor({
   const [revision, setRevision] = useState(initialDraft?.revision ?? 0);
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState('');
+  const [saveError, setSaveError] = useState(false);
   const [conflict, setConflict] = useState(false);
   const [activePhaseId, setActivePhaseId] = useState(() => initialDraft?.phases?.[0]?.id ?? null);
   const [activeStepId, setActiveStepId] = useState(() => initialDraft?.phases?.[0]?.steps?.[0]?.id ?? null);
@@ -98,7 +99,10 @@ function ProcessSheetDraftEditor({
     if (!editable) return;
     setForm((current) => typeof updater === 'function' ? updater(current) : updater);
     setDirty(true);
-    if (!conflict) setMessage('');
+    if (!conflict) {
+      setMessage('');
+      setSaveError(false);
+    }
   };
   const patchPhase = (i, phase) => edit((current) => ({
     ...current, phases: updateAt(current.phases, i, phase),
@@ -197,6 +201,7 @@ function ProcessSheetDraftEditor({
   const save = async () => {
     if (!editable || !dirty || conflict) return;
     setMessage('');
+    setSaveError(false);
     try {
       const result = await saveDraft({
         workspaceId, dossierId, processSheetId, expectedRevision: revision,
@@ -207,10 +212,12 @@ function ProcessSheetDraftEditor({
       setRevision(result.revision);
       setDirty(false);
       setConflict(false);
+      setSaveError(false);
       setMessage('Brouillon enregistré.');
     } catch (error) {
       const isConflict = error?.status === 409;
       setConflict(isConflict);
+      setSaveError(true);
       setMessage(isConflict
         ? 'Une autre modification ou un changement de statut empêche la sauvegarde. Le brouillon local reste affiché.'
         : error?.data?.message ?? 'Échec de sauvegarde. Votre travail reste affiché.');
@@ -220,6 +227,7 @@ function ProcessSheetDraftEditor({
     try {
       const fresh = await onReload();
       if (!fresh?.data?.draft) {
+        setSaveError(true);
         setMessage('Impossible de recharger le brouillon. Les modifications locales restent affichées.');
         return;
       }
@@ -227,12 +235,14 @@ function ProcessSheetDraftEditor({
       setRevision(fresh.data.draft.revision);
       setDirty(false);
       setConflict(false);
+      setSaveError(false);
       setMessage('');
       setActivePhaseId(fresh.data.draft.phases?.[0]?.id ?? null);
       setActiveStepId(fresh.data.draft.phases?.[0]?.steps?.[0]?.id ?? null);
       setExpandedPhaseIds(fresh.data.draft.phases?.[0]?.id ? [fresh.data.draft.phases[0].id] : []);
       setMobileView('structure');
     } catch {
+      setSaveError(true);
       setMessage('Impossible de recharger le brouillon. Les modifications locales restent affichées.');
     }
   };
@@ -289,8 +299,12 @@ function ProcessSheetDraftEditor({
           <h2 className="text-base font-semibold">Déroulement de fabrication</h2>
           <InfoTooltip label="À propos du brouillon process"
             content="Les phases, étapes et ingrédients associés sont propres à cette Fiche process. La sauvegarde est manuelle et ne modifie pas la Fiche technique." />
-          <span className="text-xs text-muted-foreground" role="status">
-            {dirty ? 'Modifications non enregistrées' : 'À jour'}
+          <span className={'text-xs font-medium '
+            + (saveError ? 'text-destructive' : dirty ? 'text-warning' : 'text-success')}
+            role="status">
+            {conflict ? 'Conflit d’enregistrement'
+              : saveError ? 'Erreur d’enregistrement'
+                : dirty ? 'Modifications non enregistrées' : 'À jour'}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -312,7 +326,12 @@ function ProcessSheetDraftEditor({
           Consultation uniquement : droits d’édition ou Dossier actif requis.
         </p>
       )}
-      {message && <p role={conflict ? 'alert' : 'status'} className="text-sm">{message}</p>}
+      {message && (
+        <p className={'text-sm ' + (saveError ? 'text-destructive' : 'text-success')}
+          role={saveError ? 'alert' : 'status'}>
+          {message}
+        </p>
+      )}
       {conflict && (
         <Button onClick={() => setDanger({ kind: 'reload' })} type="button" variant="outline">
           Recharger le brouillon
