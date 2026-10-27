@@ -9,6 +9,7 @@ import { TECHNICAL_SHEET_PERMISSION } from '@/features/technical-sheets/constant
 
 const mocks = vi.hoisted(() => ({
   list: vi.fn(),
+  get: vi.fn(),
   dossier: vi.fn(),
   navigate: vi.fn(),
   can: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock('react-router', async (original) => ({
 
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useListProcessSheetsQuery: mocks.list,
+  useGetProcessSheetQuery: mocks.get,
 }));
 
 vi.mock('@/features/dossiers/api/dossiers-api', () => ({
@@ -86,6 +88,14 @@ beforeEach(() => {
     data: { status: 'ACTIVE' },
     isLoading: false, isError: false,
   });
+  mocks.get.mockReturnValue({
+    data: {
+      draft: { phases: [{ id: 'phase-one', title: 'Préparation', instructions: 'Préparer',
+        ingredientLineKeys: [], steps: [] }] },
+      sourceIngredients: { lines: [] },
+    },
+    isLoading: false, isFetching: false, isError: false, refetch: vi.fn(),
+  });
   mocks.list.mockReturnValue({
     data: { processes, pagination: { page: 1, limit: 10, total: 2, totalPages: 1 } },
     isLoading: false,
@@ -103,7 +113,9 @@ describe('M-006 — liste des Fiches process uniquement', () => {
     expect(screen.getByText('Fabrication tartine')).toBeInTheDocument();
     expect(screen.getByText('Tartine auvergnate')).toBeInTheDocument();
     expect(screen.getByText('Préparation bourguignon')).toBeInTheDocument();
-    expect(screen.getByText('Archivée')).toBeInTheDocument();
+    expect(screen.getByText('Validée')).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Statut' })).not.toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'État' })).toBeInTheDocument();
     expect(screen.queryByText('Composition de référence M-004')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Créer une Fiche process' })).toBeEnabled();
     expect(mocks.list).toHaveBeenCalledWith({
@@ -117,12 +129,38 @@ describe('M-006 — liste des Fiches process uniquement', () => {
 
   it('ouvre le process sélectionné et non sa Fiche technique', async () => {
     renderPage();
-    await userEvent.setup().click(screen.getByRole('button', {
-      name: 'Ouvrir la Fiche process Fabrication tartine',
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la Fiche process Fabrication tartine',
     }));
+    await user.click(screen.getByRole('button', { name: 'Ouvrir', exact: true }));
     expect(mocks.navigate).toHaveBeenCalledWith(
       '/workspaces/workspace-1/dossiers/dossier-1/process-sheets/process-1',
     );
+  });
+
+  it('prévisualise le brouillon enregistré sans naviguer et laisse la suppression désactivée', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la Fiche process Fabrication tartine',
+    }));
+    const deleteButton = screen.getByRole('button', { name: 'Supprimer' });
+    expect(deleteButton).toBeDisabled();
+    expect(deleteButton).toHaveClass('text-destructive');
+    await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Prévisualiser : Fabrication tartine',
+    });
+    expect(dialog).toHaveTextContent('Aperçu du brouillon enregistré');
+    expect(dialog).toHaveTextContent('Préparation');
+    expect(mocks.get).toHaveBeenCalledWith(
+      { workspaceId: 'workspace-1', dossierId: 'dossier-1', processSheetId: 'process-1' },
+      { skip: false },
+    );
+    expect(mocks.navigate).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Fermer' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('ouvre la modale puis la Fiche process créée', async () => {
