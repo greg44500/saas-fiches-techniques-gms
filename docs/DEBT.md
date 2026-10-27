@@ -1,4 +1,14 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
+## GMS-M006-VALIDATION-CURRENT — Cycle courant sans historique (2026-10-27)
+
+**Décision métier :** une Fiche process courante par Fiche technique, état Brouillon ou Validée ; validation explicite ; une modification métier réellement enregistrée sur une fiche validée repasse celle-ci en Brouillon ; revalidation ensuite. Aucune archive de versions M-006. Les versions officielles M-004 et les révisions de bibliothèque ne changent pas.
+
+**Dette de conception bloquante avant lot 3 :** auditer les modèles persistés `ProcessSheet.currentValidatedState` (ObjectId historiquement prévu pour un état validé immuable), `ProcessSheet.sourceValidation` immutable et `ProcessSheetDraft`. Définir une stratégie d'évolution compatible avec les données existantes, sans inventer de valeur d'état ou de collection d'historique ; décider de la comparaison serveur de contenu normalisé avant d'invalider, du `expectedRevision` partagé validation/PUT et du traitement de la cohérence de composition M-004. Permission métier `process-sheet:validate` à cadrer dans le registre applicatif et migrations RBAC à ajouter si nécessaire. Tests unitaires/Zod, transaction MongoDB, Supertest, RTL, E2E et audit minimal requis.
+
+**Séparation stricte :** la suppression autonome définitive est un lot distinct. Aucune mutation de DB, migration, permission ou route n'a été ajoutée par le lot 2 documentaire ; aucune gate locale verte n'est revendiquée.
+
+---
+
 ## M-006 — choix d'une primitive adaptée aux menus d'actions (2026-10-27)
 
 Le \`Select\` Base UI a été utilisé pour une action « Autre phase… » qui ouvre un Dialog ; le test jsdom de l'éditeur ne parvenait pas à ouvrir sa liste (\`aria-expanded=false\`). Plutôt que de continuer à modifier une sélection de valeur comme s'il s'agissait d'un menu d'actions, le composant réutilisable Popover/PopoverTrigger/PopoverContent du dépôt est maintenant utilisé avec des boutons, sans champ de recherche. Il reste à confirmer au travers des tests RTL réels (particulièrement les tests dépendant du helper \`addFreePhase\`) et des recettes clavier/mobile.
