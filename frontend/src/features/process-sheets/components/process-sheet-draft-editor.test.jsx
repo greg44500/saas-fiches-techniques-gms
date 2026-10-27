@@ -45,7 +45,67 @@ beforeEach(() => {
   });
 });
 
-describe('M-006 — éditeur compact du brouillon process', () => {
+describe('M-006 — atelier de fabrication à deux zones', () => {
+  it('sépare les ingrédients de la navigation phases/étapes, sans empilement de cartes', async () => {
+    const user = userEvent.setup();
+    const { container } = view();
+    expect(screen.getByRole('complementary', { name: 'Suivi des ingrédients' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ingrédients non affectés (2)' })).toBeInTheDocument();
+    expect(screen.getByText(/0 sur 2 affectés/)).toBeInTheDocument();
+    expect(container.querySelector('.backdrop-blur')).not.toBeInTheDocument();
+    await addStep(user);
+    expect(screen.getByRole('navigation', { name: 'Navigation des phases' })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Étapes de la phase' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Éditeur de l’étape' })).toBeInTheDocument();
+    expect(screen.getAllByRole('article')).toHaveLength(1);
+  });
+
+  it('sépare les identités de ligne même lorsqu’elles désignent le même produit', async () => {
+    const user = userEvent.setup();
+    view();
+    const step = await addStep(user);
+    const group = within(step).getByRole('group', { name: 'Ingrédients affectés à cette étape' });
+    await user.click(within(group).getByRole('button', { name: 'Associer des ingrédients' }));
+    await user.click(within(group).getAllByRole('checkbox')[1]);
+    const sidebar = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
+    expect(within(sidebar).getByRole('heading', { name: 'Ingrédients non affectés (1)' }))
+      .toBeInTheDocument();
+    expect(within(sidebar).getByText('Déjà affectés (1)')).toBeInTheDocument();
+    expect(within(sidebar).getByText('1 association(s)')).toBeInTheDocument();
+    await user.click(within(group).getAllByRole('checkbox')[0]);
+    expect(within(sidebar).getByRole('heading', { name: 'Ingrédients non affectés (0)' }))
+      .toBeInTheDocument();
+  });
+
+  it('conserve le contenu en changeant de phase sans provoquer de sauvegarde', async () => {
+    const user = userEvent.setup();
+    view();
+    const step = await addStep(user);
+    await user.type(within(step).getByRole('textbox', { name: 'Instructions' }), 'Peser les ingrédients');
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    const navigation = screen.getByRole('navigation', { name: 'Navigation des phases' });
+    await user.click(within(navigation).getByRole('button', { name: /01.*Nouvelle phase/ }));
+    expect(within(screen.getByRole('article', { name: 'Étape 1' }))
+      .getByRole('textbox', { name: 'Instructions' })).toHaveValue('Peser les ingrédients');
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
+
+  it('replie les paramètres de l’étape sans les laisser accessibles au clavier', async () => {
+    const user = userEvent.setup();
+    view();
+    const step = await addStep(user);
+    const disclosure = within(step).getByRole('button', { name: /Temps, température et équipements/ });
+    expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+    expect(within(step).queryByRole('spinbutton', { name: 'Temps actif (min)' }))
+      .not.toBeInTheDocument();
+    await user.click(disclosure);
+    expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+    expect(within(step).getByRole('spinbutton', { name: 'Temps actif (min)' }))
+      .toBeInTheDocument();
+    await user.click(disclosure);
+    expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+  });
+
   it('ajoute phase et étape, affecte la deuxième occurrence et sauvegarde sans fusionner les lignes M-004', async () => {
     const user = userEvent.setup();
     view();
@@ -82,9 +142,14 @@ describe('M-006 — éditeur compact du brouillon process', () => {
     await user.type(within(equipmentGroup).getByRole('textbox', { name: 'Équipements 1' }), 'Four');
     await user.click(within(equipmentGroup).getByRole('button', { name: 'Ajouter' }));
     await user.type(within(equipmentGroup).getByRole('textbox', { name: 'Équipements 2' }), 'Plaque');
-    await user.click(within(step).getByRole('button', { name: 'Replier' }));
+    await user.click(within(step).getByRole('button', { name: /Temps, température et équipements/ }));
     expect(within(step).queryByRole('group', { name: 'Équipements' })).not.toBeInTheDocument();
-    await user.click(within(step).getByRole('button', { name: 'Modifier' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+    expect(screen.getByRole('article', { name: 'Étape 2' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Sélectionner étape 1 : Nouvelle étape' }));
+    const reopened = screen.getByRole('article', { name: 'Étape 1' });
+    await user.click(within(reopened).getByRole('button', { name: /Temps, température et équipements/ }));
+    expect(within(reopened).getByRole('textbox', { name: 'Équipements 1' })).toHaveValue('Four');
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(mocks.save.mock.calls[0][0].phases[0].steps[0].equipment).toEqual(['Four', 'Plaque']);
   });
@@ -94,7 +159,6 @@ describe('M-006 — éditeur compact du brouillon process', () => {
     view();
     expect(screen.getByRole('heading', { name: 'Ingrédients non affectés (2)' })).toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: /Tomate \(ligne 1\)/ })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('heading', { name: 'Ingrédients non affectés (2)' }));
     await user.click(screen.getAllByRole('button', { name: 'Justifier la non-utilisation' })[0]);
     await user.type(screen.getByRole('textbox', { name: /Tomate \(ligne 1\)/ }), 'Utilisé indirectement');
     await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
@@ -131,10 +195,12 @@ describe('M-006 — éditeur compact du brouillon process', () => {
     await user.type(within(first).getByRole('textbox', { name: 'Instructions' }), 'Décongeler');
     await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
     expect(screen.getByRole('article', { name: 'Étape 2' })).toBeInTheDocument();
-    expect(within(first).queryByRole('textbox', { name: 'Instructions' })).not.toBeInTheDocument();
-    expect(within(first).getByText('Décongeler')).toBeInTheDocument();
-    await user.click(within(first).getByRole('button', { name: 'Modifier' }));
-    expect(within(first).getByRole('textbox', { name: 'Instructions' })).toHaveValue('Décongeler');
+    expect(screen.queryByRole('article', { name: 'Étape 1' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sélectionner étape 1 : Nouvelle étape' }))
+      .toHaveTextContent('Décongeler');
+    await user.click(screen.getByRole('button', { name: 'Sélectionner étape 1 : Nouvelle étape' }));
+    expect(within(screen.getByRole('article', { name: 'Étape 1' }))
+      .getByRole('textbox', { name: 'Instructions' })).toHaveValue('Décongeler');
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(mocks.save.mock.calls[0][0].phases[0].steps[0].instructions).toBe('Décongeler');
   });
@@ -154,10 +220,11 @@ describe('M-006 — éditeur compact du brouillon process', () => {
     };
     view({ initialDraft });
     expect(screen.getByRole('article', { name: 'Étape 1' })).toBeInTheDocument();
+    const navigation = screen.getByRole('navigation', { name: 'Navigation des phases' });
+    await user.click(within(navigation).getByRole('button', { name: /02.*Assemblage/ }));
     const second = screen.getByRole('region', { name: 'Phase 2' });
-    await user.click(within(second).getByRole('button', { name: /02.*Assemblage/ }));
-    expect(within(screen.getByRole('region', { name: 'Phase 1' }))
-      .queryByRole('article', { name: 'Étape 1' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Phase 1' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('article', { name: 'Étape 1' })).not.toBeInTheDocument();
     await user.click(within(second).getByRole('button', { name: 'Monter phase 2' }));
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     const body = mocks.save.mock.calls[0][0];
