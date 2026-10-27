@@ -7,7 +7,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/process-sheet-permissions';
 
 const mocks = vi.hoisted(() => ({
-  detail: vi.fn(), save: vi.fn(), can: vi.fn(),
+  detail: vi.fn(), save: vi.fn(), validate: vi.fn(), can: vi.fn(),
   phaseTitles: vi.fn(), createTitle: vi.fn(),
 }));
 
@@ -19,6 +19,7 @@ vi.mock('react-router', async (original) => ({
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useGetProcessSheetQuery: mocks.detail,
   useSaveProcessSheetDraftMutation: () => [mocks.save, { isLoading: false }],
+  useValidateProcessSheetMutation: () => [mocks.validate, { isLoading: false }],
   useListProcessPhaseTitlesQuery: (...args) => mocks.phaseTitles(...args),
   useCreateProcessPhaseTitleMutation: () => [mocks.createTitle, { isLoading: false }],
 }));
@@ -119,7 +120,7 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     expect(payload.phases[0].steps[0]).toMatchObject({
       instructions: 'Assembler les éléments', ingredientLineKeys: ['line:b'],
     });
-    expect(await screen.findByText('Brouillon enregistré.')).toBeInTheDocument();
+    expect(screen.queryByText('Brouillon enregistré.')).not.toBeInTheDocument();
     expect(screen.getByText('À jour')).toBeInTheDocument();
   });
 
