@@ -1,5 +1,19 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Lot 1 — Prévisualisation M-006 épurée (2026-10-27)
+
+**Branche conservée :** `feature/m006-fiches-process`. À la demande du propriétaire, les lots suivants attendent chacun la vérification des tests locaux, sans PR ni merge.
+
+**Code :** `frontend/src/features/process-sheets/components/process-sheet-preview.jsx` et `process-sheet-row-actions.jsx`. La prévisualisation ne présente plus de paragraphes d'explication visibles, de sous-titres « Ingrédients de la phase / de l'étape », de badges d'ingrédients ou de numéros « ligne N ». La description du Dialog reste disponible aux technologies d'assistance via `sr-only`. Les phases sont présentées sans carte bordée ; les étapes sont indentées et les ingrédients affichés en texte simple. Les ingrédients affectés directement à une phase sont rendus dans celle-ci et ceux d'une étape exclusivement dans celle-ci, plutôt que d'agréger les affectations de toutes les étapes sous la phase. Les sélections restent basées sur `lineKey` : les occurrences identiques ne sont pas fusionnées. Le bouton d'aperçu dans l'atelier utilise le même composant.
+
+**Tests :** nouveau test `process-sheet-preview.test.jsx` (noms sans numéros, distinction des occurrences identiques, niveau de rattachement, conservation des instructions et champs de détails) et adaptation du test de prévisualisation de liste dans `process-sheets-page.test.jsx`. Pas de modification API, modèles, MongoDB, Core, RTK Query, droits ou cycle de vie.
+
+**État réel :** commits écrits via GitHub, pas de test local, lint, build, QA visuelle ou gate exécutés ici. Le dernier résultat fourni pour l'ancien lot indiquait 89/90 avec un test Base UI corrigé au commit `5c4daa3` sans preuve d'exécution post-correctif. Pour valider ce lot, exécuter les tests du composant d'aperçu, de la liste et de l'éditeur, puis la suite M-006, lint et build ; constater aussi le rendu Desktop/mobile et clair/sombre. Ne pas lancer le lot suivant tant que les résultats ne sont pas confirmés.
+
+**Lots suivants séparés, non commencés :** mise à jour du cadrage canonique pour la nouvelle règle décidée le 2026-10-27 (une unique Fiche process courante par M-004, pas d'historique de versions M-006, validation invalidée à la prochaine modification réellement enregistrée), puis implémentation réelle de la validation et, dans un lot indépendant, de la suppression définitive et sécurisée. Les anciennes mentions de « version officielle immuable / historique consultable » des documents M-006 restent historiquement présentes et doivent être remplacées au prochain lot contractuel avant tout développement du cycle de vie.
+
+---
+
 ## Correctif RTL ciblé — Select Base UI et label Outlined (2026-10-27)
 
 **Preuve utilisateur :** exécution locale Vitest v4.1.11, suite M-006 : 9 fichiers, 90 tests, **89 réussis et 1 échec**. Seul le test `process-sheet-create-dialog.test.jsx` « déplace les libellés outlined au focus et garde le libellé relevé après sélection » échoue à `getByRole('option', { name: 'Tartine validée' })`. Le DOM montre `aria-expanded="false"` après `user.click(linked)` sous jsdom/Base UI. Les 12 autres tests de création et les 32 tests du brouillon sont verts dans ce log.
