@@ -1,5 +1,11 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Correctif RTL — sélecteur dans le groupe Qualité (2026-10-27)
+
+**Log utilisateur Vitest 4.1.11 :** `process-sheet-draft-editor.test.jsx` : 31 tests réussis sur 32. L'unique échec est une erreur JavaScript dans le test « bloque les lignes facultatives incomplètes avant de les placer dans le brouillon » : `within(dialog).getByRole('group', { name: 'Qualité' }).getByRole(...)`. `getByRole` retourne un élément DOM, qui ne possède pas cette méthode. Correctif limité au test : stocker le groupe puis appeler `within(quality).getByRole('button', { name: 'Ajouter un contrôle' })`. Aucun code métier, Core, schéma ou migration modifié. **Exécution après correction non encore communiquée** ; relancer le fichier de 32 tests et les gates applicables avant de conclure.
+
+---
+
 ## Lot UX M-006 — modales des compléments d'étape et statuts de sauvegarde (2026-10-27)
 
 **Périmètre :** finition ergonomique du brouillon sur `feature/m006-fiches-process`. Les deux volets « Temps, température et équipements » et « Vigilance, qualité et maîtrise sanitaire » de l'éditeur d'étape ont été remplacés par des boutons ouvrant deux modales dédiées, également consultables en lecture seule. Titre de l'étape, instructions et affectations d'ingrédients restent dans l'éditeur principal. Les états « Renseignés » / « Facultatifs » sont calculés séparément pour chacune des deux catégories.
