@@ -74,8 +74,8 @@ function ProcessSheetRowActions({ dossierId, workspaceId, process, onOpen }) {
           <DialogContent className="flex max-h-[90dvh] max-w-3xl flex-col">
             <DialogHeader>
               <DialogTitle>Prévisualiser : {process.title}</DialogTitle>
-              <DialogDescription>
-                Aperçu en lecture seule de la dernière version enregistrée du brouillon.
+              <DialogDescription className="sr-only">
+                Consultation du brouillon enregistré sans modification.
               </DialogDescription>
             </DialogHeader>
             <div className="min-h-0 flex-1 overflow-y-auto py-3">
@@ -94,7 +94,6 @@ function ProcessSheetRowActions({ dossierId, workspaceId, process, onOpen }) {
                 </div>
               ) : (
                 <ProcessSheetPreview
-                  description="Aperçu du brouillon enregistré. Cette consultation ne modifie ni ne valide la Fiche process."
                   ingredients={detail.data.sourceIngredients?.lines ?? []}
                   phases={detail.data.draft.phases ?? []}
                 />
