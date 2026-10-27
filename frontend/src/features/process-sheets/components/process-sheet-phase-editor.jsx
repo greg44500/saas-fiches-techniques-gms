@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ProductVariantField } from '@/features/products/components/product-variant-field';
 import { IngredientChoices } from '@/features/process-sheets/components/process-sheet-editor-fields';
+import { ProcessPhasePicker } from '@/features/process-sheets/components/process-phase-picker';
 
 // Phase-specific fields reuse existing inputs and ingredient selectors.
 function ProcessSheetPhaseEditor({
   phase, index, count, ingredients, disabled, onChange,
   onChangeIngredients, onAddStep, onMove, onRequestDelete,
+  workspaceId, dossierId, canReadPhaseLibrary,
 }) {
   return (
     <section aria-label={'Phase ' + (index + 1)} className="space-y-4" role="region">
@@ -41,6 +43,15 @@ function ProcessSheetPhaseEditor({
           placeholder="Ex. Préparation" value={phase.title}
           onChange={(event) => onChange({ ...phase, title: event.target.value })} />
       </ProductVariantField>
+      {!disabled && (
+        <ProcessPhasePicker
+          canReadLibrary={canReadPhaseLibrary}
+          dossierId={dossierId}
+          mode="rename"
+          onSelect={(title) => onChange({ ...phase, title })}
+          workspaceId={workspaceId}
+        />
+      )}
       <label className="grid gap-1 text-sm">Instructions de la phase
         <Textarea disabled={disabled} maxLength={5000}
           value={phase.instructions ?? ''}

@@ -1,4 +1,20 @@
 # M-006 — Conception technique et séquencement de l'implémentation
+## Lot UX M-006 — intitulés de phase issus des bibliothèques backend (2026-10-27)
+
+**Décision produit :** les propositions de phases ne sont PAS une constante frontend. L'éditeur lit les modèles \`PHASE\` actifs déjà gérés par le backend, via les routes \`GET /workspaces/:workspaceId/process-library/phases\` et \`GET /workspaces/:workspaceId/dossiers/:dossierId/process-library/phases\`, en respectant les scopes de tenant, le Dossier courant, le filtre \`status=ACTIVE\`, \`search\` et la pagination serveur (100 éléments par page et par périmètre). Le frontend utilise RTK Query avec des tags de cache dédiés \`ProcessPhaseTemplates\`. Les propositions distinguent Dossier et Workspace, sans inventer de valeur absente de la réponse.
+
+**Contrôle d'accès :** les lectures existantes sont soumises à \`process-library:read\`. La page obtient la capability de lecture via le contexte Workspace ; les hooks RTK Query ne lancent aucune requête lorsque la permission manque ou que le panneau n'est pas ouvert. L'édition du brouillon continue de dépendre de \`process-sheet:edit\` et du statut opérationnel. En l'absence de la permission de bibliothèque ou de données, l'utilisateur peut toujours saisir un titre libre sans contournement RBAC.
+
+**UX :** le bouton \`+\` de l'arbre ouvre un \`Popover\` Base UI avec les intitulés retournés par les deux bibliothèques, recherche côté API, pagination, et une action \`Autre phase (intitulé libre)\`. Le formulaire d'une phase existante propose le même sélecteur backend pour changer seulement son titre. Aucun modèle d'étape, instruction ou ingrédient n'est adopté implicitement ; la sélection crée une nouvelle phase \`steps: []\`, ou renomme la phase sélectionnée. Les étapes existantes ne sont pas remplacées par la sélection d'un intitulé. L'ajout à la bibliothèque globale d'un intitulé libre **n'est pas** automatique.
+
+**Contrainte existante à préserver :** un \`ProcessLibraryTemplate\` de type PHASE doit contenir au moins une étape d'après \`phaseDefinitionSchema\` (\`steps.min(1)\`), tandis qu'un brouillon de process peut contenir une phase sans étapes (\`steps: []\`). Les cinq intitulés proposés par le propriétaire doivent donc avoir des modèles effectivement enregistrés dans les bibliothèques via leurs parcours backend validés pour apparaître ; ils ne sont pas automatiquement injectés en base, et aucune donnée n'a été inventée. L'idée future d'une bibliothèque de simples intitulés, ou d'un ajout de modèle vierge en un clic, nécessite un cadrage métier séparé avant de modifier cette contrainte.
+
+**Densité :** aucun texte \`Aucune étape\`, liste ni chevron sur les phases sans étapes. Une étape peut être supprimée directement depuis sa ligne arborescente via l'action discrète au survol/focus, avec confirmation \`Dialog\` existante ; la suppression conserve la sélection courante si une autre étape est retirée. Les données restent enregistrées uniquement au PUT explicite et toujours contrôlées par \`expectedRevision\`/409.
+
+**Vérifications en attente :** tests RTL/API adaptés pour options Workspace et Dossier, choix d'un intitulé sans adoption des étapes du modèle, renommage, suppression d'étape et absence de bruit visuel ; tests frontend, lint, build, tests backend pertinents, \`release:check\` et QA visuelle doivent encore être réellement exécutés. Pas de mutation de bibliothèque, de changement du schéma backend ou du Core dans ce lot.
+
+---
+
 ## Lot UX M-006 — arbre phases / étapes et en-tête compact (2026-10-27)
 
 **Décision validée par le propriétaire :** remplacer la navigation horizontale des phases et l'éditeur d'étapes imbriqué par une arborescence verticale et un éditeur contextuel unique. Conserver à gauche le rail ingrédients M-004 inchangé ; à droite, séparer visuellement la navigation hiérarchique (phases repliables, étapes en retrait) de la saisie sélectionnée. En-tête de détail sur une ligne : bouton « Fiches process » | titre H1 | aide contextuelle. L'alignement économise une rangée verticale ; les titres longs restent tronqués visuellement uniquement en petit écran.

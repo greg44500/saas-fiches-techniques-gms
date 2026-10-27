@@ -4,9 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 
-const mocks = vi.hoisted(() => ({ save: vi.fn(), reload: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  save: vi.fn(), reload: vi.fn(), localPhases: vi.fn(), commonPhases: vi.fn(),
+}));
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useSaveProcessSheetDraftMutation: () => [mocks.save, { isLoading: false }],
+  useListDossierPhaseTemplatesQuery: (...args) => mocks.localPhases(...args),
+  useListWorkspacePhaseTemplatesQuery: (...args) => mocks.commonPhases(...args),
 }));
 
 import { ProcessSheetDraftEditor } from '@/features/process-sheets/components/process-sheet-draft-editor';
@@ -32,8 +36,12 @@ function view(overrides = {}) {
     </TooltipProvider>,
   );
 }
-async function addStep(user) {
+async function addFreePhase(user) {
   await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+  await user.click(screen.getByRole('button', { name: 'Autre phase (intitulé libre)' }));
+}
+async function addStep(user) {
+  await addFreePhase(user);
   await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
   return screen.getByRole('article', { name: 'Étape 1' });
 }
@@ -42,6 +50,8 @@ function navigation() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.localPhases.mockReturnValue({ data: { templates: [], pagination: { totalPages: 0 } }, isLoading: false });
+  mocks.commonPhases.mockReturnValue({ data: { templates: [], pagination: { totalPages: 0 } }, isLoading: false });
   mocks.save.mockImplementation((body) => ({
     unwrap: vi.fn().mockResolvedValue({
       id: 'draft-1', revision: body.expectedRevision + 1,
@@ -51,6 +61,97 @@ beforeEach(() => {
 });
 
 describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
+  it('n’invente aucune suggestion lorsque le backend ne retourne pas de modèles', async () => {
+    const user = userEvent.setup();
+    view({ canReadPhaseLibrary: true });
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    expect(screen.getByText('Aucun modèle actif ne correspond à cette recherche.')).toBeInTheDocument();
+    expect(screen.queryByText('Cuisson')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Autre phase (intitulé libre)' }));
+    expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Nouvelle phase');
+    expect(mocks.localPhases).toHaveBeenCalledWith(
+      expect.objectContaining({ workspaceId: 'workspace-1', dossierId: 'dossier-1' }),
+      expect.objectContaining({ skip: false }),
+    );
+  });
+
+  it('respecte les permissions de bibliothèque et laisse la création libre au contributeur', async () => {
+    const user = userEvent.setup();
+    view({ canReadPhaseLibrary: false });
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    expect(screen.getByText(/n’est pas autorisée pour ce rôle/)).toBeInTheDocument();
+    expect(mocks.localPhases).toHaveBeenCalledWith(expect.anything(),
+      expect.objectContaining({ skip: true }));
+    await user.click(screen.getByRole('button', { name: 'Autre phase (intitulé libre)' }));
+    expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
+  });
+
+  it('affiche les intitulés ACTIVE provenant des bibliothèques backend et crée une phase vide', async () => {
+    const user = userEvent.setup();
+    mocks.localPhases.mockReturnValue({
+      data: { templates: [
+        { id: 'local-1', title: 'Préparation du poste', status: 'ACTIVE' },
+      ], pagination: { totalPages: 1 } },
+      isLoading: false,
+    });
+    mocks.commonPhases.mockReturnValue({
+      data: { templates: [
+        { id: 'common-1', title: 'Cuisson', status: 'ACTIVE',
+          definition: { steps: [{ title: 'Étape modèle' }] } },
+      ], pagination: { totalPages: 1 } },
+      isLoading: false,
+    });
+    view({ canReadPhaseLibrary: true });
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    const suggestions = screen.getByRole('list', { name: 'Propositions de phases' });
+    expect(within(suggestions).getByText('Préparation du poste')).toBeInTheDocument();
+    expect(within(suggestions).getByText('Cuisson')).toBeInTheDocument();
+    expect(within(suggestions).getByText('Workspace')).toBeInTheDocument();
+    expect(within(suggestions).getByText('Dossier')).toBeInTheDocument();
+    await user.click(within(suggestions).getByRole('button', { name: /Cuisson/ }));
+    expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Cuisson');
+    expect(within(navigation()).queryByText('Étape modèle')).not.toBeInTheDocument();
+    expect(within(navigation()).queryByText('Aucune étape')).not.toBeInTheDocument();
+    expect(within(navigation()).queryByRole('button', { name: 'Déplier phase 1' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(mocks.save.mock.calls[0][0].phases[0]).toMatchObject({
+      title: 'Cuisson', steps: [], ingredientLineKeys: [],
+    });
+    expect(mocks.localPhases).toHaveBeenCalledWith(expect.objectContaining({
+      workspaceId: 'workspace-1', dossierId: 'dossier-1',
+    }), expect.anything());
+  });
+
+  it('permet de sélectionner un nom backend dans le formulaire sans copier les étapes du modèle', async () => {
+    const user = userEvent.setup();
+    mocks.commonPhases.mockReturnValue({
+      data: { templates: [
+        { id: 'common-2', title: 'Assemblage', status: 'ACTIVE',
+          definition: { steps: [{ title: 'Ne pas copier' }] } },
+      ], pagination: { totalPages: 1 } },
+      isLoading: false,
+    });
+    view({ canReadPhaseLibrary: true });
+    await addFreePhase(user);
+    await user.click(screen.getByRole('button', { name: 'Choisir un intitulé de phase' }));
+    await user.click(screen.getByRole('button', { name: /Assemblage/ }));
+    expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Assemblage');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(mocks.save.mock.calls[0][0].phases[0]).toMatchObject({ title: 'Assemblage', steps: [] });
+  });
+
+  it('permet la suppression directe depuis la ligne d’étape, sans affichage de sous-liste vide', async () => {
+    const user = userEvent.setup();
+    view();
+    await addStep(user);
+    await user.click(within(navigation()).getByRole('button', { name: 'Supprimer étape 1 : Nouvelle étape' }));
+    expect(screen.getByRole('dialog', { name: 'Supprimer cette étape ?' })).toBeInTheDocument();
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Supprimer' }));
+    expect(within(navigation()).queryByText('Aucune étape')).not.toBeInTheDocument();
+    expect(within(navigation()).queryByRole('list', { name: 'Étapes de la phase 1' })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
+  });
+
   it('garde le rail ingrédients intact et remplace les onglets horizontaux par un arbre', async () => {
     const user = userEvent.setup();
     const { container } = view();
@@ -69,7 +170,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
   it('édite une phase puis une étape, sans deuxième carte d’édition affichée', async () => {
     const user = userEvent.setup();
     view();
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await addFreePhase(user);
     expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
     await user.clear(screen.getByRole('textbox', { name: 'Titre de la phase' }));
     await user.type(screen.getByRole('textbox', { name: 'Titre de la phase' }), 'Préparation');
@@ -106,7 +207,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     view();
     const step = await addStep(user);
     await user.type(within(step).getByRole('textbox', { name: 'Instructions' }), 'Peser les ingrédients');
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await addFreePhase(user);
     await user.click(within(navigation()).getByRole('button', { name: 'Sélectionner étape 1 : Nouvelle étape' }));
     expect(within(screen.getByRole('article', { name: 'Étape 1' }))
       .getByRole('textbox', { name: 'Instructions' })).toHaveValue('Peser les ingrédients');
@@ -139,7 +240,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
   it('permet la même occurrence sur une phase et une étape, sans la consommer', async () => {
     const user = userEvent.setup();
     view();
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await addFreePhase(user);
     const phaseIngredients = screen.getByRole('group', { name: 'Ingrédients directement affectés à la phase' });
     await user.click(within(phaseIngredients).getByRole('button', { name: 'Associer des ingrédients' }));
     await user.click(within(phaseIngredients).getAllByRole('checkbox')[0]);
@@ -251,7 +352,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     } });
     const rail = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
     expect(within(rail).queryByRole('textbox')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await addFreePhase(user);
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(mocks.save.mock.calls[0][0].unassignedReasons)
       .toEqual([{ lineKey: 'line:a', reason: 'Justification historique' }]);
@@ -261,7 +362,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     mocks.save.mockReturnValue({ unwrap: vi.fn().mockRejectedValue({ status: 409 }) });
     const user = userEvent.setup();
     view();
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await addFreePhase(user);
     await user.type(screen.getByRole('textbox', { name: 'Titre de la phase' }), ' modifiée');
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Le brouillon local reste affiché');
@@ -309,7 +410,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
   it('signale les identifiants historiques sans association automatique', async () => {
     const user = userEvent.setup();
     view({ sourceIngredients: { ...ingredients, hasLegacyLineIdentity: true } });
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await addFreePhase(user);
     expect(screen.getByRole('note')).toHaveTextContent('identifiants limités');
     expect(within(screen.getByRole('complementary', { name: 'Suivi des ingrédients' }))
       .getByRole('status')).toHaveTextContent('0 affectés · 2 à affecter');

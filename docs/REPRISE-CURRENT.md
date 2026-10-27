@@ -1,4 +1,14 @@
 # Reprise M-006 — Fiches process (2026-10-26)
+## Reprise M-006 — suggestions de phases côté backend (2026-10-27)
+
+Suite à la demande explicite du propriétaire, les titres de phases proposés au bouton \`+\` et dans le formulaire d'édition proviennent exclusivement des modèles \`PHASE\` actifs stockés côté backend (bibliothèques commune Workspace et locale Dossier). Connexion à deux GET existants via RTK Query, avec \`process-library:read\`, recherche et pagination. Un \`Popover\` Base UI liste uniquement les modèles effectivement retournés, en affichant le scope ; l'action « Autre phase (intitulé libre) » permet une phase locale sans muter la bibliothèque. Aucun choix de nom n'importe automatiquement les étapes/consignes d'un modèle ; l'enregistrement explicite \`expectedRevision\` reste inchangé. Les phases sans étapes ne montrent ni sous-liste « Aucune étape » ni chevron, et chaque ligne d'étape dispose d'une suppression confirmée depuis l'arborescence.
+
+**Limite métier à ne pas masquer :** la bibliothèque PHASE existante impose \`steps.min(1)\`, donc un simple intitulé vide ne peut actuellement pas être créé comme modèle PHASE sans évolution de contrat. Les cinq propositions de noms formulées en conversation ne sont **pas** insérées automatiquement dans MongoDB. Elles n'apparaîtront que si des modèles correspondants existent réellement dans le scope lisible. Un éventuel catalogue administrable de simples titres est à cadrer distinctement, et ne doit pas dupliquer silencieusement \`ProcessLibraryTemplate\`.
+
+Tests JSX/RTL étendus, mais aucune exécution locale attestée. Vérifier le GET effectif avec données Workspace et Dossier, les permissions, la recherche/pagination, le mode lecture seule, le mobile, la suppression et la sauvegarde. Aucun Core ni backend modifié ; pas de fusion main/PR implicite.
+
+---
+
 ## Reprise M-006 — arbre phases/étapes et en-tête compact (2026-10-27)
 
 **Lot UX implémenté en branche, à vérifier localement.** Après validation du propriétaire, l'éditeur M-006 remplace les phases horizontales par une arborescence repliable pilotée par Collapsible/Base UI ; une seule phase ou étape est éditée à la fois, sans cartes imbriquées. Le rail ingrédients minimal reste inchangé. Sur téléphone, un SegmentedControl Structure/Édition évite de compresser l'arborescence. Les suppressions passent par Dialog ; le rechargement après 409 avertit de la perte des modifications locales. Les autres primitives existantes (Button, Input, Textarea, ProductVariantField, IngredientChoices, ProcessStepFields) sont réutilisées. En page de détail, « Fiches process » | titre H1 | infobulle sont alignés horizontalement. Transitions de 210 ms avec reduced motion.

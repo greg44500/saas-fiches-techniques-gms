@@ -1,4 +1,10 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
+## M-006 — propositions de phases issues du backend (2026-10-27)
+
+**Lot frontend sur la branche M-006, non livré et gates à exécuter :** les intitulés proposés dans l'arbre et le formulaire de phase proviennent des bibliothèques backend PHASE actives (Dossier + Workspace) via RTK Query, pas d'une liste statique React. Selection d'un titre seulement ; adoption automatique d'instructions ou d'étapes interdite. Recherche/pagination serveur, permission \`process-library:read\`, titre libre de repli. Masquage complet des sous-listes vides et suppression contextuelle des étapes. Aucun changement de contrat de modèles : les PHASE en bibliothèque imposent au moins une étape, les phases de brouillon peuvent rester vides. Enregistrement en bibliothèque d'un intitulé vierge et peuplement de titres prédéfinis restent à cadrer distinctement ; pas de seed inventé.
+
+---
+
 ## M-006 — lot UX arbre de fabrication (2026-10-27)
 
 **Implémentation sur la branche de travail, contrôles en attente.** Refonte du déroulement phases/étapes en arborescence verticale Base UI avec éditeur contextuel unique, conservation du rail ingrédients et en-tête compact « Fiches process | Titre ». Affichage mobile adapté via SegmentedControl et suppressions confirmées par Dialog. Aucun ajout de sous-étapes ni changement de contrats M-006/Backend/Core. Tests frontend révisés ; exécution réelle, QA et gate globale restent à effectuer avant PR. Les autres lots M-006 (bibliothèques, validation, impression, cycles de vie et copies) restent distincts.

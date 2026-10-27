@@ -12,9 +12,32 @@ const processSheetsApi = baseApi.enhanceEndpoints({
     'ProcessSheetList',
     'ProcessSheet',
     'EligibleProcessTechnicalSheets',
+    'ProcessPhaseTemplates',
   ],
 }).injectEndpoints({
   endpoints: (builder) => ({
+    // The editor reads ACTIVE PHASE templates without copying their steps.
+    listWorkspacePhaseTemplates: builder.query({
+      query: ({ workspaceId, page = 1, limit = 100, search }) => ({
+        url: '/workspaces/' + workspaceId + '/process-library/phases',
+        params: Object.fromEntries(Object.entries({
+          page, limit, status: 'ACTIVE', search,
+        }).filter(([, value]) => value !== undefined && value !== '')),
+      }),
+      transformResponse: (response) => response.data,
+      providesTags: ['ProcessPhaseTemplates'],
+    }),
+    listDossierPhaseTemplates: builder.query({
+      query: ({ workspaceId, dossierId, page = 1, limit = 100, search }) => ({
+        url: '/workspaces/' + workspaceId + '/dossiers/' + dossierId
+          + '/process-library/phases',
+        params: Object.fromEntries(Object.entries({
+          page, limit, status: 'ACTIVE', search,
+        }).filter(([, value]) => value !== undefined && value !== '')),
+      }),
+      transformResponse: (response) => response.data,
+      providesTags: ['ProcessPhaseTemplates'],
+    }),
     listProcessSheets: builder.query({
       query: ({ workspaceId, dossierId, page = 1, limit = 20, search, status }) => ({
         url: '/workspaces/' + workspaceId + '/dossiers/' + dossierId + '/process-sheets',
@@ -107,6 +130,8 @@ const {
   useListEligibleProcessTechnicalSheetsQuery,
   useListProcessSheetsQuery,
   useSaveProcessSheetDraftMutation,
+  useListWorkspacePhaseTemplatesQuery,
+  useListDossierPhaseTemplatesQuery,
 } = processSheetsApi;
 
 export {
@@ -118,4 +143,6 @@ export {
   useListEligibleProcessTechnicalSheetsQuery,
   useListProcessSheetsQuery,
   useSaveProcessSheetDraftMutation,
+  useListWorkspacePhaseTemplatesQuery,
+  useListDossierPhaseTemplatesQuery,
 };

@@ -16,6 +16,8 @@ vi.mock('react-router', async (original) => ({
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useGetProcessSheetQuery: mocks.detail,
   useSaveProcessSheetDraftMutation: () => [mocks.save, { isLoading: false }],
+  useListDossierPhaseTemplatesQuery: () => ({ data: { templates: [] }, isLoading: false }),
+  useListWorkspacePhaseTemplatesQuery: () => ({ data: { templates: [] }, isLoading: false }),
 }));
 
 vi.mock('@/features/workspace/components/workspace-context', () => ({
@@ -56,6 +58,11 @@ function view() {
   );
 }
 
+async function addFreePhase(user) {
+  await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+  await user.click(screen.getByRole('button', { name: 'Autre phase (intitulé libre)' }));
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.can.mockImplementation((permission) => permission === PROCESS_SHEET_PERMISSION.EDIT);
@@ -75,7 +82,7 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     const user = userEvent.setup();
     view();
     expect(screen.getByRole('heading', { name: 'Assemblage tartine' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await addFreePhase(user);
     expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
     const step = screen.getByRole('article', { name: 'Étape 1' });

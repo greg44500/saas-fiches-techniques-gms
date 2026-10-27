@@ -27,9 +27,9 @@ function newStep() {
     qualityControls: [], sanitaryControls: [],
   };
 }
-function newPhase() {
+function newPhase(title = 'Nouvelle phase') {
   return {
-    id: makeId(), title: 'Nouvelle phase', instructions: '',
+    id: makeId(), title, instructions: '',
     ingredientLineKeys: [], steps: [],
   };
 }
@@ -53,7 +53,8 @@ const MOBILE_VIEWS = [
 ];
 
 function ProcessSheetDraftEditor({
-  initialDraft, sourceIngredients, canEdit, dossierId, processSheetId, workspaceId,
+  initialDraft, sourceIngredients, canEdit, canReadPhaseLibrary = false,
+  dossierId, processSheetId, workspaceId,
   onReload,
 }) {
   const [form, setForm] = useState(() => normalize(initialDraft));
@@ -136,8 +137,9 @@ function ProcessSheetDraftEditor({
     expandPhase(phaseId);
     setMobileView('editor');
   };
-  const addPhase = () => {
-    const phase = newPhase();
+  const addPhase = (title) => {
+    if (!editable || form.phases.length >= 40) return;
+    const phase = newPhase(title);
     edit((current) => ({ ...current, phases: [...current.phases, phase] }));
     setActivePhaseId(phase.id);
     setActiveStepId(null);
@@ -145,6 +147,7 @@ function ProcessSheetDraftEditor({
     setMobileView('editor');
   };
   const addStep = (i) => {
+    if (!editable) return;
     const phase = form.phases[i];
     if (!phase || phase.steps.length >= 40) return;
     const step = newStep();
@@ -236,8 +239,9 @@ function ProcessSheetDraftEditor({
             steps: current.phases[i].steps.filter((step) => step.id !== danger.stepId),
           }),
         }));
-        setActivePhaseId(danger.phaseId);
-        setActiveStepId(remaining[Math.min(j, remaining.length - 1)]?.id ?? null);
+        if (danger.phaseId === activePhaseId && danger.stepId === activeStepId) {
+          setActiveStepId(remaining[Math.min(j, remaining.length - 1)]?.id ?? null);
+        }
         expandPhase(danger.phaseId);
       }
     }
@@ -315,12 +319,18 @@ function ProcessSheetDraftEditor({
                   activePhaseId={activePhaseId}
                   activeStepId={activeStepId}
                   disabled={!editable}
+                  canReadPhaseLibrary={canReadPhaseLibrary}
+                  dossierId={dossierId}
+                  workspaceId={workspaceId}
                   expandedPhaseIds={expandedPhaseIds}
                   onAddPhase={addPhase}
                   onAddStep={addStep}
                   onSelectPhase={selectPhase}
                   onSelectStep={selectStep}
                   onTogglePhase={togglePhase}
+                  onRequestDeleteStep={(phaseId, stepId) => setDanger({
+                    kind: 'step', phaseId, stepId,
+                  })}
                   phases={form.phases}
                 />
               </div>
@@ -336,6 +346,9 @@ function ProcessSheetDraftEditor({
                     key={currentPhase.id}
                     count={form.phases.length}
                     disabled={!editable}
+                    canReadPhaseLibrary={canReadPhaseLibrary}
+                    dossierId={dossierId}
+                    workspaceId={workspaceId}
                     index={currentPhaseIndex}
                     ingredients={ingredients}
                     onAddStep={() => addStep(currentPhaseIndex)}
