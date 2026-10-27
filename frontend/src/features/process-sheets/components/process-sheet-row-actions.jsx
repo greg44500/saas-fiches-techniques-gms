@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { Eye, FolderOpen, MoreHorizontal, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -43,7 +43,7 @@ function ProcessSheetRowActions({ dossierId, workspaceId, process, onOpen }) {
             setMenuOpen(false);
             onOpen();
           }} size="sm" type="button" variant="ghost">
-            <Pencil aria-hidden="true" className="size-4" />
+            <FolderOpen aria-hidden="true" className="size-4" />
             Ouvrir
           </Button>
           <Button className="w-full justify-start" onClick={openPreview}
