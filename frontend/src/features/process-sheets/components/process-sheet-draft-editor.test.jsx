@@ -236,6 +236,52 @@ describe('M-006 — atelier de fabrication à deux zones', () => {
     });
   });
 
+  it('préserve tous les champs métier en changeant de sélection et en sauvegardant', async () => {
+    const user = userEvent.setup();
+    const originalStep = {
+      id: 'step-complete', title: 'Finition', instructions: 'Assembler',
+      ingredientLineKeys: ['line:b'],
+      duration: { activeMinutes: 5, restMinutes: 10, treatmentMinutes: 2 },
+      temperatureCelsius: 65,
+      equipment: ['Couteau', 'Planche'],
+      manufacturingVigilance: ['Vérifier la texture'],
+      qualityControls: [{ instruction: 'Couleur', expectedCriterion: 'Dorée', correctiveAction: 'Ajuster' }],
+      sanitaryControls: [{ instruction: 'Contrôler la température', expectedCriterion: '65°C' }],
+    };
+    view({
+      initialDraft: {
+        ...props.initialDraft, revision: 4,
+        phases: [{
+          id: 'phase-complete', title: 'Préparation', instructions: 'Nettoyer',
+          ingredientLineKeys: ['line:a'], steps: [originalStep],
+        }],
+      },
+    });
+    expect(screen.getByRole('article', { name: 'Étape 1' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+    await user.click(screen.getByRole('button', { name: 'Sélectionner étape 1 : Finition' }));
+    await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
+    expect(screen.getByRole('spinbutton', { name: 'Temps actif (min)' })).toHaveValue(5);
+    expect(screen.getByRole('spinbutton', { name: 'Température (°C)' })).toHaveValue(65);
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    const body = mocks.save.mock.calls[0][0];
+    expect(body.expectedRevision).toBe(4);
+    expect(body.phases[0].steps[0]).toMatchObject(originalStep);
+    expect(body.phases[0].ingredientLineKeys).toEqual(['line:a']);
+  });
+
+  it('après suppression de l’étape sélectionnée choisit une étape voisine', async () => {
+    const user = userEvent.setup();
+    view();
+    await addStep(user);
+    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+    await user.click(screen.getByRole('button', { name: 'Supprimer étape 2' }));
+    expect(screen.getByRole('article', { name: 'Étape 1' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Sélectionner étape 2/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(mocks.save.mock.calls[0][0].phases[0].steps).toHaveLength(1);
+  });
+
   it('affiche un aperçu de lecture sans altérer la saisie ni la révision', async () => {
     const user = userEvent.setup();
     view();
