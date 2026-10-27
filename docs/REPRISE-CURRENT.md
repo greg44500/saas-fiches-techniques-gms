@@ -1,5 +1,14 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Reprise M-006 — test de reprise après conflit (2026-10-27)
+
+Dernier log fourni localement : **12/13 tests de la modale passent**, seul « après conflit actualise les choix, autorise une autre Fiche et termine la création » échoue faute d'alerte 409. **Cause du scénario de test identifié dans la fixture** : la liste simulée d'éligibles basculait de sheet-1 à sheet-2 dès l'appel de mutation POST, au lieu d'attendre `eligible.refetch()`; des rendus intermédiaires peuvent alors invalider la sélection avant traitement de la réponse 409. Le mock simule désormais deux états de cache RTK Query stables, avec bascule déclenchée exclusivement par `refetch`, et la suite contrôle explicitement le premier POST/409 puis le second POST réussi. Le dialogue conserve désormais son message 409 face à un `onValueChange(null)` interne de Base UI lors de la mise à jour des options. Aucun changement backend/Core.
+
+**Statut post-correctif : non exécuté** dans cette conversation. Le prochain Vitest local est requis pour conclure. Ne pas qualifier le test de vert à partir de la seule inspection statique.
+
+---
+
+
 ## Reprise M-006 — stabilisation de la création après nouveau log local (2026-10-27)
 
 Log fourni par le propriétaire (avant modification) : suite frontend M-006, **54/55 tests réussis**. L'unique erreur se produit dans `process-sheet-create-dialog.test.jsx` : l'option du Select « Tartine validée » n'est pas affichée, `aria-expanded=false`, avant tout POST et donc avant la réponse 409 simulée. Les 12 tests de la page détail et les 3 tests d'intégration page/éditeur ajoutés précédemment réussissent.
