@@ -1,5 +1,14 @@
 # Reprise M-006 — Fiches process (2026-10-26)
 
+## Reprise du 2026-10-27 — refonte UX du phasage M-006
+
+Développement commencé et commité sur `feature/m006-fiches-process` après validation du cas d'usage dominant : assemblages courts, plusieurs petites phases de une ou deux étapes. L'éditeur a été transformé en cartes de phases repliables et étapes compactes, détails contextuels, affectation d'ingrédients à la demande et revue différée des ingrédients non affectés. Un aperçu chronologique de lecture est disponible sans perdre les modifications locales. Les composants ont été séparés en édition métier, orchestration/sauvegarde et aperçu.
+
+Le backend, la structure des données, les règles métier, la tenancy, les identifiants de lignes M-004 et le protocole `expectedRevision` restent inchangés. Aucun drag and drop obligatoire, aucun PDF, aucune validation officielle ou intégration de bibliothèque n'est ajouté par cette refonte. Les tests RTL ont été enrichis mais **aucun Vitest, lint, build, E2E ni `release:check` n'a été exécuté** dans cette conversation : une validation locale sous Node 24.x, MongoDB adapté et une recette visuelle sont requises avant de qualifier le lot de stable. Aucune PR ni fusion vers `main` n'est autorisée par ce travail.
+
+---
+
+
 **Lot 5 développé sur `feature/m006-fiches-process` (2026-10-26) :** éditeur de brouillon phases et étapes avec instructions, ingrédients du snapshot M-004 lié au process (lignes répétées distinctes), durées actif/repos/traitement, équipement/vigilance, contrôles qualité/sanitaire, justifications de non-affectation. API `PUT /:processSheetId/draft` strictement validée, transaction et audit, concurrence optimiste, permission `process-sheet:edit` et migration distincte `migration:m006-process-editor-permission`. Vue détail désormais éditable avec sauvegarde et retour 409 explicite, et indicateur de composition M-004 décalée. Tests unitaires/HTTP/RTL ajoutés **non exécutés ici**, QA locale requise avant PR. Le module M-006 complet n'est pas livré : validation officielle, bibliothèque dans l'éditeur, copie du contenu, impression et suppression autonome restent à réaliser. Voir `docs/m006/M-006-TECHNICAL-DESIGN.md`.
 
 
