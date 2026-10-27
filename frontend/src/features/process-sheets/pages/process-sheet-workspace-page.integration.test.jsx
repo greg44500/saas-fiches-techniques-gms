@@ -76,13 +76,13 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     view();
     expect(screen.getByRole('heading', { name: 'Assemblage tartine' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-    const phase = screen.getByRole('region', { name: 'Phase 1' });
-    await user.click(within(phase).getByRole('button', { name: 'Ajouter une étape' }));
-    const step = within(phase).getByRole('article', { name: 'Étape 1' });
+    expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+    const step = screen.getByRole('article', { name: 'Étape 1' });
     expect(within(screen.getByRole('complementary', { name: 'Suivi des ingrédients' }))
       .getByRole('status')).toHaveTextContent('0 affectés · 2 à affecter');
-    expect(screen.getByRole('navigation', { name: 'Navigation des phases' })).toBeInTheDocument();
-    expect(screen.getByRole('list', { name: 'Étapes de la phase' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Navigation des phases et étapes' })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Étapes de la phase 1' })).toBeInTheDocument();
     await user.type(within(step).getByRole('textbox', { name: 'Instructions' }), 'Assembler les éléments');
     const selection = within(step).getByRole('group', { name: 'Ingrédients affectés à cette étape' });
     await user.click(within(selection).getByRole('button', { name: 'Associer des ingrédients' }));
@@ -103,7 +103,8 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     expect(payload.phases[0].steps[0]).toMatchObject({
       instructions: 'Assembler les éléments', ingredientLineKeys: ['line:b'],
     });
-    expect(await screen.findByText(/Révision 1 · À jour/)).toBeInTheDocument();
+    expect(await screen.findByText('Brouillon enregistré.')).toBeInTheDocument();
+    expect(screen.getByText('À jour')).toBeInTheDocument();
   });
 
   it.each([

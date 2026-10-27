@@ -1,4 +1,10 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
+## M-006 — lot UX arbre de fabrication (2026-10-27)
+
+**Implémentation sur la branche de travail, contrôles en attente.** Refonte du déroulement phases/étapes en arborescence verticale Base UI avec éditeur contextuel unique, conservation du rail ingrédients et en-tête compact « Fiches process | Titre ». Affichage mobile adapté via SegmentedControl et suppressions confirmées par Dialog. Aucun ajout de sous-étapes ni changement de contrats M-006/Backend/Core. Tests frontend révisés ; exécution réelle, QA et gate globale restent à effectuer avant PR. Les autres lots M-006 (bibliothèques, validation, impression, cycles de vie et copies) restent distincts.
+
+---
+
 
 ## Lot M-006 — Refonte UX/UI de l'éditeur (2026-10-27)
 

@@ -1,4 +1,12 @@
 # Reprise M-006 — Fiches process (2026-10-26)
+## Reprise M-006 — arbre phases/étapes et en-tête compact (2026-10-27)
+
+**Lot UX implémenté en branche, à vérifier localement.** Après validation du propriétaire, l'éditeur M-006 remplace les phases horizontales par une arborescence repliable pilotée par Collapsible/Base UI ; une seule phase ou étape est éditée à la fois, sans cartes imbriquées. Le rail ingrédients minimal reste inchangé. Sur téléphone, un SegmentedControl Structure/Édition évite de compresser l'arborescence. Les suppressions passent par Dialog ; le rechargement après 409 avertit de la perte des modifications locales. Les autres primitives existantes (Button, Input, Textarea, ProductVariantField, IngredientChoices, ProcessStepFields) sont réutilisées. En page de détail, « Fiches process » | titre H1 | infobulle sont alignés horizontalement. Transitions de 210 ms avec reduced motion.
+
+Seuls les composants UI et tests/documents du chantier M-006 sont modifiés. Modèle de données et API inchangés ; pas de sous-étapes, aucune intégration des bibliothèques à cette occasion. Identités \`lineKey\`, sauvegarde \`expectedRevision\`, conservation des données non enregistrées et droits de lecture seule préservés. Tests RTL de l'arbre et intégration page/éditeur actualisés mais **non exécutés** dans cette intervention via GitHub ; aucune preuve de lint/build/backend/E2E/release:check. Une validation Windows/Node 24.7+ et une recette visuelle, notamment mobile et thème sombre, sont requises avant toute PR/merge.
+
+---
+
 
 ## Reprise M-006 — simplification de la colonne ingrédients (2026-10-27)
 

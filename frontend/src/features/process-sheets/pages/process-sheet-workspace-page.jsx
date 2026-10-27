@@ -54,15 +54,18 @@ function ProcessSheetWorkspacePage() {
   }
 
   return (
-    <div className="space-y-5">
-      <Button asChild size="sm" variant="outline">
-        <Link to={backPath}>
-          <ArrowLeft aria-hidden="true" className="size-4" />
-          Fiches process
-        </Link>
-      </Button>
-      <header className="flex flex-wrap items-center gap-2">
-        <h1 className="text-2xl font-semibold">{process.title}</h1>
+    <div className="space-y-3">
+      <header className="flex min-w-0 items-center gap-3">
+        <Button asChild className="shrink-0" size="sm" variant="outline">
+          <Link to={backPath}>
+            <ArrowLeft aria-hidden="true" className="size-4" />
+            Fiches process
+          </Link>
+        </Button>
+        <span aria-hidden="true" className="shrink-0 text-muted-foreground">|</span>
+        <h1 className="min-w-0 truncate text-xl font-semibold sm:text-2xl" title={process.title}>
+          {process.title}
+        </h1>
         <InfoTooltip
           label="À propos du brouillon de fabrication"
           content="La Fiche process est liée à la validation M-004 sélectionnée lors de sa création. Le travail sur les phases et étapes sera enregistré dans un brouillon spécifique au process."

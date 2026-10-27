@@ -1,11 +1,29 @@
-/* M-006 only: subtle content entry, without a separate theme or glass effects. */
+/* M-006 only: structural animations, no new theme or glass effects. */
 @keyframes process-sheet-pane-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+.process-sheet-tree-panel {
+  height: var(--collapsible-panel-height);
+  overflow: hidden;
+  transition: height 210ms ease-in-out, opacity 210ms ease-in-out;
+}
+
+.process-sheet-tree-panel[data-starting-style],
+.process-sheet-tree-panel[data-ending-style] {
+  height: 0;
+  opacity: 0;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .process-sheet-pane-enter {
     animation: process-sheet-pane-in 190ms ease-out both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .process-sheet-tree-panel {
+    transition: none;
   }
 }

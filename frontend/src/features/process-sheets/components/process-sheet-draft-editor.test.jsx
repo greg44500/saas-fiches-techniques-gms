@@ -13,8 +13,8 @@ import { ProcessSheetDraftEditor } from '@/features/process-sheets/components/pr
 
 const ingredients = {
   lines: [
-    { lineKey: 'line:a', productVariantId: 'variant-a', productVariantName: 'Tomate', sourcePosition: 0 },
-    { lineKey: 'line:b', productVariantId: 'variant-a', productVariantName: 'Tomate', sourcePosition: 1 },
+    { lineKey: 'line:a', productVariantName: 'Tomate', sourcePosition: 0 },
+    { lineKey: 'line:b', productVariantName: 'Tomate', sourcePosition: 1 },
   ],
   hasLegacyLineIdentity: false,
 };
@@ -34,256 +34,133 @@ function view(overrides = {}) {
 }
 async function addStep(user) {
   await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-  const phase = screen.getByRole('region', { name: 'Phase 1' });
-  await user.click(within(phase).getByRole('button', { name: 'Ajouter une étape' }));
-  return within(phase).getByRole('article', { name: 'Étape 1' });
+  await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+  return screen.getByRole('article', { name: 'Étape 1' });
+}
+function navigation() {
+  return screen.getByRole('navigation', { name: 'Navigation des phases et étapes' });
 }
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.save.mockReturnValue({
-    unwrap: vi.fn().mockResolvedValue({ id: 'draft-1', revision: 1, phases: [], unassignedReasons: [] }),
-  });
+  mocks.save.mockImplementation((body) => ({
+    unwrap: vi.fn().mockResolvedValue({
+      id: 'draft-1', revision: body.expectedRevision + 1,
+      phases: body.phases, unassignedReasons: body.unassignedReasons,
+    }),
+  }));
 });
 
-describe('M-006 — atelier de fabrication à deux zones', () => {
-  it('sépare les ingrédients de la navigation phases/étapes, sans empilement de cartes', async () => {
+describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
+  it('garde le rail ingrédients intact et remplace les onglets horizontaux par un arbre', async () => {
     const user = userEvent.setup();
     const { container } = view();
-    expect(screen.getByRole('complementary', { name: 'Suivi des ingrédients' })).toBeInTheDocument();
-    const sidebar = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
-    expect(within(sidebar).getByRole('heading', { name: 'Ingrédients' })).toBeInTheDocument();
-    expect(within(sidebar).getByRole('status')).toHaveTextContent('0 affectés · 2 à affecter');
-    expect(within(sidebar).getAllByText('Tomate')).toHaveLength(2);
-    expect(within(sidebar).queryByText(/ligne [12]/)).not.toBeInTheDocument();
-    expect(within(sidebar).queryByText('Déjà affectés')).not.toBeInTheDocument();
-    expect(within(sidebar).queryByRole('button', { name: /Justifier/ })).not.toBeInTheDocument();
+    const rail = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
+    expect(within(rail).getByRole('status')).toHaveTextContent('0 affectés · 2 à affecter');
+    expect(within(rail).getAllByText('Tomate')).toHaveLength(2);
+    expect(within(rail).queryByText(/ligne [12]/)).not.toBeInTheDocument();
     expect(container.querySelector('.backdrop-blur')).not.toBeInTheDocument();
     await addStep(user);
-    expect(screen.getByRole('navigation', { name: 'Navigation des phases' })).toBeInTheDocument();
-    expect(screen.getByRole('list', { name: 'Étapes de la phase' })).toBeInTheDocument();
+    expect(navigation()).toBeInTheDocument();
+    expect(within(navigation()).getByRole('list', { name: 'Étapes de la phase 1' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Éditeur de l’étape' })).toBeInTheDocument();
     expect(screen.getAllByRole('article')).toHaveLength(1);
   });
 
-  it('sépare les identités de ligne même lorsqu’elles désignent le même produit', async () => {
+  it('édite une phase puis une étape, sans deuxième carte d’édition affichée', async () => {
     const user = userEvent.setup();
     view();
-    const step = await addStep(user);
-    const group = within(step).getByRole('group', { name: 'Ingrédients affectés à cette étape' });
-    await user.click(within(group).getByRole('button', { name: 'Associer des ingrédients' }));
-    await user.click(within(group).getAllByRole('checkbox')[1]);
-    const sidebar = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
-    const list = within(sidebar).getByRole('list', { name: 'Liste des ingrédients' });
-    const rows = within(list).getAllByRole('listitem');
-    expect(rows).toHaveLength(2);
-    expect(rows[0]).toHaveTextContent('Tomate');
-    expect(rows[1]).toHaveTextContent('Tomate');
-    expect(within(sidebar).getByRole('status')).toHaveTextContent('1 affecté · 1 à affecter');
-    expect(within(rows[0]).queryByRole('button')).not.toBeInTheDocument();
-    const checked = within(rows[1]).getByRole('button', {
-      name: 'Affecté dans : Étape : Nouvelle étape · Nouvelle phase',
-    });
-    expect(checked).toHaveClass('text-emerald-600');
-    expect(list).not.toHaveClass('divide-y');
-    await user.click(within(group).getAllByRole('checkbox')[0]);
-    expect(within(sidebar).getByRole('status')).toHaveTextContent('2 affectés · 0 à affecter');
-    expect(within(rows[0]).getByRole('button', { name: /Affecté dans/ })).toBeInTheDocument();
-    expect(within(rows[1]).getByRole('button', { name: /Affecté dans/ })).toBeInTheDocument();
-    await user.click(within(group).getAllByRole('checkbox')[1]);
-    expect(within(sidebar).getByRole('status')).toHaveTextContent('1 affecté · 1 à affecter');
-    expect(within(rows[1]).queryByRole('button')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
+    await user.clear(screen.getByRole('textbox', { name: 'Titre de la phase' }));
+    await user.type(screen.getByRole('textbox', { name: 'Titre de la phase' }), 'Préparation');
+    expect(within(navigation()).getByRole('button', { name: 'Sélectionner phase 1 : Préparation' }))
+      .toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+    expect(screen.queryByRole('textbox', { name: 'Titre de la phase' })).not.toBeInTheDocument();
+    await user.clear(screen.getByRole('textbox', { name: 'Titre de l’étape' }));
+    await user.type(screen.getByRole('textbox', { name: 'Titre de l’étape' }), 'Peser');
+    expect(within(navigation()).getByRole('button', { name: 'Sélectionner étape 1 : Peser' }))
+      .toHaveAttribute('aria-pressed', 'true');
+    await user.click(within(navigation()).getByRole('button', { name: 'Sélectionner phase 1 : Préparation' }));
+    expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Préparation');
+    expect(screen.queryByRole('article')).not.toBeInTheDocument();
   });
 
-  it('met à jour le lieu d’affectation quand les titres de phase et d’étape changent', async () => {
+  it('replie une phase avec Base UI, sans supprimer ses étapes', async () => {
     const user = userEvent.setup();
     view();
-    const step = await addStep(user);
-    const group = within(step).getByRole('group', { name: 'Ingrédients affectés à cette étape' });
-    await user.click(within(group).getByRole('button', { name: 'Associer des ingrédients' }));
-    await user.click(within(group).getAllByRole('checkbox')[0]);
-    const sidebar = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
-    const stepTitle = within(step).getByRole('textbox', { name: 'Titre de l’étape' });
-    const phaseTitle = screen.getByRole('textbox', { name: 'Titre de la phase' });
-    await user.clear(stepTitle);
-    await user.type(stepTitle, 'Découper');
-    await user.clear(phaseTitle);
-    await user.type(phaseTitle, 'Préparation');
-    expect(within(sidebar).getByRole('button', {
-      name: 'Affecté dans : Étape : Découper · Préparation',
-    })).toBeInTheDocument();
-    expect(within(sidebar).getAllByText('Tomate')).toHaveLength(2);
+    await addStep(user);
+    const collapse = within(navigation()).getByRole('button', { name: 'Replier phase 1' });
+    expect(collapse).toHaveAttribute('aria-expanded', 'true');
+    await user.click(collapse);
+    expect(within(navigation()).getByRole('button', { name: 'Déplier phase 1' }))
+      .toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
+    await user.click(within(navigation()).getByRole('button', { name: 'Déplier phase 1' }));
+    await user.click(within(navigation()).getByRole('button', { name: 'Sélectionner étape 1 : Nouvelle étape' }));
+    expect(screen.getByRole('article', { name: 'Étape 1' })).toBeInTheDocument();
   });
 
-  it('conserve le contenu en changeant de phase sans provoquer de sauvegarde', async () => {
+  it('conserve les saisies locales en naviguant sans sauvegarde automatique', async () => {
     const user = userEvent.setup();
     view();
     const step = await addStep(user);
     await user.type(within(step).getByRole('textbox', { name: 'Instructions' }), 'Peser les ingrédients');
     await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-    const navigation = screen.getByRole('navigation', { name: 'Navigation des phases' });
-    await user.click(within(navigation).getByRole('button', { name: /01.*Nouvelle phase/ }));
+    await user.click(within(navigation()).getByRole('button', { name: 'Sélectionner étape 1 : Nouvelle étape' }));
     expect(within(screen.getByRole('article', { name: 'Étape 1' }))
       .getByRole('textbox', { name: 'Instructions' })).toHaveValue('Peser les ingrédients');
     expect(mocks.save).not.toHaveBeenCalled();
   });
 
-  it('replie les paramètres de l’étape sans les laisser accessibles au clavier', async () => {
+  it('distingue deux occurrences de même nom via lineKey et met à jour les localisations', async () => {
     const user = userEvent.setup();
     view();
     const step = await addStep(user);
-    const disclosure = within(step).getByRole('button', { name: /Temps, température et équipements/ });
-    expect(disclosure).toHaveAttribute('aria-expanded', 'false');
-    expect(within(step).queryByRole('spinbutton', { name: 'Temps actif (min)' }))
-      .not.toBeInTheDocument();
-    await user.click(disclosure);
-    expect(disclosure).toHaveAttribute('aria-expanded', 'true');
-    expect(within(step).getByRole('spinbutton', { name: 'Temps actif (min)' }))
-      .toBeInTheDocument();
-    await user.click(disclosure);
-    expect(disclosure).toHaveAttribute('aria-expanded', 'false');
-  });
-
-  it('ajoute phase et étape, affecte la deuxième occurrence et sauvegarde sans fusionner les lignes M-004', async () => {
-    const user = userEvent.setup();
-    view();
-    const step = await addStep(user);
-    expect(step).toBeInTheDocument();
-    const selection = within(step).getByRole('group', { name: 'Ingrédients affectés à cette étape' });
-    expect(within(selection).queryByRole('checkbox')).not.toBeInTheDocument();
-    await user.click(within(selection).getByRole('button', { name: 'Associer des ingrédients' }));
-    const checkboxes = within(selection).getAllByRole('checkbox');
-    expect(checkboxes).toHaveLength(2);
-    await user.click(checkboxes[1]);
-    expect(checkboxes[0]).not.toBeChecked();
-    expect(checkboxes[1]).toBeChecked();
-    expect(within(screen.getByRole('complementary', { name: 'Suivi des ingrédients' }))
-      .getByRole('status')).toHaveTextContent('1 affecté · 1 à affecter');
+    const group = within(step).getByRole('group', { name: 'Ingrédients affectés à cette étape' });
+    await user.click(within(group).getByRole('button', { name: 'Associer des ingrédients' }));
+    await user.click(within(group).getAllByRole('checkbox')[1]);
+    const rail = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
+    expect(within(rail).getByRole('status')).toHaveTextContent('1 affecté · 1 à affecter');
+    expect(within(rail).getAllByText('Tomate')).toHaveLength(2);
+    expect(within(rail).getByRole('button', {
+      name: 'Affecté dans : Étape : Nouvelle étape · Nouvelle phase',
+    })).toBeInTheDocument();
+    await user.clear(within(step).getByRole('textbox', { name: 'Titre de l’étape' }));
+    await user.type(within(step).getByRole('textbox', { name: 'Titre de l’étape' }), 'Découper');
+    expect(within(rail).getByRole('button', {
+      name: 'Affecté dans : Étape : Découper · Nouvelle phase',
+    })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    expect(mocks.save).toHaveBeenCalledTimes(1);
-    const payload = mocks.save.mock.calls[0][0];
-    expect(payload).toMatchObject({
-      workspaceId: 'workspace-1', dossierId: 'dossier-1',
-      processSheetId: 'process-1', expectedRevision: 0, unassignedReasons: [],
-    });
-    expect(payload.phases).toHaveLength(1);
-    expect(payload.phases[0].steps).toHaveLength(1);
-    expect(payload.phases[0].steps[0].ingredientLineKeys).toEqual(['line:b']);
+    expect(mocks.save.mock.calls[0][0].phases[0].steps[0].ingredientLineKeys).toEqual(['line:b']);
+    expect(mocks.save.mock.calls[0][0].expectedRevision).toBe(0);
   });
 
-  it('replie les détails, et conserve deux équipements dans leur ordre', async () => {
-    const user = userEvent.setup();
-    view();
-    const step = await addStep(user);
-    await user.click(within(step).getByText(/Temps, température et équipements/));
-    const equipmentGroup = within(step).getByRole('group', { name: 'Équipements' });
-    await user.click(within(equipmentGroup).getByRole('button', { name: 'Ajouter' }));
-    await user.type(within(equipmentGroup).getByRole('textbox', { name: 'Équipements 1' }), 'Four');
-    await user.click(within(equipmentGroup).getByRole('button', { name: 'Ajouter' }));
-    await user.type(within(equipmentGroup).getByRole('textbox', { name: 'Équipements 2' }), 'Plaque');
-    await user.click(within(step).getByRole('button', { name: /Temps, température et équipements/ }));
-    expect(within(step).queryByRole('group', { name: 'Équipements' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
-    expect(screen.getByRole('article', { name: 'Étape 2' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Sélectionner étape 1 : Nouvelle étape' }));
-    const reopened = screen.getByRole('article', { name: 'Étape 1' });
-    await user.click(within(reopened).getByRole('button', { name: /Temps, température et équipements/ }));
-    expect(within(reopened).getByRole('textbox', { name: 'Équipements 1' })).toHaveValue('Four');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    expect(mocks.save.mock.calls[0][0].phases[0].steps[0].equipment).toEqual(['Four', 'Plaque']);
-  });
-
-  it('ne propose aucune justification et conserve les anciennes données du brouillon', async () => {
-    const user = userEvent.setup();
-    view({
-      initialDraft: {
-        ...props.initialDraft,
-        unassignedReasons: [{ lineKey: 'line:a', reason: 'Justification historique' }],
-      },
-    });
-    const sidebar = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
-    expect(within(sidebar).queryByRole('textbox')).not.toBeInTheDocument();
-    expect(within(sidebar).queryByText('Justification historique')).not.toBeInTheDocument();
-    expect(within(sidebar).queryByText(/justifier la non-utilisation/i)).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    expect(mocks.save.mock.calls[0][0].unassignedReasons)
-      .toEqual([{ lineKey: 'line:a', reason: 'Justification historique' }]);
-  });
-
-  it('permet la même ligne sur une phase et sur son étape sans la consommer', async () => {
+  it('permet la même occurrence sur une phase et une étape, sans la consommer', async () => {
     const user = userEvent.setup();
     view();
     await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-    const phase = screen.getByRole('region', { name: 'Phase 1' });
-    await user.click(within(phase).getByText(/Consignes et ingrédients propres à la phase/));
-    const phaseIngredients = within(phase).getByRole('group', { name: 'Ingrédients directement affectés à la phase' });
+    const phaseIngredients = screen.getByRole('group', { name: 'Ingrédients directement affectés à la phase' });
     await user.click(within(phaseIngredients).getByRole('button', { name: 'Associer des ingrédients' }));
     await user.click(within(phaseIngredients).getAllByRole('checkbox')[0]);
-    await user.click(within(phase).getByRole('button', { name: 'Ajouter une étape' }));
-    const step = within(phase).getByRole('article', { name: 'Étape 1' });
+    const step = await (async () => {
+      await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+      return screen.getByRole('article', { name: 'Étape 1' });
+    })();
     const stepIngredients = within(step).getByRole('group', { name: 'Ingrédients affectés à cette étape' });
     await user.click(within(stepIngredients).getByRole('button', { name: 'Associer des ingrédients' }));
     await user.click(within(stepIngredients).getAllByRole('checkbox')[0]);
-    const sidebar = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
-    expect(within(sidebar).getByRole('status')).toHaveTextContent('1 affecté · 1 à affecter');
-    expect(within(sidebar).getByRole('button', {
+    const rail = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
+    expect(within(rail).getByRole('status')).toHaveTextContent('1 affecté · 1 à affecter');
+    expect(within(rail).getByRole('button', {
       name: 'Affecté dans : Phase : Nouvelle phase ; Étape : Nouvelle étape · Nouvelle phase',
     })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    const saved = mocks.save.mock.calls[0][0].phases[0];
-    expect(saved.ingredientLineKeys).toEqual(['line:a']);
-    expect(saved.steps[0].ingredientLineKeys).toEqual(['line:a']);
+    expect(mocks.save.mock.calls[0][0].phases[0].ingredientLineKeys).toEqual(['line:a']);
+    expect(mocks.save.mock.calls[0][0].phases[0].steps[0].ingredientLineKeys).toEqual(['line:a']);
   });
 
-  it('ne montre les champs détaillés que pour une étape active et préserve les instructions', async () => {
-    const user = userEvent.setup();
-    view();
-    const first = await addStep(user);
-    await user.type(within(first).getByRole('textbox', { name: 'Instructions' }), 'Décongeler');
-    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
-    expect(screen.getByRole('article', { name: 'Étape 2' })).toBeInTheDocument();
-    expect(screen.queryByRole('article', { name: 'Étape 1' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Sélectionner étape 1 : Nouvelle étape' }))
-      .toHaveTextContent('Décongeler');
-    await user.click(screen.getByRole('button', { name: 'Sélectionner étape 1 : Nouvelle étape' }));
-    expect(within(screen.getByRole('article', { name: 'Étape 1' }))
-      .getByRole('textbox', { name: 'Instructions' })).toHaveValue('Décongeler');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    expect(mocks.save.mock.calls[0][0].phases[0].steps[0].instructions).toBe('Décongeler');
-  });
-
-  it('garde une seule phase ouverte et préserve les identifiants et affectations après réordonnancement', async () => {
-    const user = userEvent.setup();
-    const initialDraft = {
-      ...props.initialDraft, revision: 3,
-      phases: [
-        { id: 'phase-1', title: 'Préparation', instructions: '',
-          ingredientLineKeys: ['line:a'], steps: [
-            { id: 'step-1', title: 'Laver', instructions: 'Laver la tomate',
-              ingredientLineKeys: ['line:b'], equipment: [] },
-          ] },
-        { id: 'phase-2', title: 'Assemblage', instructions: '', ingredientLineKeys: [], steps: [] },
-      ],
-    };
-    view({ initialDraft });
-    expect(screen.getByRole('article', { name: 'Étape 1' })).toBeInTheDocument();
-    const navigation = screen.getByRole('navigation', { name: 'Navigation des phases' });
-    await user.click(within(navigation).getByRole('button', { name: /02.*Assemblage/ }));
-    const second = screen.getByRole('region', { name: 'Phase 2' });
-    expect(screen.queryByRole('region', { name: 'Phase 1' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('article', { name: 'Étape 1' })).not.toBeInTheDocument();
-    await user.click(within(second).getByRole('button', { name: 'Monter phase 2' }));
-    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    const body = mocks.save.mock.calls[0][0];
-    expect(body.expectedRevision).toBe(3);
-    expect(body.phases.map((phase) => phase.id)).toEqual(['phase-2', 'phase-1']);
-    expect(body.phases[1].ingredientLineKeys).toEqual(['line:a']);
-    expect(body.phases[1].steps[0]).toMatchObject({
-      id: 'step-1', ingredientLineKeys: ['line:b'], instructions: 'Laver la tomate',
-    });
-  });
-
-  it('préserve tous les champs métier en changeant de sélection et en sauvegardant', async () => {
+  it('préserve tous les champs d’étape et les identifiants lors de la réorganisation', async () => {
     const user = userEvent.setup();
     const originalStep = {
       id: 'step-complete', title: 'Finition', instructions: 'Assembler',
@@ -298,85 +175,143 @@ describe('M-006 — atelier de fabrication à deux zones', () => {
     view({
       initialDraft: {
         ...props.initialDraft, revision: 4,
-        phases: [{
-          id: 'phase-complete', title: 'Préparation', instructions: 'Nettoyer',
-          ingredientLineKeys: ['line:a'], steps: [originalStep],
-        }],
+        phases: [
+          { id: 'phase-one', title: 'Préparation', instructions: 'Nettoyer',
+            ingredientLineKeys: ['line:a'], steps: [originalStep] },
+          { id: 'phase-two', title: 'Assemblage', instructions: '', ingredientLineKeys: [], steps: [] },
+        ],
       },
     });
-    expect(screen.getByRole('article', { name: 'Étape 1' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
-    await user.click(screen.getByRole('button', { name: 'Sélectionner étape 1 : Finition' }));
+    await user.click(within(navigation()).getByRole('button', { name: 'Sélectionner phase 2 : Assemblage' }));
+    await user.click(screen.getByRole('button', { name: 'Monter phase 2' }));
+    await user.click(within(navigation()).getByRole('button', { name: 'Sélectionner étape 1 : Finition' }));
     await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
     expect(screen.getByRole('spinbutton', { name: 'Temps actif (min)' })).toHaveValue(5);
-    expect(screen.getByRole('spinbutton', { name: 'Température (°C)' })).toHaveValue(65);
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    const body = mocks.save.mock.calls[0][0];
-    expect(body.expectedRevision).toBe(4);
-    expect(body.phases[0].steps[0]).toMatchObject(originalStep);
-    expect(body.phases[0].ingredientLineKeys).toEqual(['line:a']);
+    const payload = mocks.save.mock.calls[0][0];
+    expect(payload.expectedRevision).toBe(4);
+    expect(payload.phases.map((phase) => phase.id)).toEqual(['phase-two', 'phase-one']);
+    expect(payload.phases[1].ingredientLineKeys).toEqual(['line:a']);
+    expect(payload.phases[1].steps[0]).toMatchObject(originalStep);
   });
 
-  it('après suppression de l’étape sélectionnée choisit une étape voisine', async () => {
+  it('préserve le réordonnancement des étapes avec leurs ingrédients', async () => {
     const user = userEvent.setup();
     view();
     await addStep(user);
-    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+    await user.click(within(navigation()).getByRole('button', { name: 'Ajouter une étape à la phase 1' }));
+    const second = screen.getByRole('article', { name: 'Étape 2' });
+    const group = within(second).getByRole('group', { name: 'Ingrédients affectés à cette étape' });
+    await user.click(within(group).getByRole('button', { name: 'Associer des ingrédients' }));
+    await user.click(within(group).getAllByRole('checkbox')[1]);
+    await user.click(screen.getByRole('button', { name: 'Monter étape 2' }));
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    const steps = mocks.save.mock.calls[0][0].phases[0].steps;
+    expect(steps).toHaveLength(2);
+    expect(steps[0].ingredientLineKeys).toEqual(['line:b']);
+    expect(steps[1].ingredientLineKeys).toEqual([]);
+    expect(new Set(steps.map((step) => step.id)).size).toBe(2);
+  });
+
+  it('demande confirmation avant de supprimer une étape, puis sélectionne sa voisine', async () => {
+    const user = userEvent.setup();
+    view();
+    await addStep(user);
+    await user.click(within(navigation()).getByRole('button', { name: 'Ajouter une étape à la phase 1' }));
     await user.click(screen.getByRole('button', { name: 'Supprimer étape 2' }));
+    expect(screen.getByRole('dialog', { name: 'Supprimer cette étape ?' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Annuler' }));
+    expect(screen.getByRole('article', { name: 'Étape 2' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Supprimer étape 2' }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Supprimer' }));
     expect(screen.getByRole('article', { name: 'Étape 1' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Sélectionner étape 2/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(mocks.save.mock.calls[0][0].phases[0].steps).toHaveLength(1);
   });
 
-  it('affiche un aperçu de lecture sans altérer la saisie ni la révision', async () => {
+  it('demande confirmation avant de supprimer une phase et ses étapes', async () => {
+    const user = userEvent.setup();
+    view();
+    await addStep(user);
+    await user.click(within(navigation()).getByRole('button', { name: 'Sélectionner phase 1 : Nouvelle phase' }));
+    await user.click(screen.getByRole('button', { name: 'Supprimer phase 1' }));
+    expect(screen.getByRole('dialog', { name: 'Supprimer cette phase ?' }))
+      .toHaveTextContent('toutes ses étapes');
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Supprimer' }));
+    expect(within(navigation()).queryByRole('button', { name: /Sélectionner phase/ })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(mocks.save.mock.calls[0][0].phases).toEqual([]);
+  });
+
+  it('conserve les anciens justificatifs cachés et ne force aucune affectation', async () => {
+    const user = userEvent.setup();
+    view({ initialDraft: {
+      ...props.initialDraft,
+      unassignedReasons: [{ lineKey: 'line:a', reason: 'Justification historique' }],
+    } });
+    const rail = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
+    expect(within(rail).queryByRole('textbox')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(mocks.save.mock.calls[0][0].unassignedReasons)
+      .toEqual([{ lineKey: 'line:a', reason: 'Justification historique' }]);
+  });
+
+  it('préserve les saisies locales en cas de 409 et confirme le remplacement avant rechargement', async () => {
+    mocks.save.mockReturnValue({ unwrap: vi.fn().mockRejectedValue({ status: 409 }) });
+    const user = userEvent.setup();
+    view();
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await user.type(screen.getByRole('textbox', { name: 'Titre de la phase' }), ' modifiée');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Le brouillon local reste affiché');
+    expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Nouvelle phase modifiée');
+    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Recharger le brouillon' }));
+    expect(screen.getByRole('dialog', { name: 'Recharger le brouillon ?' }))
+      .toHaveTextContent('Les modifications locales non enregistrées');
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Annuler' }));
+    expect(mocks.reload).not.toHaveBeenCalled();
+    expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Nouvelle phase modifiée');
+  });
+
+  it('laisse les outils de navigation à un lecteur mais masque les actions de modification', async () => {
+    const user = userEvent.setup();
+    view({ canEdit: false, initialDraft: {
+      ...props.initialDraft,
+      phases: [{ id: 'phase-read', title: 'Préparation', instructions: '',
+        ingredientLineKeys: [], steps: [
+          { id: 'step-read', title: 'Rincer', instructions: '', ingredientLineKeys: [] },
+        ] }],
+    } });
+    expect(screen.queryByRole('button', { name: 'Ajouter une phase' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Enregistrer le brouillon' })).not.toBeInTheDocument();
+    await user.click(within(navigation()).getByRole('button', { name: 'Replier phase 1' }));
+    await user.click(within(navigation()).getByRole('button', { name: 'Déplier phase 1' }));
+    expect(within(navigation()).getByRole('button', { name: 'Sélectionner étape 1 : Rincer' }))
+      .toBeInTheDocument();
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
+
+  it('garde un aperçu chronologique sans altérer les instructions du brouillon', async () => {
     const user = userEvent.setup();
     view();
     const step = await addStep(user);
     await user.type(within(step).getByRole('textbox', { name: 'Instructions' }), 'Assembler la tartine');
     await user.click(screen.getByRole('button', { name: 'Aperçu du process' }));
-    const preview = screen.getByRole('region', { name: 'Aperçu du process' });
-    expect(within(preview).getByText('Assembler la tartine')).toBeInTheDocument();
-    expect(within(preview).getByText(/1\.1 Nouvelle étape/)).toBeInTheDocument();
-    expect(screen.getByText(/Modifications non enregistrées/)).toBeInTheDocument();
-    expect(within(preview).queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Aperçu du process' }))
+      .toHaveTextContent('Assembler la tartine');
     await user.click(screen.getByRole('button', { name: 'Revenir à l’édition' }));
-    const reopened = screen.getByRole('article', { name: 'Étape 1' });
-    expect(within(reopened).getByRole('textbox', { name: 'Instructions' }))
-      .toHaveValue('Assembler la tartine');
-    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    expect(mocks.save.mock.calls[0][0].phases[0].steps[0].instructions).toBe('Assembler la tartine');
-  });
-
-  it('masque toutes les commandes de mutation à un lecteur tout en laissant la consultation', () => {
-    view({ canEdit: false });
-    expect(screen.queryByRole('button', { name: 'Ajouter une phase' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Enregistrer le brouillon' })).not.toBeInTheDocument();
-    expect(screen.getByText(/Consultation uniquement/)).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Instructions' })).toHaveValue('Assembler la tartine');
     expect(mocks.save).not.toHaveBeenCalled();
   });
 
-  it('préserve le brouillon local lors d’un conflit de révision 409', async () => {
-    mocks.save.mockReturnValue({ unwrap: vi.fn().mockRejectedValue({ status: 409 }) });
+  it('signale les identifiants historiques sans association automatique', async () => {
     const user = userEvent.setup();
-    view();
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Une autre modification');
-    expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Recharger le brouillon' })).toBeInTheDocument();
-    await user.type(screen.getByRole('textbox', { name: 'Titre de la phase' }), ' modifiée');
-    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
-    expect(screen.getByRole('alert')).toHaveTextContent('Une autre modification');
-  });
-
-  it('n’affecte rien automatiquement et signale les identités historiques', async () => {
     view({ sourceIngredients: { ...ingredients, hasLegacyLineIdentity: true } });
-    await userEvent.setup().click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
     expect(screen.getByRole('note')).toHaveTextContent('identifiants limités');
-    const sidebar = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
-    expect(within(sidebar).getByRole('status')).toHaveTextContent('0 affectés · 2 à affecter');
-    expect(within(sidebar).getAllByText('Tomate')).toHaveLength(2);
+    expect(within(screen.getByRole('complementary', { name: 'Suivi des ingrédients' }))
+      .getByRole('status')).toHaveTextContent('0 affectés · 2 à affecter');
   });
 });

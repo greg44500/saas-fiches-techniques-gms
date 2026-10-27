@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';
 
@@ -75,7 +75,11 @@ beforeEach(() => {
 describe('M-006 — ouverture du brouillon process', () => {
   it('ouvre un vrai brouillon ACTIVE et autorise l’édition avec permission et Dossier actif', () => {
     view();
-    expect(screen.getByRole('heading', { name: 'Fabrication tartine' })).toBeInTheDocument();
+    const heading = screen.getByRole('heading', { name: 'Fabrication tartine' });
+    expect(heading).toBeInTheDocument();
+    const header = heading.closest('header');
+    expect(within(header).getByRole('link', { name: 'Fiches process' })).toBeInTheDocument();
+    expect(within(header).getByText('|')).toBeInTheDocument();
     expect(screen.getByText(/Éditeur M-006 : 0/)).toBeInTheDocument();
     expect(screen.getByText(/Ingrédients : 1/)).toBeInTheDocument();
     expect(screen.getByText(/Édition : oui/)).toBeInTheDocument();

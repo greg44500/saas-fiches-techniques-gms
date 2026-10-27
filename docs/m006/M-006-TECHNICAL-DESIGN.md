@@ -1,4 +1,18 @@
 # M-006 — Conception technique et séquencement de l'implémentation
+## Lot UX M-006 — arbre phases / étapes et en-tête compact (2026-10-27)
+
+**Décision validée par le propriétaire :** remplacer la navigation horizontale des phases et l'éditeur d'étapes imbriqué par une arborescence verticale et un éditeur contextuel unique. Conserver à gauche le rail ingrédients M-004 inchangé ; à droite, séparer visuellement la navigation hiérarchique (phases repliables, étapes en retrait) de la saisie sélectionnée. En-tête de détail sur une ligne : bouton « Fiches process » | titre H1 | aide contextuelle. L'alignement économise une rangée verticale ; les titres longs restent tronqués visuellement uniquement en petit écran.
+
+**Primitives réutilisées :** Button, Input, Textarea, Dialog, SegmentedControl et Collapsible existants sous \`frontend/src/components/ui\`, ainsi que ProductVariantField, IngredientChoices, ProcessStepFields et ProcessIngredientRail. \`ProcessSheetPhaseTree\` ne possède aucune donnée métier ; \`ProcessSheetPhaseEditor\` saisit exclusivement la phase sélectionnée. \`ProcessSheetDisclosure\` réutilise désormais le Collapsible Base UI, qui gère le repli accessible, les états ouverts/fermés et le retrait du parcours clavier. Animation locale de 210 ms pilotée par \`--collapsible-panel-height\`, désactivée si \`prefers-reduced-motion: reduce\`. Aucun thème ni effet glassy introduit.
+
+**Interactions :** chevron pour développer/replier, titre de phase ou d'étape pour sélectionner ; commande d'ajout pour chaque phase ; éditeur contextuel unique ; Monter/Descendre pour préserver les identifiants et associations sans drag-and-drop ; suppression de phase/étape confirmée par Dialog avant modification locale. En mobile, SegmentedControl « Structure / Édition » sans duplication de l'état du brouillon ; sélection/ajout ouvrent l'édition. Les changements restent locaux jusqu'au PUT explicite.
+
+**Invariant préservé :** aucun sous-niveau ajouté (\`phases[] -> steps[]\`). Aucun changement backend, Mongoose, API, Core, ownership, RBAC, valeurs de bibliothèque ni migration. Les ingrédients restent identifiés par occurrence \`lineKey\` et peuvent être associés à plusieurs éléments. \`unassignedReasons\` historique reste compatible, non obligatoire. \`expectedRevision\`, 409 et rafraîchissements RTK Query sont conservés ; le rechargement après conflit requiert une confirmation explicite car il remplace les saisies locales.
+
+**Tests modifiés :** tests de page, tests RTL de l'éditeur et intégration page → vrai éditeur → payload PUT, couvrant arborescence, contexte, réorganisation, confirmation, associations, lecture seule, données legacy et conflit. **Vérifications réelles en attente :** Vitest ciblé, lint, build, tests backend M-006, \`npm run release:check\` et QA Desktop/tablette/mobile, clair/sombre, clavier, scroll et nombreuses phases. Ne pas déclarer la gate verte sans logs locaux. Branche \`feature/m006-fiches-process\` uniquement, aucune PR ni merge implicite.
+
+---
+
 
 ## Lot UX M-006 — rail ingrédients minimal (2026-10-27)
 

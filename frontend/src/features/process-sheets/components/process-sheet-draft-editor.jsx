@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
-import { ArrowDown, ArrowUp, Plus, Save, Trash2 } from 'lucide-react';
-import { IngredientChoices, ProcessStepFields } from '@/features/process-sheets/components/process-sheet-editor-fields';
-import { ProcessIngredientRail } from '@/features/process-sheets/components/process-ingredient-rail';
-import { ProcessSheetDisclosure } from '@/features/process-sheets/components/process-sheet-disclosure';
-import './process-sheet-workspace.css';
-import { ProcessSheetPreview } from '@/features/process-sheets/components/process-sheet-preview';
+import { Save } from 'lucide-react';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { ProductVariantField } from '@/features/products/components/product-variant-field';
+import {
+  DialogContent, DialogDescription, DialogFooter, DialogHeader,
+  DialogOverlay, DialogPortal, DialogRoot, DialogTitle,
+} from '@/components/ui/dialog';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { useSaveProcessSheetDraftMutation } from '@/features/process-sheets/api/process-sheets-api';
+import { ProcessIngredientRail } from '@/features/process-sheets/components/process-ingredient-rail';
+import { ProcessSheetPhaseEditor } from '@/features/process-sheets/components/process-sheet-phase-editor';
+import { ProcessSheetPhaseTree } from '@/features/process-sheets/components/process-sheet-phase-tree';
+import { ProcessSheetPreview } from '@/features/process-sheets/components/process-sheet-preview';
+import { ProcessStepFields } from '@/features/process-sheets/components/process-sheet-editor-fields';
+import './process-sheet-workspace.css';
 
 function makeId() {
   const suffix = Math.random().toString(36).slice(2, 12);
@@ -44,6 +47,11 @@ const normalize = (draft) => ({
   phases: draft?.phases ?? [],
   unassignedReasons: draft?.unassignedReasons ?? [],
 });
+const MOBILE_VIEWS = [
+  { value: 'structure', label: 'Structure' },
+  { value: 'editor', label: 'Édition' },
+];
+
 function ProcessSheetDraftEditor({
   initialDraft, sourceIngredients, canEdit, dossierId, processSheetId, workspaceId,
   onReload,
@@ -55,21 +63,25 @@ function ProcessSheetDraftEditor({
   const [conflict, setConflict] = useState(false);
   const [activePhaseId, setActivePhaseId] = useState(() => initialDraft?.phases?.[0]?.id ?? null);
   const [activeStepId, setActiveStepId] = useState(() => initialDraft?.phases?.[0]?.steps?.[0]?.id ?? null);
+  const [expandedPhaseIds, setExpandedPhaseIds] = useState(() => initialDraft?.phases?.[0]?.id
+    ? [initialDraft.phases[0].id] : []);
+  const [mobileView, setMobileView] = useState('structure');
+  const [danger, setDanger] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [saveDraft, saving] = useSaveProcessSheetDraftMutation();
   const editable = canEdit && !saving.isLoading;
 
-  // RTK Query may refetch while there is unsaved work; never replace it.
+  // A background RTK Query refetch must never erase local unsaved work.
   useEffect(() => {
     if (!dirty && (initialDraft?.revision ?? 0) > revision) {
       setForm(normalize(initialDraft));
       setRevision(initialDraft.revision);
       setActivePhaseId(initialDraft?.phases?.[0]?.id ?? null);
       setActiveStepId(initialDraft?.phases?.[0]?.steps?.[0]?.id ?? null);
+      setExpandedPhaseIds(initialDraft?.phases?.[0]?.id ? [initialDraft.phases[0].id] : []);
     }
   }, [initialDraft, dirty, revision]);
 
-  // Protect local edits against a browser refresh or closing the tab.
   useEffect(() => {
     if (!dirty) return undefined;
     const warnBeforeUnload = (event) => {
@@ -85,7 +97,6 @@ function ProcessSheetDraftEditor({
     if (!editable) return;
     setForm((current) => typeof updater === 'function' ? updater(current) : updater);
     setDirty(true);
-    // A stale expectedRevision must stay blocked until an explicit reload.
     if (!conflict) setMessage('');
   };
   const patchPhase = (i, phase) => edit((current) => ({
@@ -110,18 +121,43 @@ function ProcessSheetDraftEditor({
       }),
     unassignedReasons: current.unassignedReasons.filter((r) => !next.includes(r.lineKey)),
   }));
+  const expandPhase = (phaseId) => {
+    setExpandedPhaseIds((current) => current.includes(phaseId)
+      ? current : [...current, phaseId]);
+  };
+  const selectPhase = (phaseId) => {
+    setActivePhaseId(phaseId);
+    setActiveStepId(null);
+    setMobileView('editor');
+  };
+  const selectStep = (phaseId, stepId) => {
+    setActivePhaseId(phaseId);
+    setActiveStepId(stepId);
+    expandPhase(phaseId);
+    setMobileView('editor');
+  };
   const addPhase = () => {
     const phase = newPhase();
     edit((current) => ({ ...current, phases: [...current.phases, phase] }));
     setActivePhaseId(phase.id);
     setActiveStepId(null);
+    expandPhase(phase.id);
+    setMobileView('editor');
   };
   const addStep = (i) => {
-    const step = newStep();
     const phase = form.phases[i];
+    if (!phase || phase.steps.length >= 40) return;
+    const step = newStep();
     patchPhase(i, { ...phase, steps: [...phase.steps, step] });
-    setActiveStepId(step.id);
+    selectStep(phase.id, step.id);
   };
+  const togglePhase = (phaseId, open) => {
+    setExpandedPhaseIds((current) => open
+      ? current.includes(phaseId) ? current : [...current, phaseId]
+      : current.filter((id) => id !== phaseId));
+    if (!open && phaseId === activePhaseId && activeStepId) setActiveStepId(null);
+  };
+
   const save = async () => {
     if (!editable || !dirty || conflict) return;
     setMessage('');
@@ -140,13 +176,17 @@ function ProcessSheetDraftEditor({
       const isConflict = error?.status === 409;
       setConflict(isConflict);
       setMessage(isConflict
-        ? 'Une autre modification ou un changement de statut empêche la sauvegarde. Rechargez avant de recommencer.'
+        ? 'Une autre modification ou un changement de statut empêche la sauvegarde. Le brouillon local reste affiché.'
         : error?.data?.message ?? 'Échec de sauvegarde. Votre travail reste affiché.');
     }
   };
   const reload = async () => {
-    const fresh = await onReload();
-    if (fresh?.data?.draft) {
+    try {
+      const fresh = await onReload();
+      if (!fresh?.data?.draft) {
+        setMessage('Impossible de recharger le brouillon. Les modifications locales restent affichées.');
+        return;
+      }
       setForm(normalize(fresh.data.draft));
       setRevision(fresh.data.draft.revision);
       setDirty(false);
@@ -154,6 +194,10 @@ function ProcessSheetDraftEditor({
       setMessage('');
       setActivePhaseId(fresh.data.draft.phases?.[0]?.id ?? null);
       setActiveStepId(fresh.data.draft.phases?.[0]?.steps?.[0]?.id ?? null);
+      setExpandedPhaseIds(fresh.data.draft.phases?.[0]?.id ? [fresh.data.draft.phases[0].id] : []);
+      setMobileView('structure');
+    } catch {
+      setMessage('Impossible de recharger le brouillon. Les modifications locales restent affichées.');
     }
   };
   const currentPhaseIndex = form.phases.findIndex((phase) => phase.id === activePhaseId);
@@ -161,18 +205,64 @@ function ProcessSheetDraftEditor({
   const currentStepIndex = currentPhase?.steps.findIndex((step) => step.id === activeStepId) ?? -1;
   const currentStep = currentStepIndex >= 0 ? currentPhase.steps[currentStepIndex] : null;
 
+  const confirmDanger = () => {
+    if (!danger) return;
+    if (danger.kind === 'reload') {
+      setDanger(null);
+      void reload();
+      return;
+    }
+    if (!editable) { setDanger(null); return; }
+    const i = form.phases.findIndex((phase) => phase.id === danger.phaseId);
+    if (i < 0) { setDanger(null); return; }
+    if (danger.kind === 'phase') {
+      const remaining = form.phases.filter((phase) => phase.id !== danger.phaseId);
+      edit((current) => ({
+        ...current,
+        phases: current.phases.filter((phase) => phase.id !== danger.phaseId),
+      }));
+      const fallback = remaining[Math.min(i, remaining.length - 1)];
+      setActivePhaseId(fallback?.id ?? null);
+      setActiveStepId(null);
+      setExpandedPhaseIds((current) => current.filter((id) => id !== danger.phaseId));
+    } else {
+      const j = form.phases[i].steps.findIndex((step) => step.id === danger.stepId);
+      if (j >= 0) {
+        const remaining = form.phases[i].steps.filter((step) => step.id !== danger.stepId);
+        edit((current) => ({
+          ...current,
+          phases: updateAt(current.phases, i, {
+            ...current.phases[i],
+            steps: current.phases[i].steps.filter((step) => step.id !== danger.stepId),
+          }),
+        }));
+        setActivePhaseId(danger.phaseId);
+        setActiveStepId(remaining[Math.min(j, remaining.length - 1)]?.id ?? null);
+        expandPhase(danger.phaseId);
+      }
+    }
+    setDanger(null);
+  };
+
+  const dangerTitle = danger?.kind === 'phase' ? 'Supprimer cette phase ?'
+    : danger?.kind === 'step' ? 'Supprimer cette étape ?'
+      : 'Recharger le brouillon ?';
+  const dangerDescription = danger?.kind === 'reload'
+    ? 'Les modifications locales non enregistrées seront remplacées par la version du serveur. Cette action est irréversible.'
+    : danger?.kind === 'phase'
+      ? 'Cette phase et toutes ses étapes seront retirées du brouillon local. La suppression sera enregistrée seulement lors de la prochaine sauvegarde.'
+      : 'Cette étape sera retirée du brouillon local. La suppression sera enregistrée seulement lors de la prochaine sauvegarde.';
+
   return (
     <div className="space-y-3" aria-label="Atelier de fabrication">
       <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background py-3">
-        <div className="min-w-0 space-y-1">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold">Déroulement de fabrication</h2>
-            <InfoTooltip label="À propos du brouillon process"
-              content="Les phases, étapes et ingrédients associés sont propres à cette Fiche process. Les modifications sont enregistrées manuellement et ne modifient pas la Fiche technique." />
-          </div>
-          <p className="text-xs text-muted-foreground" role="status">
-            Révision {revision} · {dirty ? 'Modifications non enregistrées' : 'À jour'}
-          </p>
+        <div className="flex min-w-0 items-center gap-2">
+          <h2 className="text-base font-semibold">Déroulement de fabrication</h2>
+          <InfoTooltip label="À propos du brouillon process"
+            content="Les phases, étapes et ingrédients associés sont propres à cette Fiche process. La sauvegarde est manuelle et ne modifie pas la Fiche technique." />
+          <span className="text-xs text-muted-foreground" role="status">
+            {dirty ? 'Modifications non enregistrées' : 'À jour'}
+          </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={() => setShowPreview((value) => !value)}
@@ -180,16 +270,25 @@ function ProcessSheetDraftEditor({
             {showPreview ? 'Revenir à l’édition' : 'Aperçu du process'}
           </Button>
           {canEdit && (
-            <Button disabled={!dirty || saving.isLoading || conflict} onClick={save} size="sm" type="button">
-              <Save className="size-4" aria-hidden="true" />
+            <Button disabled={!dirty || saving.isLoading || conflict}
+              onClick={save} size="sm" type="button">
+              <Save aria-hidden="true" className="size-4" />
               {saving.isLoading ? 'Enregistrement…' : 'Enregistrer le brouillon'}
             </Button>
           )}
         </div>
       </header>
-      {!canEdit && <p className="text-sm text-muted-foreground">Consultation uniquement : droits d’édition ou Dossier actif requis.</p>}
+      {!canEdit && (
+        <p className="text-sm text-muted-foreground">
+          Consultation uniquement : droits d’édition ou Dossier actif requis.
+        </p>
+      )}
       {message && <p role={conflict ? 'alert' : 'status'} className="text-sm">{message}</p>}
-      {conflict && <Button onClick={reload} type="button" variant="outline">Recharger le brouillon</Button>}
+      {conflict && (
+        <Button onClick={() => setDanger({ kind: 'reload' })} type="button" variant="outline">
+          Recharger le brouillon
+        </Button>
+      )}
       {sourceIngredients?.hasLegacyLineIdentity && (
         <p role="note" className="border-l-2 border-border pl-3 text-sm text-muted-foreground">
           Cette composition historique utilise des identifiants limités à sa validation M-004 d’origine.
@@ -201,182 +300,66 @@ function ProcessSheetDraftEditor({
           <ProcessSheetPreview phases={form.phases} ingredients={ingredients} />
         </div>
       ) : (
-        <div className="grid gap-4 lg:h-[calc(100vh-15rem)] lg:min-h-[490px] lg:grid-cols-[minmax(15rem,0.78fr)_minmax(0,2fr)]">
-          <ProcessIngredientRail
-            ingredients={ingredients}
-            phases={form.phases}
-          />
-          <div
-            aria-label="Phases et étapes"
-            className="min-w-0 space-y-4 rounded-xl border border-border bg-card p-4 lg:min-h-0 lg:overflow-y-auto"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold">Phases de fabrication</h3>
-              {editable && (
-                <Button disabled={form.phases.length >= 40} onClick={addPhase}
-                  size="sm" type="button" variant="outline">
-                  <Plus className="size-4" aria-hidden="true" /> Ajouter une phase
-                </Button>
-              )}
+        <div className="grid gap-4 lg:h-[calc(100dvh-12rem)] lg:min-h-[480px] lg:grid-cols-[minmax(14rem,0.75fr)_minmax(0,2.25fr)]">
+          <ProcessIngredientRail ingredients={ingredients} phases={form.phases} />
+          <section aria-label="Phases et étapes"
+            className="min-w-0 rounded-xl border border-border bg-card p-4 lg:min-h-0">
+            <div className="mb-3 lg:hidden">
+              <SegmentedControl ariaLabel="Vue de l’atelier"
+                items={MOBILE_VIEWS} onValueChange={setMobileView} value={mobileView} />
             </div>
-            {form.phases.length > 0 && (
-              <nav aria-label="Navigation des phases" className="flex gap-2 overflow-x-auto pb-2">
-                {form.phases.map((phase, i) => (
-                  <button
-                    aria-pressed={phase.id === activePhaseId}
-                    className={'flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors duration-150 motion-reduce:transition-none '
-                      + (phase.id === activePhaseId
-                        ? 'bg-foreground font-medium text-background'
-                        : 'bg-muted/60 text-foreground hover:bg-muted')}
-                    key={phase.id}
-                    onClick={() => {
-                      setActivePhaseId(phase.id);
-                      setActiveStepId(phase.steps[0]?.id ?? null);
-                    }}
-                    type="button"
-                  >
-                    <span className="text-xs tabular-nums">{String(i + 1).padStart(2, '0')}</span>
-                    <span className="max-w-44 truncate">{phase.title || 'Phase sans titre'}</span>
-                  </button>
-                ))}
-              </nav>
-            )}
-            {!currentPhase && (
-              <p className="py-10 text-center text-sm text-muted-foreground">
-                Aucune phase. Commencez par ajouter la première phase de fabrication.
-              </p>
-            )}
-            {currentPhase && (
-              <section className="process-sheet-pane-enter space-y-4" key={currentPhase.id}
-                aria-label={'Phase ' + (currentPhaseIndex + 1)}>
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-base font-semibold">{currentPhase.title || 'Phase sans titre'}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {currentPhase.steps.length} étape(s)
-                    </p>
-                  </div>
-                  {editable && (
-                    <div className="flex items-center gap-1">
-                      <Button aria-label={'Monter phase ' + (currentPhaseIndex + 1)}
-                        disabled={currentPhaseIndex === 0}
-                        onClick={() => edit((current) => ({
-                          ...current,
-                          phases: move(current.phases, currentPhaseIndex, -1),
-                        }))}
-                        size="icon" type="button" variant="ghost">
-                        <ArrowUp className="size-4" aria-hidden="true" />
-                      </Button>
-                      <Button aria-label={'Descendre phase ' + (currentPhaseIndex + 1)}
-                        disabled={currentPhaseIndex === form.phases.length - 1}
-                        onClick={() => edit((current) => ({
-                          ...current,
-                          phases: move(current.phases, currentPhaseIndex, 1),
-                        }))}
-                        size="icon" type="button" variant="ghost">
-                        <ArrowDown className="size-4" aria-hidden="true" />
-                      </Button>
-                      <Button aria-label={'Supprimer phase ' + (currentPhaseIndex + 1)}
-                        onClick={() => {
-                          edit((current) => ({
-                            ...current,
-                            phases: current.phases.filter((_, n) => n !== currentPhaseIndex),
-                          }));
-                          const remaining = form.phases.filter((_, n) => n !== currentPhaseIndex);
-                          const fallback = remaining[Math.min(currentPhaseIndex, remaining.length - 1)];
-                          setActivePhaseId(fallback?.id ?? null);
-                          setActiveStepId(fallback?.steps[0]?.id ?? null);
-                        }}
-                        size="icon" type="button" variant="ghost">
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                <ProductVariantField floating filled={Boolean(currentPhase.title)}
-                  id={'phase-' + currentPhase.id} label="Titre de la phase">
-                  <Input className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground"
-                    disabled={!editable} id={'phase-' + currentPhase.id} maxLength={160}
-                    placeholder="Ex. Préparation" value={currentPhase.title}
-                    onChange={(event) => patchPhase(currentPhaseIndex, {
-                      ...currentPhase, title: event.target.value,
-                    })} />
-                </ProductVariantField>
-                <ProcessSheetDisclosure title={'Consignes et ingrédients propres à la phase · '
-                  + ((currentPhase.instructions || currentPhase.ingredientLineKeys?.length) ? 'Renseignés' : 'Facultatifs')}>
-                  <label className="grid gap-1 text-sm">Instructions de la phase
-                    <Textarea disabled={!editable} maxLength={5000}
-                      value={currentPhase.instructions ?? ''}
-                      onChange={(event) => patchPhase(currentPhaseIndex, {
-                        ...currentPhase, instructions: event.target.value,
-                      })} />
-                  </label>
-                  <IngredientChoices
+            <div className="grid min-h-0 gap-4 lg:h-full xl:grid-cols-[minmax(15rem,0.85fr)_minmax(0,1.65fr)]">
+              <div className={'min-w-0 lg:min-h-0 lg:overflow-y-auto xl:border-r xl:border-border/70 xl:pr-4 '
+                + (mobileView === 'editor' ? 'hidden lg:block' : '')}>
+                <ProcessSheetPhaseTree
+                  activePhaseId={activePhaseId}
+                  activeStepId={activeStepId}
+                  disabled={!editable}
+                  expandedPhaseIds={expandedPhaseIds}
+                  onAddPhase={addPhase}
+                  onAddStep={addStep}
+                  onSelectPhase={selectPhase}
+                  onSelectStep={selectStep}
+                  onTogglePhase={togglePhase}
+                  phases={form.phases}
+                />
+              </div>
+              <div className={'min-w-0 lg:min-h-0 lg:overflow-y-auto xl:pl-1 '
+                + (mobileView === 'structure' ? 'hidden lg:block' : '')}>
+                {!currentPhase && (
+                  <p className="py-10 text-center text-sm text-muted-foreground">
+                    Sélectionnez une phase ou ajoutez-en une pour commencer.
+                  </p>
+                )}
+                {currentPhase && !currentStep && (
+                  <ProcessSheetPhaseEditor
+                    key={currentPhase.id}
+                    count={form.phases.length}
                     disabled={!editable}
+                    index={currentPhaseIndex}
                     ingredients={ingredients}
-                    label="Ingrédients directement affectés à la phase"
-                    selected={currentPhase.ingredientLineKeys ?? []}
-                    onChange={(next) => changeIngredients(currentPhaseIndex, null, next)}
+                    onAddStep={() => addStep(currentPhaseIndex)}
+                    onChange={(next) => patchPhase(currentPhaseIndex, next)}
+                    onChangeIngredients={(next) => changeIngredients(currentPhaseIndex, null, next)}
+                    onMove={(direction) => edit((current) => ({
+                      ...current,
+                      phases: move(current.phases, currentPhaseIndex, direction),
+                    }))}
+                    onRequestDelete={() => setDanger({ kind: 'phase', phaseId: currentPhase.id })}
+                    phase={currentPhase}
                   />
-                </ProcessSheetDisclosure>
-                <div className="space-y-2 border-t border-border/70 pt-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h4 className="text-sm font-semibold">Étapes</h4>
-                    {editable && (
-                      <Button disabled={currentPhase.steps.length >= 40}
-                        onClick={() => addStep(currentPhaseIndex)}
-                        size="sm" type="button" variant="ghost">
-                        <Plus className="size-4" aria-hidden="true" /> Ajouter une étape
-                      </Button>
-                    )}
-                  </div>
-                  {currentPhase.steps.length === 0 ? (
-                    <p className="py-3 text-sm text-muted-foreground">
-                      Aucune étape pour cette phase.
-                    </p>
-                  ) : (
-                    <div className="divide-y divide-border/60" role="list" aria-label="Étapes de la phase">
-                      {currentPhase.steps.map((step, j) => {
-                        const selected = step.id === activeStepId;
-                        const count = (step.ingredientLineKeys ?? []).length;
-                        return (
-                          <div key={step.id} role="listitem">
-                            <button
-                              aria-label={'Sélectionner étape ' + (j + 1) + ' : ' + (step.title || 'Étape sans titre')}
-                              aria-pressed={selected}
-                              className={'flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition-colors duration-150 motion-reduce:transition-none '
-                                + (selected ? 'bg-muted/70' : 'hover:bg-muted/40')}
-                              onClick={() => setActiveStepId(step.id)}
-                              type="button"
-                            >
-                              <span className="mt-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
-                                {String(j + 1).padStart(2, '0')}
-                              </span>
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-medium">{step.title || 'Étape sans titre'}</span>
-                                {step.instructions && (
-                                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">{step.instructions}</span>
-                                )}
-                              </span>
-                              {count > 0 && (
-                                <span className="text-xs text-muted-foreground">{count} ingr.</span>
-                              )}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                )}
                 {currentStep && (
-                  <div className="border-t border-border pt-4" aria-label="Éditeur de l’étape" role="region">
+                  <section aria-label="Éditeur de l’étape" className="space-y-3" role="region">
+                    <p className="text-xs text-muted-foreground">
+                      {currentPhase.title} · Étape {currentStepIndex + 1}
+                    </p>
                     <ProcessStepFields
                       key={currentStep.id}
                       count={currentPhase.steps.length}
                       disabled={!editable}
                       index={currentStepIndex}
                       ingredients={ingredients}
-                      step={currentStep}
                       onChange={(next) => {
                         if (next.ingredientLineKeys !== currentStep.ingredientLineKeys) {
                           changeIngredients(currentPhaseIndex, currentStepIndex, next.ingredientLineKeys);
@@ -384,23 +367,42 @@ function ProcessSheetDraftEditor({
                           patchStep(currentPhaseIndex, currentStepIndex, next);
                         }
                       }}
-                      onDelete={() => {
-                        const remaining = currentPhase.steps.filter((_, j) => j !== currentStepIndex);
-                        patchPhase(currentPhaseIndex, { ...currentPhase, steps: remaining });
-                        setActiveStepId(remaining[Math.min(currentStepIndex, remaining.length - 1)]?.id ?? null);
-                      }}
+                      onDelete={() => setDanger({
+                        kind: 'step', phaseId: currentPhase.id, stepId: currentStep.id,
+                      })}
                       onMove={(direction) => patchPhase(currentPhaseIndex, {
                         ...currentPhase,
                         steps: move(currentPhase.steps, currentStepIndex, direction),
                       })}
+                      step={currentStep}
                     />
-                  </div>
+                  </section>
                 )}
-              </section>
-            )}
-          </div>
+              </div>
+            </div>
+          </section>
         </div>
       )}
+      <DialogRoot onOpenChange={(open) => { if (!open) setDanger(null); }}
+        open={Boolean(danger)}>
+        <DialogPortal>
+          <DialogOverlay className="backdrop-blur-none" />
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{dangerTitle}</DialogTitle>
+              <DialogDescription>{dangerDescription}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={() => setDanger(null)} type="button" variant="outline">
+                Annuler
+              </Button>
+              <Button onClick={confirmDanger} type="button" variant="destructive">
+                {danger?.kind === 'reload' ? 'Recharger et remplacer' : 'Supprimer'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </DialogPortal>
+      </DialogRoot>
     </div>
   );
 }
