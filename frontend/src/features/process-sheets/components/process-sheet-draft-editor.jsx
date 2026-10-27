@@ -63,8 +63,21 @@ function ProcessSheetDraftEditor({
     if (!dirty && (initialDraft?.revision ?? 0) > revision) {
       setForm(normalize(initialDraft));
       setRevision(initialDraft.revision);
+      setActivePhaseId(initialDraft?.phases?.[0]?.id ?? null);
+      setActiveStepId(null);
     }
   }, [initialDraft, dirty, revision]);
+
+  // Protect local edits against a browser refresh or closing the tab.
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const warnBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeUnload);
+    return () => window.removeEventListener('beforeunload', warnBeforeUnload);
+  }, [dirty]);
 
   const ingredients = sourceIngredients?.lines ?? [];
   const assigned = new Set(form.phases.flatMap((p) => [
@@ -79,8 +92,8 @@ function ProcessSheetDraftEditor({
     if (!editable) return;
     setForm((current) => typeof updater === 'function' ? updater(current) : updater);
     setDirty(true);
-    setMessage('');
-    setConflict(false);
+    // A stale expectedRevision must stay blocked until an explicit reload.
+    if (!conflict) setMessage('');
   };
   const patchPhase = (i, phase) => edit((current) => ({
     ...current, phases: updateAt(current.phases, i, phase),
