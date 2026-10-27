@@ -156,14 +156,6 @@ function ProcessSheetDraftEditor({
       setActiveStepId(fresh.data.draft.phases?.[0]?.steps?.[0]?.id ?? null);
     }
   };
-  const setReason = (lineKey, reason) => edit((current) => ({
-    ...current,
-    unassignedReasons: [
-      ...current.unassignedReasons.filter((r) => r.lineKey !== lineKey),
-      ...(reason ? [{ lineKey, reason }] : []),
-    ],
-  }));
-
   const currentPhaseIndex = form.phases.findIndex((phase) => phase.id === activePhaseId);
   const currentPhase = form.phases[currentPhaseIndex] ?? null;
   const currentStepIndex = currentPhase?.steps.findIndex((step) => step.id === activeStepId) ?? -1;
@@ -211,11 +203,8 @@ function ProcessSheetDraftEditor({
       ) : (
         <div className="grid gap-4 lg:h-[calc(100vh-15rem)] lg:min-h-[490px] lg:grid-cols-[minmax(15rem,0.78fr)_minmax(0,2fr)]">
           <ProcessIngredientRail
-            editable={editable}
             ingredients={ingredients}
             phases={form.phases}
-            unassignedReasons={form.unassignedReasons}
-            onReasonChange={setReason}
           />
           <div
             aria-label="Phases et étapes"
