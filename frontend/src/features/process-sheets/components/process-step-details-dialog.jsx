@@ -170,6 +170,11 @@ function ProcessStepDetails({ step, disabled, onChange }) {
   const submit = (event) => {
     event.preventDefault();
     if (disabled || !draft) return;
+    // Opening and confirming without editing must not mark the parent draft dirty.
+    if (JSON.stringify(draft) === JSON.stringify(snapshot(step, kind))) {
+      close();
+      return;
+    }
     if (kind === 'times') {
       const duration = {};
       for (const { key } of DURATION_FIELDS) {
