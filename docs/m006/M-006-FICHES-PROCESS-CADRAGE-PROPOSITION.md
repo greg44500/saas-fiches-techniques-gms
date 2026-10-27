@@ -185,7 +185,7 @@ La Fiche process **ne peut pas survivre à la purge de sa Fiche technique**. Ell
 - Si un process source existe, mémoriser éventuellement l'origine M-004 de la copie pour une **reprise guidée ultérieure**. Ne créer **aucune** Fiche process cible tant que la nouvelle Fiche technique M-004 reste en brouillon ; la cible devra être validée et sans révision ouverte.
 - Les affectations des ingrédients doivent être **reliées aux lignes de composition réellement copiées** ; jamais conserver aveuglément les identifiants de sous-documents source.
 - Les modèles Workspace actifs peuvent être référencés selon les règles de version adoptées, les étapes locales du Dossier source ne doivent pas devenir visibles au Dossier cible par simple copie. Proposition : matérialiser des définitions/snapshots nécessaires en préservant le contenu et la provenance sans autorisation indue.
-- Aucun historique de validation, contexte économique ou donnée propre au magasin source ne doit être répliqué comme historique officiel du magasin cible.
+- Aucun contenu économique, historique M-004 ni métadonnée privée propres au magasin source ne doivent être répliqués illicitement dans le magasin cible ; M-006 ne possède pas d'historique de versions métier à importer.
 - **Décision 28 actualisée le 2026-10-27 :** examiner uniquement le **contenu courant** de la Fiche process source, qu'elle soit Brouillon ou Validée, pour une éventuelle reprise guidée. La reprise n'intervient **qu'après validation M-004 de la copie**, et toujours en nouvelle Fiche process Brouillon, sans historique M-006. La Fiche technique M-004 source doit toujours respecter ses propres préconditions de copie ; ne pas les contourner. Pour les modèles locaux indisponibles dans le Dossier cible, conserver le contenu nécessaire sous forme réutilisable localement sans exposer la bibliothèque source ; modalités techniques à concevoir.
 
 ## 11. Tenancy, RBAC et capabilities
@@ -288,7 +288,7 @@ Le propriétaire du produit **approuve les recommandations fonctionnelles 21 à 
 | 32 | Si révision proposée après changement de composition et refusée : aucune mutation du process et indicateur de décalage non bloquant. |
 | 33 | Owner et Responsable habilité : validation et suppression définitive ; Contributeur habilité : création et modification ; Lecteur : consultation ; permissions dédiées pour administrer/publier les bibliothèques, toutes évaluées côté serveur. |
 | 34 | Fonction incluse dans tous les plans en V1, sans quota process ajouté ; limites de stockage existantes uniquement si pertinentes. |
-| 35 | Impression des versions validées et des brouillons visiblement marqués, sans nouveaux documents générés stockés durablement. |
+| 35 | Impression de la Fiche process **courante** Validée ou Brouillon (brouillon visiblement marqué), sans nouveaux documents générés stockés durablement. |
 
 **Décision de report distincte : illustrations/photographies des étapes EXCLUES de M-006 V1.** Aucun champ image/photo, upload, stockage dédié, galerie, affichage illustré ou sortie imprimée illustrée n'est à développer. Le cadrage futur devra traiter formats, limites, stockage, permissions, consultation, impressions et suppression. Ne pas construire prématurément une abstraction « pour plus tard ».
 
