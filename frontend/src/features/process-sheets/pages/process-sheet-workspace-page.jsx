@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
 import { ErrorState } from '@/components/shared/error-state';
+import { useGetDossierByIdQuery } from '@/features/dossiers/api/dossiers-api';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +22,7 @@ function ProcessSheetWorkspacePage() {
   const detail = useGetProcessSheetQuery({
     workspaceId: workspace.id, dossierId, processSheetId,
   });
+  const dossier = useGetDossierByIdQuery({ workspaceId: workspace.id, dossierId });
   const backPath = '/workspaces/' + workspace.id
     + '/dossiers/' + dossierId + '/process-sheets';
 
@@ -38,6 +40,22 @@ function ProcessSheetWorkspacePage() {
   }
 
   const { process, draft, sourceIngredients, compositionOutdated } = detail.data;
+  // Match the backend PUT prerequisites: edit permission, active process and
+  // active Dossier. Unknown/failed Dossier state must never imply ACTIVE.
+  const canEdit = Boolean(can?.(PROCESS_SHEET_PERMISSION.EDIT))
+    && process?.status === 'ACTIVE'
+    && !dossier.isLoading && !dossier.isFetching && !dossier.isError
+    && dossier.data?.status === 'ACTIVE';
+
+  if (!process || !draft) {
+    return (
+      <ErrorState
+        title="Brouillon process indisponible"
+        description="Les données du process sont incomplètes. Aucun brouillon vide ne doit les remplacer."
+        onRetry={detail.refetch}
+      />
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -62,7 +80,8 @@ function ProcessSheetWorkspacePage() {
         </p>
       )}
       <ProcessSheetDraftEditor
-        canEdit={Boolean(can?.(PROCESS_SHEET_PERMISSION.EDIT)) && process.status === 'ACTIVE'}
+        key={process.id}
+        canEdit={canEdit}
         dossierId={dossierId}
         initialDraft={draft}
         onReload={detail.refetch}
