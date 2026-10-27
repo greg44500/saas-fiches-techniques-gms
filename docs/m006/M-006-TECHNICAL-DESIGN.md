@@ -1,5 +1,27 @@
 # M-006 — Conception technique et séquencement de l'implémentation
 
+## Stabilisation transversale M-006 — autorisation d'édition (2026-10-27)
+
+**Incident constaté par le propriétaire sur son environnement local avant correctif :** les 6 suites backend process (48 tests) réussissent ; les 7 suites frontend process exécutent 43 tests, dont 42 réussissent et 1 échoue dans `process-sheet-workspace-page.test.jsx` (attendu « Édition : oui », obtenu « Édition : non »). Ce sont des résultats **antérieurs** au présent lot ; ils ne prouvent pas l'état des commits correctifs.
+
+**Cause confirmée :** le test de page simulait un process dépourvu de `status`. L'API réelle sérialise systématiquement `process.status`, et la page ne permet l'édition qu'à `ACTIVE`. Le test utilisait donc un objet impossible dans le parcours nominal.
+
+**Audit étendu GET → RBAC → édition → PUT :** le backend PUT exige un Dossier ACTIVE via middleware et service, en plus de `process-sheet:edit` et d'un process/parent M-004 ACTIVE. Le GET permet aussi les Dossiers PAUSED/ARCHIVED (consultation). La page doit refuser l'édition en l'absence d'une preuve d'activation du Dossier. Mais une requête `GET /dossiers/:id` supplémentaire serait incorrecte pour certains rôles contributeurs, car elle requiert `dossier:read`, non exigé par le PUT M-006.
+
+**Contrat mis en œuvre dans le lot :** le détail `GET .../process-sheets/:id` contient désormais `dossierOperational: boolean`, dérivé de `req.dossier.status === ACTIVE` après les contrôles de scope et d'accès existants. La page accorde l'édition uniquement lorsque `can(process-sheet:edit)`, `process.status === 'ACTIVE'` et `dossierOperational === true`. Elle refuse par défaut les états inconnus et affiche une erreur si le brouillon est manquant. Aucune modification des permissions Core ou des schémas de données. Le serveur reste l'autorité pour chaque PUT, y compris face aux changements d'état concurrents.
+
+**Tests ajoutés/renforcés :**
+- RTL page : réponse GET ACTIVE complète, statut absent/inconnu, process ARCHIVED/DELETED, permission refusée, champ Dossier absent/faux, brouillon manquant, décalage de composition M-004 ;
+- RTL d'intégration : vrai composant page + vrai éditeur, ajout de phase/étape, sélection de la deuxième occurrence M-004, construction du PUT avec `expectedRevision`, sauvegarde et passage en consultation lorsque les préconditions sont absentes ;
+- Supertest/MongoDB : contrat GET `status` et `dossierOperational`, contributeur ayant READ/EDIT process sans `dossier:read`, PUT actif réussi, lecture Dossier PAUSED et PUT refusé avec révision inchangée, GET archivé et PUT bloqué.
+
+Un appel Mongoose M-006 utilise désormais `returnDocument: 'after'` au lieu de l'option dépréciée `new: true`. D'autres avertissements Mongoose peuvent provenir de chemins extérieurs à ce lot ; aucune conclusion globale n'est tirée à leur sujet.
+
+**État de preuve :** cohérence du code, middlewares, service et tests auditée en lecture sur GitHub. Les nouvelles suites ne peuvent pas être exécutées dans l'environnement de cette intervention (dépôt inaccessible au runtime d'exécution). Il est interdit de les annoncer vertes avant réception des logs locaux. Commandes à exécuter dans l'ordre : `npx vitest run backend/tests/modules/process`, `npm --prefix frontend run test -- src/features/process-sheets`, `npm --prefix frontend run lint`, `npm --prefix frontend run build`, `npm run release:check`. Aucune PR, aucun merge.
+
+---
+
+
 ## Lot UX — Refonte de l'éditeur de phasage (2026-10-27)
 
 **Statut : implémenté sur `feature/m006-fiches-process`, non testé localement et non livré.** Le cas d'usage principal confirmé est l'assemblage court, composé de plusieurs petites phases comportant une ou deux étapes.
