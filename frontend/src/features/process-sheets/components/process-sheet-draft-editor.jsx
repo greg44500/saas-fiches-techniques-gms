@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Plus, Save, Trash2 } from 'lucide-react';
 import { IngredientChoices, ProcessStepEditor, ingredientName } from '@/features/process-sheets/components/process-sheet-editor-fields';
+import { ProcessSheetPreview } from '@/features/process-sheets/components/process-sheet-preview';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
@@ -53,6 +54,7 @@ function ProcessSheetDraftEditor({
   const [activePhaseId, setActivePhaseId] = useState(() => initialDraft?.phases?.[0]?.id ?? null);
   const [activeStepId, setActiveStepId] = useState(null);
   const [visibleReasonKeys, setVisibleReasonKeys] = useState([]);
+  const [showPreview, setShowPreview] = useState(false);
   const [saveDraft, saving] = useSaveProcessSheetDraftMutation();
   const editable = canEdit && !saving.isLoading;
 
@@ -165,11 +167,17 @@ function ProcessSheetDraftEditor({
             <InfoTooltip label="À propos du brouillon process"
               content="Les phases, étapes et ingrédients associés sont propres à cette Fiche process. Les modifications sont enregistrées manuellement et ne modifient pas la Fiche technique." />
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={() => setShowPreview((value) => !value)}
+              size="sm" type="button" variant="outline">
+              {showPreview ? 'Revenir à l’édition' : 'Aperçu du process'}
+            </Button>
           {canEdit && (
             <Button disabled={!dirty || saving.isLoading || conflict} onClick={save} size="sm" type="button">
               <Save className="size-4" aria-hidden="true" /> {saving.isLoading ? 'Enregistrement…' : 'Enregistrer le brouillon'}
             </Button>
           )}
+          </div>
         </div>
         <p className="text-xs text-muted-foreground" role="status">
           Révision {revision} · {dirty ? 'Modifications non enregistrées' : 'À jour'}
@@ -179,6 +187,10 @@ function ProcessSheetDraftEditor({
         {conflict && <Button onClick={reload} type="button" variant="outline">Recharger le brouillon</Button>}
       </CardHeader>
       <CardContent className="space-y-3 pt-4">
+        {showPreview ? (
+          <ProcessSheetPreview phases={form.phases} ingredients={ingredients} />
+        ) : (
+          <>
         {sourceIngredients?.hasLegacyLineIdentity && (
           <p role="note" className="rounded-md border border-border p-3 text-sm">
             Cette composition historique utilise des identifiants limités à sa validation M-004 d’origine.
@@ -342,6 +354,8 @@ function ProcessSheetDraftEditor({
             })}
           </div>
         </details>
+          </>
+        )}
       </CardContent>
     </Card>
   );
