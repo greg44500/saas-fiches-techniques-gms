@@ -5,12 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const mocks = vi.hoisted(() => ({
-  save: vi.fn(), reload: vi.fn(), localPhases: vi.fn(), commonPhases: vi.fn(),
+  save: vi.fn(), reload: vi.fn(), phaseTitles: vi.fn(), createTitle: vi.fn(),
 }));
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useSaveProcessSheetDraftMutation: () => [mocks.save, { isLoading: false }],
-  useListDossierPhaseTemplatesQuery: (...args) => mocks.localPhases(...args),
-  useListWorkspacePhaseTemplatesQuery: (...args) => mocks.commonPhases(...args),
+  useListProcessPhaseTitlesQuery: (...args) => mocks.phaseTitles(...args),
+  useCreateProcessPhaseTitleMutation: () => [mocks.createTitle, { isLoading: false }],
 }));
 
 import { ProcessSheetDraftEditor } from '@/features/process-sheets/components/process-sheet-draft-editor';
@@ -37,8 +37,10 @@ function view(overrides = {}) {
   );
 }
 async function addFreePhase(user) {
-  await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-  await user.click(screen.getByRole('button', { name: 'Autre phase (intitulé libre)' }));
+  await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
+  await user.click(screen.getByRole('option', { name: 'Autre phase…' }));
+  await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Nouvelle phase');
+  await user.click(screen.getByRole('button', { name: 'Ajouter la phase' }));
 }
 async function addStep(user) {
   await addFreePhase(user);
@@ -50,8 +52,10 @@ function navigation() {
 }
 beforeEach(() => {
   vi.clearAllMocks();
-  mocks.localPhases.mockReturnValue({ data: { templates: [], pagination: { totalPages: 0 } }, isLoading: false });
-  mocks.commonPhases.mockReturnValue({ data: { templates: [], pagination: { totalPages: 0 } }, isLoading: false });
+  mocks.phaseTitles.mockReturnValue({ data: { phases: [] }, isLoading: false });
+  mocks.createTitle.mockImplementation(({ title }) => ({
+    unwrap: vi.fn().mockResolvedValue({ id: 'custom-id', title }),
+  }));
   mocks.save.mockImplementation((body) => ({
     unwrap: vi.fn().mockResolvedValue({
       id: 'draft-1', revision: body.expectedRevision + 1,
@@ -61,83 +65,80 @@ beforeEach(() => {
 });
 
 describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
-  it('n’invente aucune suggestion lorsque le backend ne retourne pas de modèles', async () => {
+  it('n’invente aucune proposition lorsque le backend est vide', async () => {
     const user = userEvent.setup();
     view({ canReadPhaseLibrary: true });
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-    expect(screen.getByText('Aucun modèle actif ne correspond à cette recherche.')).toBeInTheDocument();
-    expect(screen.queryByText('Cuisson')).not.toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Autre phase (intitulé libre)' }));
-    expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Nouvelle phase');
-    expect(mocks.localPhases).toHaveBeenCalledWith(
-      expect.objectContaining({ workspaceId: 'workspace-1', dossierId: 'dossier-1' }),
-      expect.objectContaining({ skip: false }),
+    await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
+    expect(screen.getByRole('option', { name: 'Aucune phase disponible' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Cuisson' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('option', { name: 'Autre phase…' }));
+    await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Marinade');
+    await user.click(screen.getByRole('button', { name: 'Ajouter la phase' }));
+    expect(mocks.createTitle).toHaveBeenCalledWith({ workspaceId: 'workspace-1', title: 'Marinade' });
+    expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Marinade');
+    expect(mocks.phaseTitles).toHaveBeenCalledWith(
+      { workspaceId: 'workspace-1' }, expect.objectContaining({ skip: false }),
     );
   });
 
-  it('respecte les permissions de bibliothèque et laisse la création libre au contributeur', async () => {
+  it('respecte la lecture de bibliothèque du rôle et conserve la saisie libre', async () => {
     const user = userEvent.setup();
     view({ canReadPhaseLibrary: false });
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-    expect(screen.getByText(/n’est pas autorisée pour ce rôle/)).toBeInTheDocument();
-    expect(mocks.localPhases).toHaveBeenCalledWith(expect.anything(),
+    await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
+    expect(screen.getByRole('option', { name: 'Bibliothèque non autorisée' })).toBeInTheDocument();
+    expect(mocks.phaseTitles).toHaveBeenCalledWith(expect.anything(),
       expect.objectContaining({ skip: true }));
-    await user.click(screen.getByRole('button', { name: 'Autre phase (intitulé libre)' }));
+    await user.click(screen.getByRole('option', { name: 'Autre phase…' }));
+    await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Découpe');
+    await user.click(screen.getByRole('button', { name: 'Ajouter la phase' }));
     expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
   });
 
-  it('affiche les intitulés ACTIVE provenant des bibliothèques backend et crée une phase vide', async () => {
+  it('propose les intitulés du backend Workspace et crée une phase sans étape automatique', async () => {
     const user = userEvent.setup();
-    mocks.localPhases.mockReturnValue({
-      data: { templates: [
-        { id: 'local-1', title: 'Préparation du poste', status: 'ACTIVE' },
-      ], pagination: { totalPages: 1 } },
-      isLoading: false,
-    });
-    mocks.commonPhases.mockReturnValue({
-      data: { templates: [
-        { id: 'common-1', title: 'Cuisson', status: 'ACTIVE',
-          definition: { steps: [{ title: 'Étape modèle' }] } },
-      ], pagination: { totalPages: 1 } },
-      isLoading: false,
-    });
+    mocks.phaseTitles.mockReturnValue({ data: { phases: [
+      { id: 'common-1', title: 'Cuisson' },
+      { id: 'common-2', title: 'Préparation du poste' },
+    ] }, isLoading: false });
     view({ canReadPhaseLibrary: true });
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-    const suggestions = screen.getByRole('list', { name: 'Propositions de phases' });
-    expect(within(suggestions).getByText('Préparation du poste')).toBeInTheDocument();
-    expect(within(suggestions).getByText('Cuisson')).toBeInTheDocument();
-    expect(within(suggestions).getByText('Workspace')).toBeInTheDocument();
-    expect(within(suggestions).getByText('Dossier')).toBeInTheDocument();
-    await user.click(within(suggestions).getByRole('button', { name: /Cuisson/ }));
+    await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
+    expect(screen.getByRole('option', { name: 'Préparation du poste' })).toBeInTheDocument();
+    await user.click(screen.getByRole('option', { name: 'Cuisson' }));
     expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Cuisson');
-    expect(within(navigation()).queryByText('Étape modèle')).not.toBeInTheDocument();
     expect(within(navigation()).queryByText('Aucune étape')).not.toBeInTheDocument();
-    expect(within(navigation()).queryByRole('button', { name: 'Déplier phase 1' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(mocks.save.mock.calls[0][0].phases[0]).toMatchObject({
       title: 'Cuisson', steps: [], ingredientLineKeys: [],
     });
-    expect(mocks.localPhases).toHaveBeenCalledWith(expect.objectContaining({
-      workspaceId: 'workspace-1', dossierId: 'dossier-1',
-    }), expect.anything());
   });
 
-  it('permet de sélectionner un nom backend dans le formulaire sans copier les étapes du modèle', async () => {
+  it('renomme la phase sélectionnée en reprenant un titre Workspace', async () => {
     const user = userEvent.setup();
-    mocks.commonPhases.mockReturnValue({
-      data: { templates: [
-        { id: 'common-2', title: 'Assemblage', status: 'ACTIVE',
-          definition: { steps: [{ title: 'Ne pas copier' }] } },
-      ], pagination: { totalPages: 1 } },
-      isLoading: false,
-    });
+    mocks.phaseTitles.mockReturnValue({ data: { phases: [
+      { id: 'common-2', title: 'Assemblage' },
+    ] }, isLoading: false });
     view({ canReadPhaseLibrary: true });
     await addFreePhase(user);
-    await user.click(screen.getByRole('button', { name: 'Choisir un intitulé de phase' }));
-    await user.click(screen.getByRole('button', { name: /Assemblage/ }));
+    await user.click(screen.getByRole('combobox', { name: 'Choisir un intitulé de phase' }));
+    await user.click(screen.getByRole('option', { name: 'Assemblage' }));
     expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Assemblage');
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(mocks.save.mock.calls[0][0].phases[0]).toMatchObject({ title: 'Assemblage', steps: [] });
+  });
+
+  it('ne crée pas de phase dans le brouillon si la création serveur échoue', async () => {
+    mocks.createTitle.mockReturnValue({
+      unwrap: vi.fn().mockRejectedValue({ status: 409 }),
+    });
+    const user = userEvent.setup();
+    view({ canReadPhaseLibrary: true });
+    await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
+    await user.click(screen.getByRole('option', { name: 'Autre phase…' }));
+    await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Cuisson');
+    await user.click(screen.getByRole('button', { name: 'Ajouter la phase' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('existe déjà');
+    expect(within(navigation()).queryByText('Cuisson')).not.toBeInTheDocument();
+    expect(mocks.save).not.toHaveBeenCalled();
   });
 
   it('permet la suppression directe depuis la ligne d’étape, sans affichage de sous-liste vide', async () => {

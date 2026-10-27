@@ -32,13 +32,14 @@ describe('M-006 — contrats frontend RTK Query', () => {
   it('déclare les seules routes réelles du backend M-006', () => {
     expect(processSheetsApi.endpoints).toBe(captured.endpoints);
     expect(Object.keys(captured.endpoints).sort()).toEqual([
-      'createProcessSheet', 'getProcessSheet', 'getProcessSheetComposition',
+      'createProcessPhaseTitle', 'createProcessSheet', 'getProcessSheet', 'getProcessSheetComposition',
+      'listProcessPhaseTitles',
       'listDossierPhaseTemplates', 'listEligibleProcessTechnicalSheets',
       'listProcessSheets', 'listWorkspacePhaseTemplates', 'saveProcessSheetDraft',
     ].sort());
     expect(captured.tags).toEqual(expect.arrayContaining([
       'ProcessSheetComposition', 'ProcessSheetList', 'ProcessSheet',
-      'EligibleProcessTechnicalSheets', 'ProcessPhaseTemplates',
+      'EligibleProcessTechnicalSheets', 'ProcessPhaseTemplates', 'ProcessPhaseTitles',
     ]));
   });
 
@@ -76,6 +77,28 @@ describe('M-006 — contrats frontend RTK Query', () => {
     };
     expect(definition.transformResponse({ status: 'success', data })).toEqual(data);
     expect(definition.providesTags).toEqual(['ProcessPhaseTemplates']);
+  });
+
+  it('utilise le catalogue commun des intitulés et invalide le cache après création', () => {
+    const list = captured.endpoints.listProcessPhaseTitles;
+    const create = captured.endpoints.createProcessPhaseTitle;
+    expect(list.query({ workspaceId: 'w' })).toEqual({
+      url: '/workspaces/w/process-phase-titles',
+    });
+    expect(list.transformResponse({
+      data: { phases: [{ id: 'phase-1', title: 'Cuisson' }] },
+    })).toEqual({ phases: [{ id: 'phase-1', title: 'Cuisson' }] });
+    expect(list.providesTags(undefined, undefined, { workspaceId: 'w' }))
+      .toEqual([{ type: 'ProcessPhaseTitles', id: 'w' }]);
+    expect(create.query({ workspaceId: 'w', title: 'Découpe' })).toEqual({
+      url: '/workspaces/w/process-phase-titles',
+      method: 'POST', body: { title: 'Découpe' },
+    });
+    expect(create.transformResponse({
+      data: { phase: { id: 'phase-2', title: 'Découpe' } },
+    })).toEqual({ id: 'phase-2', title: 'Découpe' });
+    expect(create.invalidatesTags(undefined, undefined, { workspaceId: 'w' }))
+      .toEqual([{ type: 'ProcessPhaseTitles', id: 'w' }]);
   });
 
   it('sépare liste de process et liste éligible M-004', () => {

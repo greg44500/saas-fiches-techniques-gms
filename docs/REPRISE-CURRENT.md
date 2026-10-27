@@ -1,4 +1,14 @@
 # Reprise M-006 — Fiches process (2026-10-26)
+## Reprise M-006 — catalogue Workspace d'intitulés et Select Base UI (2026-10-27)
+
+Lot demandé explicitement : supprimer l'explication « Seul l’intitulé est repris... » et le champ de recherche, passer au Select Base UI (menu déroulant), provisionner par défaut les cinq phases « Préparation du poste », « Préparations initiales », « Cuisson », « Assemblage », « Présentation / dressage » pour chaque Workspace, et persister les intitulés « Autre phase… » via MongoDB afin de les proposer lors des usages suivants. Les phases Workspace sont disponibles dans tous les Dossiers ; les étapes librement ajoutées aux Fiches process ne sont pas enregistrées comme modèles partagés.
+
+Implémentation métier : catalogue `ProcessLibraryTemplate` PHASE existant, définition autorisant des `steps: []`, routes dédiées `GET/POST /workspaces/:id/process-phase-titles` avec `process-sheet:read` / `process-sheet:edit`, cache RTK Query invalidé après POST, seed transactionnel idempotent avec révisions, runner de migration pour Workspaces existants, initialisation à la première lecture pour nouveaux Workspaces sans modification du Core. Aucun seed ne doit écraser un titre existant ou réactiver un modèle archivé. Mode sombre et responsive à recetter.
+
+**État de preuve :** code et tests créés en branche GitHub, mais les tests de ce nouveau lot n'ont PAS été exécutés. Ne pas annoncer de résultat Vitest, Supertest, lint, build, release:verify ou release:check sans logs. Détails de déploiement/rollback : `docs/releases/M-006-PHASE-TITLES.md`.
+
+---
+
 ## Reprise — Correctif M-006 RTK Query et portée des étapes libres (2026-10-27)
 
 Suite au log Vitest local du propriétaire : **1 test en échec sur 70** avant correction, uniquement \`src/features/process-sheets/api/process-sheets-api.test.js\` car l'inventaire strict attendait 6 endpoints alors que le module RTK Query en déclare 8 depuis la connexion des bibliothèques backend. Le test d'inventaire est adapté et complété par des scénarios GET Workspace et Dossier avec filtre ACTIVE, recherche, pagination, transformation et cache. Le test d'intégration page/éditeur est étendu à l'insertion d'un intitulé Workspace, la saisie d'une étape libre non publiée et la sauvegarde PUT. Le test HTTP de bibliothèque couvre le partage des modèles Workspace entre Dossiers et maintient l'isolation du catalogue Dossier existant. Tests nouveaux **non exécutés ici** ; aucune gate déclarée verte.

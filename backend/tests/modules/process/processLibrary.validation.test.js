@@ -18,7 +18,9 @@ describe('M-006 — validation stricte des bibliothèques', () => {
         expect(phaseDefinitionSchema.safeParse(step).success).toBe(false);
         expect(phaseDefinitionSchema.safeParse({
             title: 'Cuisson', steps: [],
-        }).success).toBe(false);
+        }).success).toBe(true);
+        expect(phaseDefinitionSchema.safeParse({ title: 'Cuisson' }).success)
+            .toBe(false);
     });
 
     it('rejette les champs inconnus, médias et valeurs négatives', () => {

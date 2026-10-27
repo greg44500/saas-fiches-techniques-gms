@@ -1,4 +1,5 @@
 import { processSheetRouter } from '../modules/process/processSheet.routes.js';
+import { processPhaseTitlesRouter } from '../modules/process/processPhaseTitles.routes.js';
 import {
     processLibraryDossierRouter,
     processLibraryWorkspaceRouter,
@@ -138,6 +139,11 @@ const mountApplicationRoutes = (
  * import { catalogRouter } from '../modules/catalog/catalog.routes.js';
  *
  * const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
+    Object.freeze({
+        key: 'process-phase-titles',
+        mountPath: '/api/workspaces/:workspaceId/process-phase-titles',
+        router: processPhaseTitlesRouter,
+    }),
 
  *     Object.freeze({
  *         key: 'catalog',

@@ -32,7 +32,7 @@ const stepDefinitionSchema = z.strictObject({
 const phaseDefinitionSchema = z.strictObject({
     title: titleSchema,
     instructions: instructionsSchema,
-    steps: z.array(stepDefinitionSchema).min(1).max(100),
+    steps: z.array(stepDefinitionSchema).max(100),
 });
 
 const definitionSchema = z.union([

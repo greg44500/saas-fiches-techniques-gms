@@ -42,7 +42,7 @@ function ProcessSheetWorkspacePage() {
   // backend, so edit roles do not require a second dossier:read permission.
   const canEdit = Boolean(can?.(PROCESS_SHEET_PERMISSION.EDIT))
     && process?.status === 'ACTIVE' && dossierOperational === true;
-  const canReadPhaseLibrary = Boolean(can?.('process-library:read'));
+  const canReadPhaseLibrary = Boolean(can?.(PROCESS_SHEET_PERMISSION.READ));
 
   if (!process || !draft) {
     return (

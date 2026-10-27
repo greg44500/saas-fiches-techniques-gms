@@ -1,4 +1,16 @@
 # M-006 — Conception technique et séquencement de l'implémentation
+## Lot M-006 — menu d'intitulés Workspace et provisionnement (2026-10-27)
+
+**Contrat validé à partir des demandes successives du propriétaire :** les phases proposées dans l'éditeur sont des titres provenant de MongoDB et partagés entre les Dossiers d'un Workspace. Intitulés par défaut : « Préparation du poste », « Préparations initiales », « Cuisson », « Assemblage », « Présentation / dressage ». Les étapes librement rédigées dans une fiche process restent dans cette fiche et ne sont pas publiées automatiquement au Workspace. Aucun partage inter-Workspace demandé.
+
+L'interface enlève la phrase explicative du Popover et remplace la recherche par `Select` shadcn/Base UI. Les données proviennent de `GET /api/workspaces/:workspaceId/process-phase-titles` ; `POST` sur la même route crée un titre personnalisé validé et audité via la bibliothèque PHASE existante. Après réponse réussie seulement, l'intitulé est ajouté dans le brouillon ; RTK Query invalide le catalogue afin qu'il réapparaisse à la prochaine ouverture. L'action « Autre phase… » passe par `Dialog`, avec erreur 409 visible. Une phase de bibliothèque devient possible avec `steps: []`, sans créer d'étape fictive.
+
+Provisionnement : runner `migration:m006-default-phase-titles` dans le manifeste machine-readable pour les Workspaces existants ; `ensureWorkspaceProcessPhases` idempotent lors du premier GET d'un Workspace créé ensuite, sans toucher aux fondations de création Workspace du Core. Les défauts archivés ou modifiés ne sont jamais écrasés. `ProcessLibraryRevision` révision zéro est assurée pour les modèles par défaut. Dossier local non utilisé pour le menu partagé, tout en conservant les routes de bibliothèque locales préexistantes. GET exige `process-sheet:read`, POST `process-sheet:edit` et mode Workspace écrivable. L'API et le modèle M-006 restent propriétaires de la donnée.
+
+Contrats et déploiement détaillés dans `docs/releases/M-006-PHASE-TITLES.md`. Les tests sont écrits, aucune gate exécutée ici.
+
+---
+
 ## Correctif de contrat RTK Query et clarification du partage (2026-10-27)
 
 **Régression observée en local par le propriétaire :** 69 tests réussis / 70, échec unique de l'inventaire strict de \`process-sheets-api.test.js\` après ajout des deux GET de bibliothèque de phases. Le contrat frontend comporte désormais huit endpoints, dont \`listWorkspacePhaseTemplates\` et \`listDossierPhaseTemplates\`. Corriger l'attente et protéger par tests distincts les URL GET, \`status=ACTIVE\`, la recherche et la pagination, le format de réponse et les tags RTK Query. Un test HTTP Supertest vérifie en plus la bibliothèque de modèles ACTIVE Workspace, la visibilité partagée de modèles de phases **et d'étapes** entre Dossiers du même Workspace, l'exclusion des archives, la recherche/pagination et l'isolation de la bibliothèque locale Dossier. Un test d'intégration React vérifie le parcours titre de phase Workspace → étape saisie librement → PUT du brouillon avec révision.

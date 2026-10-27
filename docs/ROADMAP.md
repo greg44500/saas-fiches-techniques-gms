@@ -1,4 +1,10 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
+## M-006 — menu des phases et amorçage des titres communs (2026-10-27)
+
+Lot de continuité UX M-006 : affichage `Select` shadcn/Base UI alimenté par le backend Workspace, cinq intitulés prévus à l'initialisation de la base, migration rejouable pour Workspaces existants, saisie d'intitulés libres persistés dans la bibliothèque PHASE Workspace, sans publication automatique des étapes libres d'une Fiche process. Contrats Core et ownership inchangés. Gate, QA et déploiement à valider localement avant PR.
+
+---
+
 ## M-006 — propositions de phases issues du backend (2026-10-27)
 
 **Lot frontend sur la branche M-006, non livré et gates à exécuter :** les intitulés proposés dans l'arbre et le formulaire de phase proviennent des bibliothèques backend PHASE actives (Dossier + Workspace) via RTK Query, pas d'une liste statique React. Selection d'un titre seulement ; adoption automatique d'instructions ou d'étapes interdite. Recherche/pagination serveur, permission \`process-library:read\`, titre libre de repli. Masquage complet des sous-listes vides et suppression contextuelle des étapes. Aucun changement de contrat de modèles : les PHASE en bibliothèque imposent au moins une étape, les phases de brouillon peuvent rester vides. Enregistrement en bibliothèque d'un intitulé vierge et peuplement de titres prédéfinis restent à cadrer distinctement ; pas de seed inventé.

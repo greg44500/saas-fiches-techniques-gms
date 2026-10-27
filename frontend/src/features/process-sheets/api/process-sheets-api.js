@@ -13,9 +13,30 @@ const processSheetsApi = baseApi.enhanceEndpoints({
     'ProcessSheet',
     'EligibleProcessTechnicalSheets',
     'ProcessPhaseTemplates',
+    'ProcessPhaseTitles',
   ],
 }).injectEndpoints({
   endpoints: (builder) => ({
+    listProcessPhaseTitles: builder.query({
+      query: ({ workspaceId }) => ({
+        url: '/workspaces/' + workspaceId + '/process-phase-titles',
+      }),
+      transformResponse: (response) => response.data,
+      providesTags: (_result, _error, { workspaceId }) => [
+        { type: 'ProcessPhaseTitles', id: workspaceId },
+      ],
+    }),
+    createProcessPhaseTitle: builder.mutation({
+      query: ({ workspaceId, title }) => ({
+        url: '/workspaces/' + workspaceId + '/process-phase-titles',
+        method: 'POST',
+        body: { title },
+      }),
+      transformResponse: (response) => response.data.phase,
+      invalidatesTags: (_result, _error, { workspaceId }) => [
+        { type: 'ProcessPhaseTitles', id: workspaceId },
+      ],
+    }),
     // The editor reads ACTIVE PHASE templates without copying their steps.
     listWorkspacePhaseTemplates: builder.query({
       query: ({ workspaceId, page = 1, limit = 100, search }) => ({
@@ -124,6 +145,8 @@ const processSheetsApi = baseApi.enhanceEndpoints({
 });
 
 const {
+  useCreateProcessPhaseTitleMutation,
+  useListProcessPhaseTitlesQuery,
   useCreateProcessSheetMutation,
   useGetProcessSheetCompositionQuery,
   useGetProcessSheetQuery,

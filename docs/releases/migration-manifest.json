@@ -216,6 +216,14 @@
       ]
     },
     {
+      "id": "m006-default-phase-titles",
+      "script": "migration:m006-default-phase-titles",
+      "runner": "backend/migrations/runSeedM006DefaultProcessPhasesMigration.js",
+      "dependsOn": [
+        "m006-process-library"
+      ]
+    },
+    {
       "id": "m006-process-editor-permission",
       "script": "migration:m006-process-editor-permission",
       "runner": "backend/migrations/runBackfillM006ProcessEditPermissionMigration.js",

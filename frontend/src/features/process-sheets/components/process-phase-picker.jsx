@@ -1,147 +1,137 @@
 import { useState } from 'react';
-import { ChevronDown, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import {
+  DialogContent, DialogDescription, DialogFooter, DialogHeader,
+  DialogOverlay, DialogPortal, DialogRoot, DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
-  Popover, PopoverContent, PopoverTrigger,
-} from '@/components/ui/popover';
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import {
-  useListDossierPhaseTemplatesQuery,
-  useListWorkspacePhaseTemplatesQuery,
+  useCreateProcessPhaseTitleMutation,
+  useListProcessPhaseTitlesQuery,
 } from '@/features/process-sheets/api/process-sheets-api';
 
-// Read-only title suggestions from both M-006 backend libraries.
-// Choosing a title deliberately does not adopt a template's instructions/steps.
+// Suggestions are server-owned and Workspace-scoped. Selecting an existing
+// title never inserts the model's steps into a process sheet.
 function ProcessPhasePicker({
-  workspaceId, dossierId, canReadLibrary = false, disabled = false,
-  onSelect, mode = 'create',
+  workspaceId, canReadLibrary = false, disabled = false, onSelect,
+  mode = 'create',
 }) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const query = {
-    workspaceId, dossierId, page, limit: 100, search: search.trim() || undefined,
-  };
-  const skip = !open || !canReadLibrary;
-  const local = useListDossierPhaseTemplatesQuery(query, {
-    skip, refetchOnMountOrArgChange: true,
-  });
-  const common = useListWorkspacePhaseTemplatesQuery(query, {
-    skip, refetchOnMountOrArgChange: true,
-  });
-  const loading = canReadLibrary && (
-    local.isLoading || common.isLoading || local.isFetching || common.isFetching
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const list = useListProcessPhaseTitlesQuery(
+    { workspaceId },
+    { skip: !canReadLibrary, refetchOnMountOrArgChange: true },
   );
-  const all = loading ? [] : [
-    ...((local.currentData ?? local.data)?.templates ?? []).map((template) => ({
-      ...template, scope: 'Dossier',
-    })),
-    ...((common.currentData ?? common.data)?.templates ?? []).map((template) => ({
-      ...template, scope: 'Workspace',
-    })),
-  ];
-  const failed = canReadLibrary && (local.isError || common.isError);
-  const totalPages = Math.max(
-    local.data?.pagination?.totalPages ?? 0,
-    common.data?.pagination?.totalPages ?? 0,
-  );
+  const [createTitle, creation] = useCreateProcessPhaseTitleMutation();
+  const phases = list.data?.phases ?? [];
 
-  const choose = (title) => {
-    onSelect(title);
-    setOpen(false);
-    setSearch('');
-    setPage(1);
+  const choose = (value) => {
+    if (!value || disabled) return;
+    if (value === 'other') {
+      setErrorMessage('');
+      setTitle('');
+      setDialogOpen(true);
+      return;
+    }
+    const selected = phases.find((phase) => phase.id === value);
+    if (selected) onSelect(selected.title);
   };
 
-  const triggerName = mode === 'create' ? 'Ajouter une phase' : 'Choisir un intitulé de phase';
+  const submit = async (event) => {
+    event.preventDefault();
+    const name = title.trim().replace(/\s+/g, ' ');
+    if (!name || disabled || creation.isLoading) return;
+    setErrorMessage('');
+    try {
+      const created = await createTitle({ workspaceId, title: name }).unwrap();
+      onSelect(created.title);
+      setDialogOpen(false);
+      setTitle('');
+    } catch (error) {
+      setErrorMessage(error?.status === 409
+        ? 'Cet intitulé existe déjà dans le Workspace. Choisissez-le dans la liste.'
+        : error?.data?.message ?? 'Impossible d’enregistrer ce nouvel intitulé.');
+    }
+  };
+
   return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger
-        render={
-          <Button
-            aria-label={triggerName}
-            className={mode === 'create' ? 'size-8' : undefined}
-            disabled={disabled}
-            size={mode === 'create' ? 'icon' : 'sm'}
-            type="button"
-            variant={mode === 'create' ? 'ghost' : 'outline'}
-          />
-        }
+    <>
+      <Select
+        disabled={disabled}
+        onValueChange={choose}
+        value={null}
       >
-        {mode === 'create' ? <Plus aria-hidden="true" className="size-4" /> : (
-          <>
-            Choisir dans la bibliothèque
-            <ChevronDown aria-hidden="true" className="size-4" />
-          </>
-        )}
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 max-w-[calc(100vw-2rem)] space-y-2" sideOffset={8}>
-        <p className="text-sm font-semibold">Phases disponibles</p>
-        <p className="text-xs text-muted-foreground">
-          Seul l’intitulé est repris, sans ajouter les étapes du modèle.
-        </p>
-        {canReadLibrary ? (
-          <>
-            <Input
-              aria-label="Rechercher une phase"
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-              placeholder="Rechercher une phase…"
-              value={search}
-            />
-            {loading && <p className="text-sm text-muted-foreground" role="status">Chargement des phases…</p>}
-            {failed && (
-              <p className="text-sm text-destructive" role="alert">
-                Une bibliothèque de phases est indisponible.
-              </p>
-            )}
-            <div className="max-h-64 space-y-1 overflow-y-auto" role="list" aria-label="Propositions de phases">
-              {all.map((template) => (
-                <div key={template.scope + ':' + template.id} role="listitem">
-                  <Button
-                    className="h-auto w-full justify-between whitespace-normal py-2 text-left"
-                    onClick={() => choose(template.title)}
-                    type="button"
-                    variant="ghost"
-                  >
-                    <span className="min-w-0 break-words">{template.title}</span>
-                    <span className="shrink-0 text-xs font-normal text-muted-foreground">{template.scope}</span>
-                  </Button>
-                </div>
-              ))}
-            </div>
-            {!loading && !failed && all.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Aucun modèle actif ne correspond à cette recherche.
-              </p>
-            )}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between gap-2">
-                <Button disabled={page <= 1} onClick={() => setPage(page - 1)}
-                  size="sm" type="button" variant="outline">Précédent</Button>
-                <span className="text-xs text-muted-foreground">{page} / {totalPages}</span>
-                <Button disabled={page >= totalPages} onClick={() => setPage(page + 1)}
-                  size="sm" type="button" variant="outline">Suivant</Button>
-              </div>
-            )}
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            La consultation des modèles de phases n’est pas autorisée pour ce rôle.
-          </p>
-        )}
-        {mode === 'create' && (
-          <Button className="w-full justify-start border-t border-border" onClick={() => choose('Nouvelle phase')}
-            size="sm" type="button" variant="ghost">
-            <Plus aria-hidden="true" className="size-4" />
-            Autre phase (intitulé libre)
-          </Button>
-        )}
-      </PopoverContent>
-    </Popover>
+        <SelectTrigger
+          aria-label={mode === 'create' ? 'Ajouter une phase' : 'Choisir un intitulé de phase'}
+          className={mode === 'create' ? 'size-8 justify-center border-0 px-1 hover:bg-muted [&_[data-slot=select-value]]:hidden' : 'w-fit max-w-full'}
+        >
+          {mode === 'create'
+            ? <Plus aria-hidden="true" className="size-4" />
+            : <SelectValue placeholder="Choisir dans la bibliothèque" />}
+        </SelectTrigger>
+        <SelectContent>
+          {list.isLoading || list.isFetching ? (
+            <SelectItem disabled value="loading">Chargement des phases…</SelectItem>
+          ) : list.isError ? (
+            <SelectItem disabled value="error">Bibliothèque indisponible</SelectItem>
+          ) : !canReadLibrary ? (
+            <SelectItem disabled value="forbidden">Bibliothèque non autorisée</SelectItem>
+          ) : phases.length === 0 ? (
+            <SelectItem disabled value="empty">Aucune phase disponible</SelectItem>
+          ) : phases.map((phase) => (
+            <SelectItem key={phase.id} value={phase.id}>{phase.title}</SelectItem>
+          ))}
+          <SelectItem value="other">Autre phase…</SelectItem>
+        </SelectContent>
+      </Select>
+      <DialogRoot
+        disablePointerDismissal
+        onOpenChange={(next) => {
+          if (!next && !creation.isLoading) setDialogOpen(false);
+        }}
+        open={dialogOpen}
+      >
+        <DialogPortal>
+          <DialogOverlay />
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Nouvel intitulé de phase</DialogTitle>
+              <DialogDescription>
+                Cet intitulé sera disponible dans tous les Dossiers de ce Workspace.
+              </DialogDescription>
+            </DialogHeader>
+            <form className="mt-4 space-y-3" onSubmit={submit}>
+              <label className="grid gap-2 text-sm" htmlFor="process-phase-custom-title">
+                Intitulé
+                <Input
+                  autoFocus
+                  disabled={creation.isLoading}
+                  id="process-phase-custom-title"
+                  maxLength={160}
+                  onChange={(event) => setTitle(event.target.value)}
+                  required
+                  value={title}
+                />
+              </label>
+              {errorMessage && <p role="alert" className="text-sm text-destructive">{errorMessage}</p>}
+              <DialogFooter>
+                <Button disabled={creation.isLoading} onClick={() => setDialogOpen(false)}
+                  type="button" variant="outline">Annuler</Button>
+                <Button disabled={!title.trim() || creation.isLoading} type="submit">
+                  {creation.isLoading ? 'Enregistrement…' : 'Ajouter la phase'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </DialogPortal>
+      </DialogRoot>
+    </>
   );
 }
 
