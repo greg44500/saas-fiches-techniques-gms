@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -152,8 +152,11 @@ describe('M-006 — liste des Fiches process uniquement', () => {
     const dialog = await screen.findByRole('dialog', {
       name: 'Prévisualiser : Fabrication tartine',
     });
-    expect(dialog).toHaveTextContent('Aperçu du brouillon enregistré');
     expect(dialog).toHaveTextContent('Préparation');
+    expect(within(dialog).getByText('Consultation du brouillon enregistré sans modification.'))
+      .toHaveClass('sr-only');
+    expect(within(dialog).queryByText(/Aperçu du brouillon enregistré/))
+      .not.toBeInTheDocument();
     expect(mocks.get).toHaveBeenCalledWith(
       { workspaceId: 'workspace-1', dossierId: 'dossier-1', processSheetId: 'process-1' },
       { skip: false },
