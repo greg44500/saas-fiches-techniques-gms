@@ -360,6 +360,10 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     dialog = screen.getByRole('dialog', { name: 'Temps, température et équipements' });
     expect(within(dialog).getByRole('spinbutton', { name: 'Temps actif (min)' })).toHaveValue(null);
     await user.click(within(dialog).getByRole('button', { name: 'Annuler' }));
+    await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Valider' }));
+    expect(screen.getByText('À jour')).toHaveClass('text-success');
+    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
     expect(mocks.save).toHaveBeenCalledTimes(1);
   });
 
