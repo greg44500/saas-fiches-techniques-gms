@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Plus, Save, Trash2 } from 'lucide-react';
-import { IngredientChoices, ProcessStepEditor, ingredientName } from '@/features/process-sheets/components/process-sheet-editor-fields';
+import { ArrowDown, ArrowUp, Check, Circle, Plus, Save, Trash2 } from 'lucide-react';
+import { IngredientChoices, ProcessStepFields, ingredientName } from '@/features/process-sheets/components/process-sheet-editor-fields';
+import { ProcessSheetDisclosure } from '@/features/process-sheets/components/process-sheet-disclosure';
+import './process-sheet-workspace.css';
 import { ProcessSheetPreview } from '@/features/process-sheets/components/process-sheet-preview';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ProductVariantField } from '@/features/products/components/product-variant-field';
@@ -52,7 +53,7 @@ function ProcessSheetDraftEditor({
   const [message, setMessage] = useState('');
   const [conflict, setConflict] = useState(false);
   const [activePhaseId, setActivePhaseId] = useState(() => initialDraft?.phases?.[0]?.id ?? null);
-  const [activeStepId, setActiveStepId] = useState(null);
+  const [activeStepId, setActiveStepId] = useState(() => initialDraft?.phases?.[0]?.steps?.[0]?.id ?? null);
   const [visibleReasonKeys, setVisibleReasonKeys] = useState([]);
   const [showPreview, setShowPreview] = useState(false);
   const [saveDraft, saving] = useSaveProcessSheetDraftMutation();
@@ -64,7 +65,7 @@ function ProcessSheetDraftEditor({
       setForm(normalize(initialDraft));
       setRevision(initialDraft.revision);
       setActivePhaseId(initialDraft?.phases?.[0]?.id ?? null);
-      setActiveStepId(null);
+      setActiveStepId(initialDraft?.phases?.[0]?.steps?.[0]?.id ?? null);
     }
   }, [initialDraft, dirty, revision]);
 
@@ -160,7 +161,7 @@ function ProcessSheetDraftEditor({
       setConflict(false);
       setMessage('');
       setActivePhaseId(fresh.data.draft.phases?.[0]?.id ?? null);
-      setActiveStepId(null);
+      setActiveStepId(fresh.data.draft.phases?.[0]?.steps?.[0]?.id ?? null);
     }
   };
   const setReason = (lineKey, reason) => edit((current) => ({
@@ -171,206 +172,329 @@ function ProcessSheetDraftEditor({
     ],
   }));
 
+  const currentPhaseIndex = form.phases.findIndex((phase) => phase.id === activePhaseId);
+  const currentPhase = form.phases[currentPhaseIndex] ?? null;
+  const currentStepIndex = currentPhase?.steps.findIndex((step) => step.id === activeStepId) ?? -1;
+  const currentStep = currentStepIndex >= 0 ? currentPhase.steps[currentStepIndex] : null;
+  const assignmentCount = (lineKey) => form.phases.reduce((count, phase) => (
+    count
+    + Number((phase.ingredientLineKeys ?? []).includes(lineKey))
+    + phase.steps.reduce((sum, step) => sum + Number((step.ingredientLineKeys ?? []).includes(lineKey)), 0)
+  ), 0);
+
   return (
-    <Card>
-      <CardHeader className="sticky top-0 z-10 border-b border-border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="space-y-3" aria-label="Atelier de fabrication">
+      <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background py-3">
+        <div className="min-w-0 space-y-1">
           <div className="flex items-center gap-2">
-            <CardTitle>Déroulement de fabrication</CardTitle>
+            <h2 className="text-base font-semibold">Déroulement de fabrication</h2>
             <InfoTooltip label="À propos du brouillon process"
               content="Les phases, étapes et ingrédients associés sont propres à cette Fiche process. Les modifications sont enregistrées manuellement et ne modifient pas la Fiche technique." />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={() => setShowPreview((value) => !value)}
-              size="sm" type="button" variant="outline">
-              {showPreview ? 'Revenir à l’édition' : 'Aperçu du process'}
-            </Button>
+          <p className="text-xs text-muted-foreground" role="status">
+            Révision {revision} · {dirty ? 'Modifications non enregistrées' : 'À jour'}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={() => setShowPreview((value) => !value)}
+            size="sm" type="button" variant="outline">
+            {showPreview ? 'Revenir à l’édition' : 'Aperçu du process'}
+          </Button>
           {canEdit && (
             <Button disabled={!dirty || saving.isLoading || conflict} onClick={save} size="sm" type="button">
-              <Save className="size-4" aria-hidden="true" /> {saving.isLoading ? 'Enregistrement…' : 'Enregistrer le brouillon'}
+              <Save className="size-4" aria-hidden="true" />
+              {saving.isLoading ? 'Enregistrement…' : 'Enregistrer le brouillon'}
             </Button>
           )}
-          </div>
         </div>
-        <p className="text-xs text-muted-foreground" role="status">
-          Révision {revision} · {dirty ? 'Modifications non enregistrées' : 'À jour'}
+      </header>
+      {!canEdit && <p className="text-sm text-muted-foreground">Consultation uniquement : droits d’édition ou Dossier actif requis.</p>}
+      {message && <p role={conflict ? 'alert' : 'status'} className="text-sm">{message}</p>}
+      {conflict && <Button onClick={reload} type="button" variant="outline">Recharger le brouillon</Button>}
+      {sourceIngredients?.hasLegacyLineIdentity && (
+        <p role="note" className="border-l-2 border-border pl-3 text-sm text-muted-foreground">
+          Cette composition historique utilise des identifiants limités à sa validation M-004 d’origine.
+          Les affectations ne sont pas transférables automatiquement à une autre version.
         </p>
-        {!canEdit && <p className="text-sm text-muted-foreground">Consultation uniquement : droits d’édition ou Dossier actif requis.</p>}
-        {message && <p role={conflict ? 'alert' : 'status'} className="text-sm">{message}</p>}
-        {conflict && <Button onClick={reload} type="button" variant="outline">Recharger le brouillon</Button>}
-      </CardHeader>
-      <CardContent className="space-y-3 pt-4">
-        {showPreview ? (
+      )}
+      {showPreview ? (
+        <div className="process-sheet-pane-enter py-3">
           <ProcessSheetPreview phases={form.phases} ingredients={ingredients} />
-        ) : (
-          <>
-        {sourceIngredients?.hasLegacyLineIdentity && (
-          <p role="note" className="rounded-md border border-border p-3 text-sm">
-            Cette composition historique utilise des identifiants limités à sa validation M-004 d’origine.
-            Les affectations ne sont pas transférables automatiquement à une autre version.
-          </p>
-        )}
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/30 p-3">
-          <div>
-            <p className="text-sm font-medium">Ingrédients de la composition M-004</p>
-            <p className="text-xs text-muted-foreground">
-              {ingredients.length - unassigned.length} sur {ingredients.length} affectés
-              {pendingCount > 0 ? ' · ' + pendingCount + ' à examiner' : ''}
-            </p>
-          </div>
-          <p className="text-xs text-muted-foreground">{form.phases.length} phase(s)</p>
         </div>
-        {form.phases.length === 0 && (
-          <p className="rounded-lg border border-dashed border-border p-5 text-sm text-muted-foreground">
-            Aucune phase. Commencez par ajouter la première phase de fabrication.
-          </p>
-        )}
-        {form.phases.map((phase, i) => {
-          const active = activePhaseId === phase.id;
-          return (
-            <section className="rounded-lg border border-border" key={phase.id} aria-label={'Phase ' + (i + 1)}>
-              <div className="flex items-center gap-2 p-2">
-                <Button className="min-w-0 flex-1 justify-start gap-3 text-left" variant="ghost" type="button"
-                  aria-expanded={active} onClick={() => {
-                    setActivePhaseId(active ? null : phase.id);
-                    setActiveStepId(null);
-                  }}>
-                  <span className="rounded-md bg-muted px-2 py-1 text-sm font-semibold">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="min-w-0 flex-1 truncate font-semibold">{phase.title || 'Phase sans titre'}</span>
-                  <span className="text-xs font-normal text-muted-foreground">{phase.steps.length} étape(s)</span>
-                  {active ? <ChevronDown aria-hidden="true" className="size-4" />
-                    : <ChevronRight aria-hidden="true" className="size-4" />}
-                </Button>
+      ) : (
+        <div className="grid gap-4 lg:h-[calc(100vh-15rem)] lg:min-h-[490px] lg:grid-cols-[minmax(15rem,0.78fr)_minmax(0,2fr)]">
+          <aside
+            aria-label="Suivi des ingrédients"
+            className="min-w-0 space-y-4 rounded-xl border border-border bg-card p-4 lg:min-h-0 lg:overflow-y-auto"
+          >
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold">Ingrédients M-004</h3>
+              <p className="text-xs text-muted-foreground">
+                {ingredients.length - unassigned.length} sur {ingredients.length} affectés
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Une ligne peut être associée à plusieurs opérations.
+              </p>
+            </div>
+            <section className="space-y-2" aria-label="Ingrédients à examiner">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="text-sm font-semibold" role="heading" aria-level="3">
+                  Ingrédients non affectés ({unassigned.length})
+                </h4>
+                {pendingCount > 0 && (
+                  <span className="text-xs text-muted-foreground">{pendingCount} à examiner</span>
+                )}
               </div>
-              {active && (
-                <div className="space-y-3 border-t border-border p-3">
-                  <ProductVariantField floating filled={Boolean(phase.title)}
-                    id={'phase-' + phase.id} label="Titre de la phase">
-                    <Input className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground"
-                      disabled={!editable} id={'phase-' + phase.id} maxLength={160}
-                      placeholder="Ex. Préparation" value={phase.title}
-                      onChange={(event) => patchPhase(i, { ...phase, title: event.target.value })} />
-                  </ProductVariantField>
-                  <details className="rounded-md border border-border p-3">
-                    <summary className="cursor-pointer text-sm font-medium">
-                      Consignes et ingrédients propres à la phase
-                      {(phase.instructions || phase.ingredientLineKeys?.length) ? ' · Renseignés' : ' · Facultatifs'}
-                    </summary>
-                    <div className="mt-3 space-y-3">
-                      <label className="grid gap-1 text-sm">Instructions de la phase
-                        <Textarea disabled={!editable} maxLength={5000} value={phase.instructions ?? ''}
-                          onChange={(event) => patchPhase(i, { ...phase, instructions: event.target.value })} />
-                      </label>
-                      <IngredientChoices disabled={!editable} ingredients={ingredients}
-                        label="Ingrédients directement affectés à la phase"
-                        selected={phase.ingredientLineKeys ?? []}
-                        onChange={(next) => changeIngredients(i, null, next)} />
-                    </div>
-                  </details>
-                  <div className="space-y-2">
-                    {phase.steps.map((step, j) => (
-                      <ProcessStepEditor
-                        count={phase.steps.length} disabled={!editable} index={j}
-                        ingredients={ingredients} key={step.id} step={step}
-                        active={activeStepId === step.id}
-                        onToggle={() => setActiveStepId(activeStepId === step.id ? null : step.id)}
-                        onChange={(next) => {
-                          if (next.ingredientLineKeys !== step.ingredientLineKeys) {
-                            changeIngredients(i, j, next.ingredientLineKeys);
-                          } else patchStep(i, j, next);
-                        }}
-                        onDelete={() => {
-                          patchPhase(i, { ...phase, steps: phase.steps.filter((_, n) => n !== j) });
-                          setActiveStepId(null);
-                        }}
-                        onMove={(direction) => patchPhase(i, {
-                          ...phase, steps: move(phase.steps, j, direction),
-                        })}
-                      />
-                    ))}
+              {unassigned.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Tous les ingrédients sont affectés à une phase ou une étape.</p>
+              ) : (
+                <ul className="divide-y divide-border/60">
+                  {unassigned.map((line) => {
+                    const label = ingredientName(line);
+                    const existingReason = reasonFor(line.lineKey);
+                    const showReason = Boolean(existingReason) || visibleReasonKeys.includes(line.lineKey);
+                    return (
+                      <li className="space-y-2 py-2" key={line.lineKey}>
+                        <div className="flex items-start gap-2">
+                          <Circle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                          <span className="min-w-0 flex-1 text-xs">{label}</span>
+                        </div>
+                        {!showReason && editable && (
+                          <Button size="sm" type="button" variant="ghost"
+                            onClick={() => setVisibleReasonKeys((keys) => [...keys, line.lineKey])}>
+                            Justifier la non-utilisation
+                          </Button>
+                        )}
+                        {showReason && (
+                          <label className="grid gap-1 text-xs">
+                            {label} — justification éventuelle
+                            <Input disabled={!editable} maxLength={1000}
+                              placeholder="Pourquoi cet ingrédient n’est-il pas utilisé ?"
+                              value={existingReason}
+                              onChange={(event) => setReason(line.lineKey, event.target.value)} />
+                          </label>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+            <section className="space-y-2 border-t border-border pt-3" aria-label="Ingrédients déjà affectés">
+              <h4 className="text-sm font-semibold">Déjà affectés ({ingredients.length - unassigned.length})</h4>
+              {ingredients.filter((line) => assigned.has(line.lineKey)).length === 0 ? (
+                <p className="text-xs text-muted-foreground">Les affectations apparaîtront ici.</p>
+              ) : (
+                <ul className="divide-y divide-border/60">
+                  {ingredients.filter((line) => assigned.has(line.lineKey)).map((line) => (
+                    <li className="flex items-start gap-2 py-2" key={line.lineKey}>
+                      <Check className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                      <span className="min-w-0 flex-1 text-xs">{ingredientName(line)}</span>
+                      <span className="shrink-0 text-[11px] text-muted-foreground">
+                        {assignmentCount(line.lineKey)} association(s)
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </aside>
+          <div
+            aria-label="Phases et étapes"
+            className="min-w-0 space-y-4 rounded-xl border border-border bg-card p-4 lg:min-h-0 lg:overflow-y-auto"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">Phases de fabrication</h3>
+              {editable && (
+                <Button disabled={form.phases.length >= 40} onClick={addPhase}
+                  size="sm" type="button" variant="outline">
+                  <Plus className="size-4" aria-hidden="true" /> Ajouter une phase
+                </Button>
+              )}
+            </div>
+            {form.phases.length > 0 && (
+              <nav aria-label="Navigation des phases" className="flex gap-2 overflow-x-auto pb-2">
+                {form.phases.map((phase, i) => (
+                  <button
+                    aria-pressed={phase.id === activePhaseId}
+                    className={'flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors duration-150 motion-reduce:transition-none '
+                      + (phase.id === activePhaseId
+                        ? 'bg-foreground font-medium text-background'
+                        : 'bg-muted/60 text-foreground hover:bg-muted')}
+                    key={phase.id}
+                    onClick={() => {
+                      setActivePhaseId(phase.id);
+                      setActiveStepId(phase.steps[0]?.id ?? null);
+                    }}
+                    type="button"
+                  >
+                    <span className="text-xs tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+                    <span className="max-w-44 truncate">{phase.title || 'Phase sans titre'}</span>
+                  </button>
+                ))}
+              </nav>
+            )}
+            {!currentPhase && (
+              <p className="py-10 text-center text-sm text-muted-foreground">
+                Aucune phase. Commencez par ajouter la première phase de fabrication.
+              </p>
+            )}
+            {currentPhase && (
+              <section className="process-sheet-pane-enter space-y-4" key={currentPhase.id}
+                aria-label={'Phase ' + (currentPhaseIndex + 1)}>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-base font-semibold">{currentPhase.title || 'Phase sans titre'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {currentPhase.steps.length} étape(s)
+                    </p>
                   </div>
                   {editable && (
-                    <Button disabled={phase.steps.length >= 40} onClick={() => addStep(i)}
-                      size="sm" type="button" variant="outline">
-                      <Plus className="size-4" aria-hidden="true" /> Ajouter une étape
-                    </Button>
-                  )}
-                  {editable && (
-                    <div className="flex justify-end gap-1 border-t border-border pt-2">
-                      <Button aria-label={'Monter phase ' + (i + 1)} disabled={i === 0}
-                        onClick={() => edit((state) => ({ ...state, phases: move(state.phases, i, -1) }))}
-                        size="icon" type="button" variant="ghost"><ArrowUp className="size-4" /></Button>
-                      <Button aria-label={'Descendre phase ' + (i + 1)} disabled={i === form.phases.length - 1}
-                        onClick={() => edit((state) => ({ ...state, phases: move(state.phases, i, 1) }))}
-                        size="icon" type="button" variant="ghost"><ArrowDown className="size-4" /></Button>
-                      <Button aria-label={'Supprimer phase ' + (i + 1)}
+                    <div className="flex items-center gap-1">
+                      <Button aria-label={'Monter phase ' + (currentPhaseIndex + 1)}
+                        disabled={currentPhaseIndex === 0}
+                        onClick={() => edit((current) => ({
+                          ...current,
+                          phases: move(current.phases, currentPhaseIndex, -1),
+                        }))}
+                        size="icon" type="button" variant="ghost">
+                        <ArrowUp className="size-4" aria-hidden="true" />
+                      </Button>
+                      <Button aria-label={'Descendre phase ' + (currentPhaseIndex + 1)}
+                        disabled={currentPhaseIndex === form.phases.length - 1}
+                        onClick={() => edit((current) => ({
+                          ...current,
+                          phases: move(current.phases, currentPhaseIndex, 1),
+                        }))}
+                        size="icon" type="button" variant="ghost">
+                        <ArrowDown className="size-4" aria-hidden="true" />
+                      </Button>
+                      <Button aria-label={'Supprimer phase ' + (currentPhaseIndex + 1)}
                         onClick={() => {
-                          edit((state) => ({ ...state, phases: state.phases.filter((_, n) => n !== i) }));
-                          setActivePhaseId(null);
-                          setActiveStepId(null);
-                        }} size="icon" type="button" variant="ghost">
-                        <Trash2 className="size-4" />
+                          edit((current) => ({
+                            ...current,
+                            phases: current.phases.filter((_, n) => n !== currentPhaseIndex),
+                          }));
+                          const remaining = form.phases.filter((_, n) => n !== currentPhaseIndex);
+                          const fallback = remaining[Math.min(currentPhaseIndex, remaining.length - 1)];
+                          setActivePhaseId(fallback?.id ?? null);
+                          setActiveStepId(fallback?.steps[0]?.id ?? null);
+                        }}
+                        size="icon" type="button" variant="ghost">
+                        <Trash2 className="size-4" aria-hidden="true" />
                       </Button>
                     </div>
                   )}
                 </div>
-              )}
-            </section>
-          );
-        })}
-        {editable && (
-          <Button disabled={form.phases.length >= 40} onClick={addPhase} type="button" variant="outline">
-            <Plus className="size-4" aria-hidden="true" /> Ajouter une phase
-          </Button>
-        )}
-        <details className="rounded-lg border border-dashed border-border p-3">
-          <summary className="cursor-pointer">
-            <span className="text-sm font-semibold" role="heading" aria-level="3">
-              Ingrédients non affectés ({unassigned.length})
-            </span>
-            <span className="ml-2 text-xs text-muted-foreground">
-              {pendingCount ? pendingCount + ' à examiner' : 'Aucun ingrédient en attente de justification'}
-            </span>
-          </summary>
-          <div className="mt-3 space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Chaque ingrédient non affecté doit recevoir une justification avant la validation officielle.
-            </p>
-            {unassigned.length === 0 && (
-              <p className="text-xs text-muted-foreground">Tous les ingrédients sont affectés à une phase ou une étape.</p>
-            )}
-            {unassigned.map((line) => {
-              const label = ingredientName(line);
-              const showReason = Boolean(reasonFor(line.lineKey)) || visibleReasonKeys.includes(line.lineKey);
-              return (
-                <div className="space-y-2 border-t border-border pt-2" key={line.lineKey}>
+                <ProductVariantField floating filled={Boolean(currentPhase.title)}
+                  id={'phase-' + currentPhase.id} label="Titre de la phase">
+                  <Input className="h-12 placeholder:text-transparent focus:placeholder:text-muted-foreground"
+                    disabled={!editable} id={'phase-' + currentPhase.id} maxLength={160}
+                    placeholder="Ex. Préparation" value={currentPhase.title}
+                    onChange={(event) => patchPhase(currentPhaseIndex, {
+                      ...currentPhase, title: event.target.value,
+                    })} />
+                </ProductVariantField>
+                <ProcessSheetDisclosure title={'Consignes et ingrédients propres à la phase · '
+                  + ((currentPhase.instructions || currentPhase.ingredientLineKeys?.length) ? 'Renseignés' : 'Facultatifs')}>
+                  <label className="grid gap-1 text-sm">Instructions de la phase
+                    <Textarea disabled={!editable} maxLength={5000}
+                      value={currentPhase.instructions ?? ''}
+                      onChange={(event) => patchPhase(currentPhaseIndex, {
+                        ...currentPhase, instructions: event.target.value,
+                      })} />
+                  </label>
+                  <IngredientChoices
+                    disabled={!editable}
+                    ingredients={ingredients}
+                    label="Ingrédients directement affectés à la phase"
+                    selected={currentPhase.ingredientLineKeys ?? []}
+                    onChange={(next) => changeIngredients(currentPhaseIndex, null, next)}
+                  />
+                </ProcessSheetDisclosure>
+                <div className="space-y-2 border-t border-border/70 pt-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-xs font-medium">{label}</p>
-                    {!showReason && editable && (
-                      <Button size="sm" variant="outline" type="button"
-                        onClick={() => setVisibleReasonKeys((keys) => [...keys, line.lineKey])}>
-                        Justifier la non-utilisation
+                    <h4 className="text-sm font-semibold">Étapes</h4>
+                    {editable && (
+                      <Button disabled={currentPhase.steps.length >= 40}
+                        onClick={() => addStep(currentPhaseIndex)}
+                        size="sm" type="button" variant="ghost">
+                        <Plus className="size-4" aria-hidden="true" /> Ajouter une étape
                       </Button>
                     )}
                   </div>
-                  {showReason && (
-                    <label className="grid gap-1 text-xs">
-                      {label} — justification éventuelle
-                      <Input disabled={!editable} maxLength={1000}
-                        placeholder="Pourquoi cet ingrédient n’est-il pas utilisé ?"
-                        value={reasonFor(line.lineKey)}
-                        onChange={(event) => setReason(line.lineKey, event.target.value)} />
-                    </label>
+                  {currentPhase.steps.length === 0 ? (
+                    <p className="py-3 text-sm text-muted-foreground">
+                      Aucune étape pour cette phase.
+                    </p>
+                  ) : (
+                    <div className="divide-y divide-border/60" role="list" aria-label="Étapes de la phase">
+                      {currentPhase.steps.map((step, j) => {
+                        const selected = step.id === activeStepId;
+                        const count = (step.ingredientLineKeys ?? []).length;
+                        return (
+                          <div key={step.id} role="listitem">
+                            <button
+                              aria-label={'Sélectionner étape ' + (j + 1) + ' : ' + (step.title || 'Étape sans titre')}
+                              aria-pressed={selected}
+                              className={'flex w-full items-start gap-3 rounded-md px-2 py-3 text-left transition-colors duration-150 motion-reduce:transition-none '
+                                + (selected ? 'bg-muted/70' : 'hover:bg-muted/40')}
+                              onClick={() => setActiveStepId(step.id)}
+                              type="button"
+                            >
+                              <span className="mt-0.5 text-xs font-semibold tabular-nums text-muted-foreground">
+                                {String(j + 1).padStart(2, '0')}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-sm font-medium">{step.title || 'Étape sans titre'}</span>
+                                {step.instructions && (
+                                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">{step.instructions}</span>
+                                )}
+                              </span>
+                              {count > 0 && (
+                                <span className="text-xs text-muted-foreground">{count} ingr.</span>
+                              )}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
-              );
-            })}
+                {currentStep && (
+                  <div className="border-t border-border pt-4" aria-label="Éditeur de l’étape" role="region">
+                    <ProcessStepFields
+                      key={currentStep.id}
+                      count={currentPhase.steps.length}
+                      disabled={!editable}
+                      index={currentStepIndex}
+                      ingredients={ingredients}
+                      step={currentStep}
+                      onChange={(next) => {
+                        if (next.ingredientLineKeys !== currentStep.ingredientLineKeys) {
+                          changeIngredients(currentPhaseIndex, currentStepIndex, next.ingredientLineKeys);
+                        } else {
+                          patchStep(currentPhaseIndex, currentStepIndex, next);
+                        }
+                      }}
+                      onDelete={() => {
+                        const remaining = currentPhase.steps.filter((_, j) => j !== currentStepIndex);
+                        patchPhase(currentPhaseIndex, { ...currentPhase, steps: remaining });
+                        setActiveStepId(remaining[Math.min(currentStepIndex, remaining.length - 1)]?.id ?? null);
+                      }}
+                      onMove={(direction) => patchPhase(currentPhaseIndex, {
+                        ...currentPhase,
+                        steps: move(currentPhase.steps, currentStepIndex, direction),
+                      })}
+                    />
+                  </div>
+                )}
+              </section>
+            )}
           </div>
-        </details>
-          </>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 }
 
