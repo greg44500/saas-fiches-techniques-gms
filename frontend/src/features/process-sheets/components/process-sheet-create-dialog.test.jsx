@@ -269,6 +269,44 @@ describe('M-006 — modale de création', () => {
     expect(mocks.created).toHaveBeenCalledWith({ id: 'process-retry' });
   });
 
+  it('sur erreur serveur non-409 garde titre et sélection, sans relancer l’éligibilité', async () => {
+    mocks.mutate.mockReturnValue({
+      unwrap: vi.fn().mockRejectedValue({
+        status: 500, data: { message: 'Service temporairement indisponible' },
+      }),
+    });
+    renderDialog();
+    const user = userEvent.setup();
+    const title = screen.getByRole('textbox', { name: 'Titre de la Fiche process' });
+    await user.type(title, 'Fabrication tartine');
+    await selectByKeyboard(user);
+    await user.click(screen.getByRole('button', { name: 'Créer et ouvrir' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Service temporairement indisponible');
+    expect(title).toHaveValue('Fabrication tartine');
+    expect(screen.getByRole('combobox', { name: 'Fiche technique associée' }))
+      .toHaveTextContent('Tartine validée');
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeEnabled();
+    expect(mocks.refetch).not.toHaveBeenCalled();
+    expect(mocks.created).not.toHaveBeenCalled();
+    await user.type(title, ' modifiée');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('signale un échec de lecture des éligibles et permet une relance sans création', async () => {
+    mocks.list.mockReturnValue({
+      data: undefined, isError: true, isFetching: false, isLoading: false,
+      refetch: mocks.refetch,
+    });
+    renderDialog();
+    expect(screen.getByRole('alert')).toHaveTextContent('Sélection indisponible');
+    expect(screen.queryByRole('combobox', { name: 'Fiche technique associée' }))
+      .not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeDisabled();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Réessayer' }));
+    expect(mocks.refetch).toHaveBeenCalledTimes(1);
+    expect(mocks.mutate).not.toHaveBeenCalled();
+  });
+
   it('bloque la sélection et la soumission pendant l’actualisation des éligibles', async () => {
     mocks.list.mockReturnValue({
       data: {
