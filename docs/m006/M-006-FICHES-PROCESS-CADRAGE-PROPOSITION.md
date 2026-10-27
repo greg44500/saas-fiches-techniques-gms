@@ -84,6 +84,8 @@ Autre entrée validée : depuis la Fiche technique, afficher « Créer la Fiche 
 
 **Risque relevé dans le code :** les lignes de TechnicalSheetDraft possèdent un _id de sous-document, alors que TechnicalSheetValidation.linesSnapshot stocke productVariantId, ordre, quantités, etc., sans identifiant de ligne historique identique. Plusieurs lignes peuvent potentiellement désigner la même Référence Produit. Ne PAS choisir silencieusement productVariantId comme clé d'association universelle : concevoir/tester une identité de ligne stable ou une stratégie de réconciliation tenant compte des versions et des doublons, avant implémentation.
 
+**Rectification UX du 2026-10-27 — colonne d'ingrédients :** une liste unique dans l'ordre de M-004, nom seul, sans numéro de ligne affiché, sans séparation ou groupe « déjà affectés », ni formulaire de justification. Une coche verte apparaît uniquement après affectation ; le survol ou focus de la coche indique les phases et étapes d'utilisation. Les identifiants `lineKey` restent strictement distincts en mémoire et dans l'API pour les occurrences d'un même produit. Le champ historique `unassignedReasons` reste conservé à ce stade pour compatibilité avec les brouillons existants ; son absence d'édition ne doit pas empêcher la validation future.
+
 ## 6. Organisation des phases, étapes et bibliothèque — DÉCISIONS VALIDÉES
 
 - Une Fiche process est organisée en **phases ordonnées**, chacune contenant **plusieurs étapes ordonnées**.
@@ -128,7 +130,7 @@ La question de la saisie des résultats des contrôles réalisés pendant une pr
 - Une Fiche technique peut être officielle sans process ; les validations sont indépendantes.
 - La Fiche process validée doit pouvoir identifier la composition / validation M-004 à laquelle elle se rapporte.
 - La **création initiale** d'un brouillon process nécessite une M-004 ACTIVE, officiellement validée, sans brouillon de révision ouvert ; après création, un brouillon process existant peut évoluer parallèlement à M-004. La validation M-006 exige une composition M-004 validée et une vérification de cohérence avec la composition de référence.
-- **Décisions approuvées (22, 31) :** signaler les ingrédients non affectés ; autoriser leur non-affectation avec justification explicite. Pour valider, exiger au minimum une phase et une étape documentée ; durées, températures et contrôles demeurent facultatifs.
+- **Décisions 22 et 31 rectifiées par le propriétaire le 2026-10-27 :** signaler discrètement les ingrédients non affectés par les compteurs, **sans exiger ni proposer de justification** pour leur non-utilisation. Pour valider, exiger au minimum une phase et une étape documentée ; durées, températures et contrôles demeurent facultatifs. La validation M-006 future ne devra pas réintroduire l'ancienne obligation de justification.
 - La gestion de concurrence doit refuser les écrasements silencieux, comme M-004.
 - Les évolutions de bibliothèque sont adoptées uniquement dans le brouillon, jamais appliquées en place à une version officielle.
 
@@ -262,7 +264,7 @@ Le propriétaire du produit **approuve les recommandations fonctionnelles 21 à 
 | N° | Décision fonctionnelle approuvée |
 | --- | --- |
 | 21 | **Remplacée le 2026-10-26** : création M-006 uniquement depuis M-004 ACTIVE, validée et sans brouillon M-004 ouvert ; validation M-006 sur composition officielle cohérente. |
-| 22 | Ingrédients sans affectation signalés ; non-affectation volontaire avec justification explicite. |
+| 22 | **Rectifiée le 2026-10-27 :** ingrédients affichés ensemble, affectation suivie par coche verte et compteur, absence d'affectation tolérée sans justification. |
 | 23 | Temps actif, attente/repos et cuisson/traitement distingués ; simultanéité prise en compte sans somme artificielle. |
 | 24 | Champs facultatifs structurés : consigne, critère attendu, action corrective ; **aucun journal d'exécution** en V1. |
 | 25 | Création rapide d'étape dans l'éditeur, initialement bibliothèque locale Dossier ; publication Workspace explicite si autorisée. |
@@ -271,7 +273,7 @@ Le propriétaire du produit **approuve les recommandations fonctionnelles 21 à 
 | 28 | **Amendée le 2026-10-26** : copie M-004 produit une Fiche technique cible DRAFT, donc **pas de process cible immédiat**. Reprise du contenu process proposée **après validation M-004 cible**, en brouillon M-006 sans historique source ; contrôles de copie M-004 conservés. |
 | 29 | Archivage, réactivation, corbeille, restauration et purge synchronisés avec M-004 ; suppression autonome définitive **seulement si le parent est ACTIVE** ; aucune résurrection après destruction physique. |
 | 30 | Archivage des modèles de bibliothèque : plus de nouvelles utilisations ; utilisations et historiques existants conservés. Suppression physique seulement sans dépendances imposant leur conservation. |
-| 31 | Validation : au moins une phase et une étape documentée ; temps, températures et contrôles facultatifs ; justification des ingrédients volontairement non affectés. |
+| 31 | **Rectifiée le 2026-10-27 :** validation : au moins une phase et une étape documentée ; temps, températures et contrôles facultatifs ; aucune justification exigée pour les ingrédients non affectés. |
 | 32 | Si révision proposée après changement de composition et refusée : aucune mutation du process et indicateur de décalage non bloquant. |
 | 33 | Owner et Responsable habilité : validation et suppression définitive ; Contributeur habilité : création et modification ; Lecteur : consultation ; permissions dédiées pour administrer/publier les bibliothèques, toutes évaluées côté serveur. |
 | 34 | Fonction incluse dans tous les plans en V1, sans quota process ajouté ; limites de stockage existantes uniquement si pertinentes. |
