@@ -331,6 +331,11 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
         expect(active.process.status).toBe('ACTIVE');
         expect(active.dossierOperational).toBe(true);
         expect(active.draft.revision).toBe(0);
+        const saved = (await request(app).put(uri + '/draft')
+            .set(bearer(member.token))
+            .send({ expectedRevision: 0, phases: [], unassignedReasons: [] })
+            .expect(200)).body.data.draft;
+        expect(saved.revision).toBe(1);
 
         await Dossier.updateOne({ _id: dossier._id }, { $set: { status: 'PAUSED' } });
         const paused = (await request(app).get(uri)
@@ -339,9 +344,9 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
         expect(paused.dossierOperational).toBe(false);
         await request(app).put(uri + '/draft')
             .set(bearer(member.token))
-            .send({ expectedRevision: 0, phases: [], unassignedReasons: [] })
+            .send({ expectedRevision: 1, phases: [], unassignedReasons: [] })
             .expect(409);
-        expect((await ProcessSheetDraft.findOne({ processSheet: created.id })).revision).toBe(0);
+        expect((await ProcessSheetDraft.findOne({ processSheet: created.id })).revision).toBe(1);
     });
 
     it('protège la création 1:1 concurrente', async () => {
