@@ -129,7 +129,13 @@ function ProcessSheetCreateDialog({
                     }))}
                     onValueChange={(nextValue) => {
                       setTechnicalSheetId(nextValue || '');
-                      setErrorMessage('');
+                      // Base UI may emit null while the available options refresh.
+                      // Keep the 409 explanation until the user selects a valid
+                      // replacement (or edits the title), rather than erasing it
+                      // as a side-effect of list reconciliation.
+                      if (nextValue && options.some((sheet) => sheet.id === nextValue)) {
+                        setErrorMessage('');
+                      }
                     }}
                     value={technicalSheetId || null}
                   >
