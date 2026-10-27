@@ -1,9 +1,15 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router';
-import { TooltipProvider } from '@/components/ui/tooltip';
 
-const mocks = vi.hoisted(() => ({ detail: vi.fn() }));
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/process-sheet-permissions';
+
+const mocks = vi.hoisted(() => ({
+  detail: vi.fn(),
+  dossier: vi.fn(),
+  can: vi.fn(),
+}));
 
 vi.mock('react-router', async (original) => ({
   ...(await original()),
@@ -12,6 +18,10 @@ vi.mock('react-router', async (original) => ({
 
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useGetProcessSheetQuery: mocks.detail,
+}));
+
+vi.mock('@/features/dossiers/api/dossiers-api', () => ({
+  useGetDossierByIdQuery: mocks.dossier,
 }));
 
 vi.mock('@/features/process-sheets/components/process-sheet-draft-editor', () => ({
@@ -27,13 +37,11 @@ vi.mock('@/features/process-sheets/components/process-sheet-draft-editor', () =>
 vi.mock('@/features/workspace/components/workspace-context', () => ({
   useWorkspaceContext: () => ({
     workspace: { id: 'workspace-1' },
-    can: (permission) => permission === 'process-sheet:edit',
+    can: mocks.can,
   }),
 }));
 
-import {
-  ProcessSheetWorkspacePage,
-} from '@/features/process-sheets/pages/process-sheet-workspace-page';
+import { ProcessSheetWorkspacePage } from '@/features/process-sheets/pages/process-sheet-workspace-page';
 
 function view() {
   return render(
@@ -45,44 +53,128 @@ function view() {
   );
 }
 
-describe('M-006 — ouverture du brouillon process', () => {
-  beforeEach(() => {
-    mocks.detail.mockReturnValue({
-      data: {
-        process: { id: 'process-1', title: 'Fabrication tartine', technicalSheetId: 'sheet-1' },
-        draft: { revision: 0, phases: [] },
-        sourceIngredients: { lines: [{ lineKey: 'line:1' }] },
-        compositionOutdated: false,
-      },
-      isError: false, isLoading: false, refetch: vi.fn(),
-    });
-  });
+const activeProcess = {
+  id: 'process-1', title: 'Fabrication tartine', technicalSheetId: 'sheet-1',
+  status: 'ACTIVE', editorialState: 'DRAFT',
+};
+const initialData = () => ({
+  process: { ...activeProcess },
+  draft: { revision: 0, phases: [], unassignedReasons: [] },
+  sourceIngredients: { lines: [{ lineKey: 'line:1' }] },
+  compositionOutdated: false,
+});
+const detailResult = (data) => ({
+  data, isError: false, isLoading: false, refetch: vi.fn(),
+});
+function expectReadOnly() {
+  expect(screen.getByText(/Édition : non/)).toBeInTheDocument();
+}
 
-  it('ouvre le brouillon réel, pas une nouvelle Fiche technique', () => {
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.can.mockImplementation((permission) => permission === PROCESS_SHEET_PERMISSION.EDIT);
+  mocks.dossier.mockReturnValue({
+    data: { id: 'dossier-1', status: 'ACTIVE' },
+    isLoading: false, isFetching: false, isError: false,
+  });
+  mocks.detail.mockReturnValue(detailResult(initialData()));
+});
+
+describe('M-006 — ouverture du brouillon process', () => {
+  it('ouvre un vrai brouillon ACTIVE et autorise l’édition avec permission et Dossier actif', () => {
     view();
     expect(screen.getByRole('heading', { name: 'Fabrication tartine' })).toBeInTheDocument();
     expect(screen.getByText(/Éditeur M-006 : 0/)).toBeInTheDocument();
     expect(screen.getByText(/Ingrédients : 1/)).toBeInTheDocument();
     expect(screen.getByText(/Édition : oui/)).toBeInTheDocument();
+    expect(mocks.detail).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1', dossierId: 'dossier-1', processSheetId: 'process-1',
+    });
+    expect(mocks.dossier).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1', dossierId: 'dossier-1',
+    });
+    expect(mocks.can).toHaveBeenCalledWith(PROCESS_SHEET_PERMISSION.EDIT);
+  });
+
+  it.each(['ARCHIVED', 'DELETED'])(
+    'n’autorise pas l’édition quand le process est %s, même avec le droit EDIT',
+    (status) => {
+      mocks.detail.mockReturnValue(detailResult({
+        ...initialData(), process: { ...activeProcess, status },
+      }));
+      view();
+      expectReadOnly();
+    },
+  );
+
+  it('refuse l’édition pour un process dont le statut est absent ou inconnu', () => {
+    const { status: _status, ...withoutStatus } = activeProcess;
+    mocks.detail.mockReturnValue(detailResult({
+      ...initialData(), process: withoutStatus,
+    }));
+    view();
+    expectReadOnly();
+  });
+
+  it('ne permet pas d’éditer à un lecteur, même avec Dossier et process actifs', () => {
+    mocks.can.mockReturnValue(false);
+    view();
+    expectReadOnly();
+  });
+
+  it.each(['PAUSED', 'ARCHIVED', 'DELETED'])(
+    'interdit l’édition si le Dossier est %s, comme le backend PUT',
+    (status) => {
+      mocks.dossier.mockReturnValue({
+        data: { status }, isLoading: false, isFetching: false, isError: false,
+      });
+      view();
+      expectReadOnly();
+    },
+  );
+
+  it.each([
+    { data: undefined, isLoading: true, isFetching: true, isError: false },
+    { data: undefined, isLoading: false, isFetching: false, isError: true },
+    { data: undefined, isLoading: false, isFetching: false, isError: false },
+    { data: { status: 'ACTIVE' }, isLoading: false, isFetching: true, isError: false },
+  ])('ne déduit jamais ACTIVE lorsque la vérification Dossier est incomplète : %#', (dossier) => {
+    mocks.dossier.mockReturnValue(dossier);
+    view();
+    expectReadOnly();
+    expect(screen.getByRole('heading', { name: 'Fabrication tartine' })).toBeInTheDocument();
   });
 
   it('signale une composition M-004 modifiée sans remapper le contenu process', () => {
-    mocks.detail.mockReturnValue({
-      data: {
-        process: {
-          id: 'process-1', title: 'Fabrication tartine',
-          technicalSheetId: 'sheet-1', status: 'ARCHIVED',
-        },
-        draft: { revision: 2, phases: [] },
-        sourceIngredients: { lines: [{ lineKey: 'validation:old:index:0' }] },
-        compositionOutdated: true,
-      },
-      isError: false, isLoading: false, refetch: vi.fn(),
-    });
+    mocks.detail.mockReturnValue(detailResult({
+      ...initialData(),
+      process: { ...activeProcess, status: 'ARCHIVED' },
+      draft: { revision: 2, phases: [], unassignedReasons: [] },
+      sourceIngredients: { lines: [{ lineKey: 'validation:old:index:0' }] },
+      compositionOutdated: true,
+    }));
     view();
     expect(screen.getByRole('note')).toHaveTextContent('La composition M-004 a évolué');
-    expect(screen.getByText(/Édition : non/)).toBeInTheDocument();
+    expectReadOnly();
     expect(screen.getByText(/Ingrédients : 1/)).toBeInTheDocument();
+  });
+
+  it('autorise l’édition du brouillon ACTIVE en cas de décalage M-004, sans rapprochement automatique', () => {
+    mocks.detail.mockReturnValue(detailResult({
+      ...initialData(), compositionOutdated: true,
+    }));
+    view();
+    expect(screen.getByRole('note')).toHaveTextContent('aucune correspondance');
+    expect(screen.getByText(/Édition : oui/)).toBeInTheDocument();
+  });
+
+  it('ne fabrique pas un brouillon vide quand la réponse API n’en contient pas', () => {
+    mocks.detail.mockReturnValue(detailResult({
+      ...initialData(), draft: null,
+    }));
+    view();
+    expect(screen.getByRole('alert')).toHaveTextContent('Brouillon process indisponible');
+    expect(screen.queryByText(/Éditeur M-006/)).not.toBeInTheDocument();
   });
 
   it('ne simule pas de document quand le processus a disparu', () => {
