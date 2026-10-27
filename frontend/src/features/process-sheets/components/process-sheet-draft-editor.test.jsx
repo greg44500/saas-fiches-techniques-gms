@@ -37,8 +37,8 @@ function view(overrides = {}) {
   );
 }
 async function addFreePhase(user) {
-  await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
-  await user.click(screen.getByRole('option', { name: 'Autre phase…' }));
+  await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+  await user.click(screen.getByRole('button', { name: 'Autre phase…' }));
   await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Nouvelle phase');
   await user.click(screen.getByRole('button', { name: 'Ajouter la phase' }));
 }
@@ -68,10 +68,10 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
   it('n’invente aucune proposition lorsque le backend est vide', async () => {
     const user = userEvent.setup();
     view({ canReadPhaseLibrary: true });
-    await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
     expect(screen.getByText('Aucune phase disponible')).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Cuisson' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('option', { name: 'Autre phase…' }));
+    expect(screen.queryByRole('button', { name: 'Cuisson' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Autre phase…' }));
     await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Marinade');
     await user.click(screen.getByRole('button', { name: 'Ajouter la phase' }));
     expect(mocks.createTitle).toHaveBeenCalledWith({ workspaceId: 'workspace-1', title: 'Marinade' });
@@ -84,11 +84,11 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
   it('respecte la lecture de bibliothèque du rôle et conserve la saisie libre', async () => {
     const user = userEvent.setup();
     view({ canReadPhaseLibrary: false });
-    await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
     expect(screen.getByText('Bibliothèque non autorisée')).toBeInTheDocument();
     expect(mocks.phaseTitles).toHaveBeenCalledWith(expect.anything(),
       expect.objectContaining({ skip: true }));
-    await user.click(screen.getByRole('option', { name: 'Autre phase…' }));
+    await user.click(screen.getByRole('button', { name: 'Autre phase…' }));
     await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Découpe');
     await user.click(screen.getByRole('button', { name: 'Ajouter la phase' }));
     expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
@@ -101,9 +101,9 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
       { id: 'common-2', title: 'Préparation du poste' },
     ] }, isLoading: false });
     view({ canReadPhaseLibrary: true });
-    await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
-    expect(screen.getByRole('option', { name: 'Préparation du poste' })).toBeInTheDocument();
-    await user.click(screen.getByRole('option', { name: 'Cuisson' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    expect(screen.getByRole('button', { name: 'Préparation du poste' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cuisson' }));
     expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Cuisson');
     expect(within(navigation()).queryByText('Aucune étape')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
@@ -119,8 +119,8 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     ] }, isLoading: false });
     view({ canReadPhaseLibrary: true });
     await addFreePhase(user);
-    await user.click(screen.getByRole('combobox', { name: 'Choisir un intitulé de phase' }));
-    await user.click(screen.getByRole('option', { name: 'Assemblage' }));
+    await user.click(screen.getByRole('button', { name: 'Choisir un intitulé de phase' }));
+    await user.click(screen.getByRole('button', { name: 'Assemblage' }));
     expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Assemblage');
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(mocks.save.mock.calls[0][0].phases[0]).toMatchObject({ title: 'Assemblage', steps: [] });
@@ -132,8 +132,8 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     });
     const user = userEvent.setup();
     view({ canReadPhaseLibrary: true });
-    await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
-    await user.click(screen.getByRole('option', { name: 'Autre phase…' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await user.click(screen.getByRole('button', { name: 'Autre phase…' }));
     await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Cuisson');
     await user.click(screen.getByRole('button', { name: 'Ajouter la phase' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('existe déjà');

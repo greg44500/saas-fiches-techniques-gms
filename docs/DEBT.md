@@ -1,4 +1,10 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
+## M-006 — choix d'une primitive adaptée aux menus d'actions (2026-10-27)
+
+Le \`Select\` Base UI a été utilisé pour une action « Autre phase… » qui ouvre un Dialog ; le test jsdom de l'éditeur ne parvenait pas à ouvrir sa liste (\`aria-expanded=false\`). Plutôt que de continuer à modifier une sélection de valeur comme s'il s'agissait d'un menu d'actions, le composant réutilisable Popover/PopoverTrigger/PopoverContent du dépôt est maintenant utilisé avec des boutons, sans champ de recherche. Il reste à confirmer au travers des tests RTL réels (particulièrement les tests dépendant du helper \`addFreePhase\`) et des recettes clavier/mobile.
+
+---
+
 ## Qualité M-006 — propagation de tests en cascade et hooks API non exportés (2026-10-27)
 
 Douze échecs RTL observés dans \`process-sheet-draft-editor.test.jsx\` après changement de sélection de phase. Les scénarios partagent le helper de création qui échoue sur le menu Select non ouvert ; les erreurs sont groupées par cause. La conversion d'un Popover testé en Select shadcn/Base UI n'a pas réutilisé entièrement le contrat du composant du dépôt (options \`items\`, \`SelectValue\` dans le trigger icône). Les hooks RTK Query nouvellement créés étaient destructurés mais pas exportés, ce que les mocks de test masquaient. Ajouter une vérification de module API non mockée en build et test de composant autonome avant d'intégrer plusieurs scénarios. Risque à solder avant PR par logs locaux : tests frontend, lint, build, gate backend pertinente.

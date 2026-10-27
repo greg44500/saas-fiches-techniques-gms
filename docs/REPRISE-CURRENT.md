@@ -1,4 +1,14 @@
 # Reprise M-006 — Fiches process (2026-10-26)
+## Correctif M-006 — erreurs en cascade à l'ouverture du menu (2026-10-27)
+
+Le propriétaire a fourni une nouvelle exécution locale du fichier \`process-sheet-draft-editor.test.jsx\` : **6 échecs, 15 réussites (21 tests)**. Les traces disponibles documentent de nouveau l'absence de l'option « Autre phase… » après clic, avec \`aria-expanded=false\` sur le \`Select\`. Les six échecs ne démontrent pas six anomalies métier distinctes ; ils peuvent découler du même helper \`addFreePhase\`.
+
+**Approche corrective plus robuste :** abandonner \`Select\` pour ce **menu d'actions** (choix d'un titre ou ouverture de \`Dialog\`), au profit de la primitive shadcn/Base UI **Popover** du dépôt, déjà utilisée par le chantier M-006 avant le changement de composant. Le résultat reste un menu déroulant simple **sans recherche** ; les intitulés viennent exclusivement du GET Workspace. Le menu est ouvert via \`PopoverTrigger\` rendant un \`Button\`, les titres et « Autre phase… » sont des boutons d'action explicites, le Popover se ferme avant d'ouvrir le Dialog de création. Aucune mutation Mongoose ni régression de la persistance des titres. Les tests RTL de l'éditeur, du menu isolé et de l'intégration page sont alignés sur les vrais rôles accessibles \`button\` plutôt que les anciens \`option\` de Select.
+
+**Statut de preuve :** le commit est un correctif ciblé, non testé dans le Node/Vitest local de l'utilisateur ; le résultat après ce commit est inconnu. Vérifier dans l'ordre le test isolé \`process-phase-picker.test.jsx\`, les 21 tests de l'éditeur, l'intégration page, puis la suite complète et build/lint. Aucune modification de l'API, backend ou migration sur cette correction.
+
+---
+
 ## Correctif frontend M-006 — Select Base UI et exports RTK Query (2026-10-27)
 
 Le propriétaire a exécuté la suite frontend du lot et remonté **12 échecs / 75 tests** (63 réussis) dans \`process-sheet-draft-editor.test.jsx\`. Les traces partagées montrent plusieurs échecs du **même helper** \`addFreePhase\` : après un clic sur la combobox « Ajouter une phase », l'option « Autre phase… » n'est pas trouvée ; le trigger montre \`aria-expanded=false\`. Ces erreurs sont en cascade et ne constituent pas 12 régressions fonctionnelles indépendantes. La cause précise du non-déploiement du menu est à confirmer par une exécution locale, non disponible ici.

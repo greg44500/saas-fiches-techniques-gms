@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -8,14 +8,12 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+  Popover, PopoverContent, PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   useCreateProcessPhaseTitleMutation,
   useListProcessPhaseTitlesQuery,
 } from '@/features/process-sheets/api/process-sheets-api';
-
-const EMPTY_PHASES = [];
 
 // Suggestions are server-owned and Workspace-scoped. Selecting an existing
 // title never inserts the model's steps into a process sheet.
@@ -24,6 +22,7 @@ function ProcessPhasePicker({
   mode = 'create',
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const list = useListProcessPhaseTitlesQuery(
@@ -31,15 +30,11 @@ function ProcessPhasePicker({
     { skip: !canReadLibrary, refetchOnMountOrArgChange: true },
   );
   const [createTitle, creation] = useCreateProcessPhaseTitleMutation();
-  const phases = list.data?.phases ?? EMPTY_PHASES;
-  // Keep Base UI's item collection stable while its popup opens.
-  const options = useMemo(() => [
-    ...phases.map((phase) => ({ value: phase.id, label: phase.title })),
-    { value: 'other', label: 'Autre phase…' },
-  ], [phases]);
+  const phases = list.data?.phases ?? [];
 
   const choose = (value) => {
     if (!value || disabled) return;
+    setMenuOpen(false);
     if (value === 'other') {
       setErrorMessage('');
       setTitle('');
@@ -69,38 +64,74 @@ function ProcessPhasePicker({
 
   return (
     <>
-      <Select
-        disabled={disabled}
-        items={options}
-        onValueChange={choose}
-        value={null}
-      >
-        <SelectTrigger
-          aria-label={mode === 'create' ? 'Ajouter une phase' : 'Choisir un intitulé de phase'}
-          className={mode === 'create' ? 'size-8 justify-center border-0 px-1 hover:bg-muted [&_[data-slot=select-value]]:hidden' : 'w-fit max-w-full'}
+      <Popover onOpenChange={setMenuOpen} open={menuOpen}>
+        <PopoverTrigger
+          render={
+            <Button
+              aria-label={mode === 'create' ? 'Ajouter une phase' : 'Choisir un intitulé de phase'}
+              className={mode === 'create' ? 'size-8' : undefined}
+              disabled={disabled}
+              size={mode === 'create' ? 'icon' : 'sm'}
+              type="button"
+              variant={mode === 'create' ? 'ghost' : 'outline'}
+            />
+          }
         >
-          {mode === 'create' ? (
-            <>
-              <Plus aria-hidden="true" className="size-4" />
-              <SelectValue className="sr-only" placeholder="Ajouter une phase" />
-            </>
-          ) : <SelectValue placeholder="Choisir dans la bibliothèque" />}
-        </SelectTrigger>
-        <SelectContent>
+          {mode === 'create'
+            ? <Plus aria-hidden="true" className="size-4" />
+            : 'Choisir dans la bibliothèque'}
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          aria-label="Phases disponibles"
+          className="max-w-[calc(100vw-2rem)] space-y-1"
+          sideOffset={8}
+        >
+          <p className="px-2 pb-1 text-sm font-semibold">Phases disponibles</p>
           {list.isLoading || list.isFetching ? (
-            <p role="status" className="px-3 py-2 text-sm text-muted-foreground">Chargement des phases…</p>
+            <p role="status" className="px-2 py-2 text-sm text-muted-foreground">
+              Chargement des phases…
+            </p>
           ) : list.isError ? (
-            <p role="alert" className="px-3 py-2 text-sm text-destructive">Bibliothèque indisponible</p>
+            <p role="alert" className="px-2 py-2 text-sm text-destructive">
+              Bibliothèque indisponible
+            </p>
           ) : !canReadLibrary ? (
-            <p role="status" className="px-3 py-2 text-sm text-muted-foreground">Bibliothèque non autorisée</p>
+            <p role="status" className="px-2 py-2 text-sm text-muted-foreground">
+              Bibliothèque non autorisée
+            </p>
           ) : phases.length === 0 ? (
-            <p role="status" className="px-3 py-2 text-sm text-muted-foreground">Aucune phase disponible</p>
-          ) : phases.map((phase) => (
-            <SelectItem key={phase.id} value={phase.id}>{phase.title}</SelectItem>
-          ))}
-          <SelectItem value="other">Autre phase…</SelectItem>
-        </SelectContent>
-      </Select>
+            <p role="status" className="px-2 py-2 text-sm text-muted-foreground">
+              Aucune phase disponible
+            </p>
+          ) : (
+            <div aria-label="Intitulés du Workspace" className="max-h-64 space-y-1 overflow-y-auto" role="group">
+              {phases.map((phase) => (
+                <Button
+                  className="h-auto w-full justify-start whitespace-normal text-left"
+                  key={phase.id}
+                  onClick={() => choose(phase.id)}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  {phase.title}
+                </Button>
+              ))}
+            </div>
+          )}
+          <Button
+            className="w-full justify-start border-t border-border"
+            onClick={() => choose('other')}
+            size="sm"
+            type="button"
+            variant="ghost"
+          >
+            <Plus aria-hidden="true" className="size-4" />
+            Autre phase…
+          </Button>
+        </PopoverContent>
+      </Popover>
       <DialogRoot
         disablePointerDismissal
         onOpenChange={(next) => {

@@ -62,8 +62,8 @@ function view() {
 }
 
 async function addFreePhase(user) {
-  await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
-  await user.click(screen.getByRole('option', { name: 'Autre phase…' }));
+  await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+  await user.click(screen.getByRole('button', { name: 'Autre phase…' }));
   await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Nouvelle phase');
   await user.click(screen.getByRole('button', { name: 'Ajouter la phase' }));
 }
@@ -134,12 +134,12 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
       isLoading: false,
     });
     view();
-    await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
     expect(mocks.phaseTitles).toHaveBeenCalledWith(
       { workspaceId: 'workspace-1' },
       expect.objectContaining({ skip: false }),
     );
-    await user.click(screen.getByRole('option', { name: 'Cuisson' }));
+    await user.click(screen.getByRole('button', { name: 'Cuisson' }));
     expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Cuisson');
     await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
     const step = screen.getByRole('article', { name: 'Étape 1' });

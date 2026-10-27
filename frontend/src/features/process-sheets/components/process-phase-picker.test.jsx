@@ -27,7 +27,7 @@ beforeEach(() => {
 });
 
 describe('M-006 — menu déroulant des intitulés de phases', () => {
-  it('ouvre le Select Base UI depuis son bouton + et propose Autre phase même avec une liste vide', async () => {
+  it('ouvre le menu Base UI depuis son bouton + et propose Autre phase même avec une liste vide', async () => {
     const user = userEvent.setup();
     const onSelect = vi.fn();
     render(
@@ -36,11 +36,11 @@ describe('M-006 — menu déroulant des intitulés de phases', () => {
       />,
     );
 
-    const trigger = screen.getByRole('combobox', { name: 'Ajouter une phase' });
+    const trigger = screen.getByRole('button', { name: 'Ajouter une phase' });
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('option', { name: 'Autre phase…' })).toBeInTheDocument();
-    await user.click(screen.getByRole('option', { name: 'Autre phase…' }));
+    expect(screen.getByRole('button', { name: 'Autre phase…' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Autre phase…' }));
     expect(screen.getByRole('dialog', { name: 'Nouvel intitulé de phase' }))
       .toBeInTheDocument();
     await user.type(screen.getByRole('textbox', { name: 'Intitulé' }), 'Assaisonnement');
@@ -59,8 +59,8 @@ describe('M-006 — menu déroulant des intitulés de phases', () => {
       isLoading: false, isFetching: false,
     });
     render(<ProcessPhasePicker canReadLibrary onSelect={onSelect} workspaceId="workspace-1" />);
-    await user.click(screen.getByRole('combobox', { name: 'Ajouter une phase' }));
-    await user.click(screen.getByRole('option', { name: 'Cuisson' }));
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    await user.click(screen.getByRole('button', { name: 'Cuisson' }));
     expect(onSelect).toHaveBeenCalledWith('Cuisson');
     expect(mocks.createTitle).not.toHaveBeenCalled();
   });
