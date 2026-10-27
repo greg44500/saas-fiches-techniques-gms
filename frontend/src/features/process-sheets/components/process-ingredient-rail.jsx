@@ -38,7 +38,7 @@ function ProcessIngredientRail({ ingredients, phases }) {
       <div className="space-y-1">
         <h3 className="text-sm font-semibold">Ingrédients</h3>
         <p className="text-xs text-muted-foreground" role="status">
-          {assignedCount} affecté(s) · {remainingCount} à affecter
+          {assignedCount} affecté{assignedCount === 1 ? '' : 's'} · {remainingCount} à affecter
         </p>
       </div>
       <ul aria-label="Liste des ingrédients" className="mt-4 space-y-0.5">
