@@ -79,10 +79,18 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     const phase = screen.getByRole('region', { name: 'Phase 1' });
     await user.click(within(phase).getByRole('button', { name: 'Ajouter une étape' }));
     const step = within(phase).getByRole('article', { name: 'Étape 1' });
+    expect(screen.getByRole('complementary', { name: 'Suivi des ingrédients' }))
+      .toHaveTextContent('0 sur 2 affectés');
+    expect(screen.getByRole('navigation', { name: 'Navigation des phases' })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Étapes de la phase' })).toBeInTheDocument();
     await user.type(within(step).getByRole('textbox', { name: 'Instructions' }), 'Assembler les éléments');
     const selection = within(step).getByRole('group', { name: 'Ingrédients affectés à cette étape' });
     await user.click(within(selection).getByRole('button', { name: 'Associer des ingrédients' }));
     await user.click(within(selection).getAllByRole('checkbox')[1]);
+    const ingredients = screen.getByRole('complementary', { name: 'Suivi des ingrédients' });
+    expect(ingredients).toHaveTextContent('1 sur 2 affectés');
+    expect(within(ingredients).getByRole('heading', { name: 'Ingrédients non affectés (1)' }))
+      .toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(mocks.save).toHaveBeenCalledTimes(1);
     const payload = mocks.save.mock.calls[0][0];
