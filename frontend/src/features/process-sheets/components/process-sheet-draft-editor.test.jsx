@@ -139,20 +139,34 @@ describe('M-006 — éditeur compact du brouillon process', () => {
     expect(mocks.save.mock.calls[0][0].phases[0].steps[0].instructions).toBe('Décongeler');
   });
 
-  it('garde une seule phase ouverte et permet de réordonner les phases', async () => {
+  it('garde une seule phase ouverte et préserve les identifiants et affectations après réordonnancement', async () => {
     const user = userEvent.setup();
-    view();
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
-    expect(within(screen.getByRole('region', { name: 'Phase 1' }))
-      .queryByRole('button', { name: 'Ajouter une étape' })).not.toBeInTheDocument();
+    const initialDraft = {
+      ...props.initialDraft, revision: 3,
+      phases: [
+        { id: 'phase-1', title: 'Préparation', instructions: '',
+          ingredientLineKeys: ['line:a'], steps: [
+            { id: 'step-1', title: 'Laver', instructions: 'Laver la tomate',
+              ingredientLineKeys: ['line:b'], equipment: [] },
+          ] },
+        { id: 'phase-2', title: 'Assemblage', instructions: '', ingredientLineKeys: [], steps: [] },
+      ],
+    };
+    view({ initialDraft });
+    expect(screen.getByRole('article', { name: 'Étape 1' })).toBeInTheDocument();
     const second = screen.getByRole('region', { name: 'Phase 2' });
+    await user.click(within(second).getByRole('button', { name: /02.*Assemblage/ }));
+    expect(within(screen.getByRole('region', { name: 'Phase 1' }))
+      .queryByRole('article', { name: 'Étape 1' })).not.toBeInTheDocument();
     await user.click(within(second).getByRole('button', { name: 'Monter phase 2' }));
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     const body = mocks.save.mock.calls[0][0];
-    expect(body.phases[0].id).toBe(body.phases[0].id);
-    expect(body.phases).toHaveLength(2);
-    expect(body.phases[0].id).not.toBe(body.phases[1].id);
+    expect(body.expectedRevision).toBe(3);
+    expect(body.phases.map((phase) => phase.id)).toEqual(['phase-2', 'phase-1']);
+    expect(body.phases[1].ingredientLineKeys).toEqual(['line:a']);
+    expect(body.phases[1].steps[0]).toMatchObject({
+      id: 'step-1', ingredientLineKeys: ['line:b'], instructions: 'Laver la tomate',
+    });
   });
 
   it('masque toutes les commandes de mutation à un lecteur tout en laissant la consultation', () => {
