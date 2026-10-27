@@ -1,4 +1,18 @@
 # Reprise M-006 — Fiches process (2026-10-26)
+
+## Lot UX M-006 — modales des compléments d'étape et statuts de sauvegarde (2026-10-27)
+
+**Périmètre :** finition ergonomique du brouillon sur `feature/m006-fiches-process`. Les deux volets « Temps, température et équipements » et « Vigilance, qualité et maîtrise sanitaire » de l'éditeur d'étape ont été remplacés par des boutons ouvrant deux modales dédiées, également consultables en lecture seule. Titre de l'étape, instructions et affectations d'ingrédients restent dans l'éditeur principal. Les états « Renseignés » / « Facultatifs » sont calculés séparément pour chacune des deux catégories.
+
+**Champs :** les saisies utilisent le composant flottant `ProductVariantField` déjà réemployé par M-006 (label Outlined, placeholder d'exemple affiché au focus). Trois durées numériques en colonnes compactes sur écrans adaptés, température séparée, équipements/vigilances en listes ajoutables, contrôles qualité et sanitaires avec instruction, critère attendu et mesure corrective. Les longueurs et bornes du contrat Zod M-006 sont conservées ; les lignes ajoutées mais non renseignées sont refusées en modale avant application au brouillon.
+
+**Transactions UX :** ouvrir la modale effectue une copie locale des champs de la seule catégorie. « Annuler » et fermeture modale jettent cette copie ; « Valider » applique la catégorie au brouillon React sans PUT réseau. Seul le bouton global « Enregistrer le brouillon » lance toujours la mutation avec `expectedRevision` et conserve la gestion 409. Pas de modification serveur, de schéma, de Core ni de migration.
+
+**États textuels :** « À jour » et le message d'enregistrement réussi utilisent `text-success` (vert) ; « Modifications non enregistrées », `text-warning` ; « Erreur d’enregistrement », « Conflit d’enregistrement » et messages d'échec, `text-destructive`. Aucun badge ni fond coloré. Les variables sémantiques existantes assurent les variantes clair/sombre.
+
+**Vérifications :** tests RTL de l'éditeur complétés (ouverture, fermeture, annulation, état local, payload, édition qualité/sanitaire, validation incomplète, lecture seule, états texte). Le test d'édition d'un brouillon complet a été adapté : il ferme désormais la modale avant le clic sur le bouton de sauvegarde qui, correctement, est inert derrière le `Dialog` Base UI. Les tests antérieurs déclarés verts par le propriétaire ne valent pas preuve du nouveau lot : nouveaux tests Vitest, ESLint, build, QA visuelle et gate globale sont à exécuter localement et à journaliser. Aucun merge/PR autorisé sans validation.
+
+---
 ## Correctif ciblé test de création M-006 (2026-10-27)
 
 Journal utilisateur : **82 tests réussis / 83**, seul échec dans `process-sheet-create-dialog.test.jsx`, scénario « soumet exactement le titre et la référence M-004 choisie ». Après la saisie du titre, le clic jsdom sur le `Select` Base UI ne laisse parfois pas la liste ouverte (`aria-expanded=false`) ; l'assertion ne trouve donc pas l'option « Tartine validée ». Les autres tests de la même modale passent, dont des scénarios `selectByKeyboard()` validant la sélection et la soumission. Correction **test seulement** : le test de contrat du payload utilise l'helper clavier commun déjà éprouvé, puis vérifie le bouton activé, les données envoyées au POST et le callback de création. L'ouverture et la sélection à la souris restent testées dans les tests « demande uniquement le titre » et « déplace les libellés outlined ». Aucune modification de `Select`, de la logique de production, du Core, du backend ou des données.
