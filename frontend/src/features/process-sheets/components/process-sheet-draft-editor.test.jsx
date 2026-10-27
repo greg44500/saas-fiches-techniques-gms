@@ -302,13 +302,147 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await user.click(screen.getByRole('button', { name: 'Monter phase 2' }));
     await user.click(within(navigation()).getByRole('button', { name: 'Sélectionner étape 1 : Finition' }));
     await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
-    expect(screen.getByRole('spinbutton', { name: 'Temps actif (min)' })).toHaveValue(5);
+    const dialog = screen.getByRole('dialog', { name: 'Temps, température et équipements' });
+    expect(within(dialog).getByRole('spinbutton', { name: 'Temps actif (min)' })).toHaveValue(5);
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler' }));
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     const payload = mocks.save.mock.calls[0][0];
     expect(payload.expectedRevision).toBe(4);
     expect(payload.phases.map((phase) => phase.id)).toEqual(['phase-two', 'phase-one']);
     expect(payload.phases[1].ingredientLineKeys).toEqual(['line:a']);
     expect(payload.phases[1].steps[0]).toMatchObject(originalStep);
+  });
+
+  it('ouvre la modale des temps avec champs outlined et ne valide que localement', async () => {
+    const user = userEvent.setup();
+    view();
+    const step = await addStep(user);
+    await user.click(within(step).getByRole('button', { name: /Temps, température et équipements/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Temps, température et équipements' });
+    const active = within(dialog).getByRole('spinbutton', { name: 'Temps actif (min)' });
+    expect(active).toHaveAttribute('placeholder', 'Ex. 15');
+    expect(within(dialog).getByText('Temps actif (min)')).toHaveAttribute('for', active.id);
+    await user.type(active, '15');
+    await user.type(within(dialog).getByRole('spinbutton', { name: 'Température (°C)' }), '65.5');
+    await user.click(within(dialog).getByRole('button', { name: 'Ajouter' }));
+    await user.type(within(dialog).getByRole('textbox', { name: 'Équipements 1' }), 'Four');
+    await user.click(within(dialog).getByRole('button', { name: 'Valider' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mocks.save).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
+    expect(within(screen.getByRole('dialog')).getByRole('spinbutton', {
+      name: 'Temps actif (min)',
+    })).toHaveValue(15);
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Annuler' }));
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(mocks.save.mock.calls[0][0].phases[0].steps[0]).toMatchObject({
+      duration: { activeMinutes: 15 }, temperatureCelsius: 65.5, equipment: ['Four'],
+    });
+  });
+
+  it('annule les saisies de la modale sans modifier le brouillon local', async () => {
+    const user = userEvent.setup();
+    view();
+    await addStep(user);
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(await screen.findByText('Brouillon enregistré.')).toHaveClass('text-success');
+    await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
+    let dialog = screen.getByRole('dialog', { name: 'Temps, température et équipements' });
+    await user.type(within(dialog).getByRole('spinbutton', { name: 'Temps actif (min)' }), '25');
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler' }));
+    expect(screen.getByText('À jour')).toHaveClass('text-success');
+    await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
+    dialog = screen.getByRole('dialog', { name: 'Temps, température et équipements' });
+    expect(within(dialog).getByRole('spinbutton', { name: 'Temps actif (min)' })).toHaveValue(null);
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler' }));
+    expect(mocks.save).toHaveBeenCalledTimes(1);
+  });
+
+  it('édite les vigilances, contrôles qualité et sanitaires dans une seconde modale', async () => {
+    const user = userEvent.setup();
+    view();
+    const step = await addStep(user);
+    await user.click(within(step).getByRole('button', {
+      name: /Vigilance, qualité et maîtrise sanitaire/,
+    }));
+    const dialog = screen.getByRole('dialog', {
+      name: 'Vigilance, qualité et maîtrise sanitaire',
+    });
+    expect(within(dialog).queryByRole('spinbutton')).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Ajouter' }));
+    await user.type(within(dialog).getByRole('textbox', { name: 'Points de vigilance 1' }),
+      'Surveiller la texture');
+    const quality = within(dialog).getByRole('group', { name: 'Qualité' });
+    await user.click(within(quality).getByRole('button', { name: 'Ajouter un contrôle' }));
+    await user.type(within(quality).getByRole('textbox', { name: 'Qualité Instruction 1' }),
+      'Vérifier la couleur');
+    await user.type(within(quality).getByRole('textbox', { name: 'Qualité Critère attendu 1' }),
+      'Dorée');
+    const sanitary = within(dialog).getByRole('group', { name: 'Maîtrise sanitaire' });
+    await user.click(within(sanitary).getByRole('button', { name: 'Ajouter un contrôle' }));
+    await user.type(within(sanitary).getByRole('textbox', {
+      name: 'Maîtrise sanitaire Instruction 1',
+    }), 'Contrôler la température');
+    await user.click(within(dialog).getByRole('button', { name: 'Valider' }));
+    expect(mocks.save).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(mocks.save.mock.calls[0][0].phases[0].steps[0]).toMatchObject({
+      manufacturingVigilance: ['Surveiller la texture'],
+      qualityControls: [{ instruction: 'Vérifier la couleur', expectedCriterion: 'Dorée' }],
+      sanitaryControls: [{ instruction: 'Contrôler la température' }],
+    });
+  });
+
+  it('bloque les lignes facultatives incomplètes avant de les placer dans le brouillon', async () => {
+    const user = userEvent.setup();
+    view();
+    await addStep(user);
+    await user.click(screen.getByRole('button', { name: /Vigilance, qualité et maîtrise sanitaire/ }));
+    const dialog = screen.getByRole('dialog', { name: 'Vigilance, qualité et maîtrise sanitaire' });
+    await user.click(within(dialog).getByRole('group', { name: 'Qualité' })
+      .getByRole('button', { name: 'Ajouter un contrôle' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Valider' }));
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('Renseignez chaque vigilance');
+    await user.click(within(dialog).getByRole('button', { name: 'Annuler' }));
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(mocks.save.mock.calls[0][0].phases[0].steps[0].qualityControls).toEqual([]);
+  });
+
+  it('colore les textes de sauvegarde en vert, warning puis rouge selon la situation', async () => {
+    const user = userEvent.setup();
+    view();
+    expect(screen.getByText('À jour')).toHaveClass('text-success');
+    await addFreePhase(user);
+    expect(screen.getByText('Modifications non enregistrées')).toHaveClass('text-warning');
+    mocks.save.mockReturnValue({ unwrap: vi.fn().mockRejectedValue({
+      status: 500, data: { message: 'Échec serveur' },
+    }) });
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(await screen.findByText('Erreur d’enregistrement')).toHaveClass('text-destructive');
+    expect(screen.getByRole('alert')).toHaveClass('text-destructive');
+    expect(screen.getByRole('alert')).toHaveTextContent('Échec serveur');
+  });
+
+  it('conserve les deux modales consultables mais non modifiables en lecture seule', async () => {
+    const user = userEvent.setup();
+    view({ canEdit: false, initialDraft: {
+      ...props.initialDraft,
+      phases: [{ id: 'phase-read', title: 'Préparation', instructions: '',
+        ingredientLineKeys: [], steps: [
+          { id: 'step-read', title: 'Rincer', instructions: '', ingredientLineKeys: [],
+            duration: { activeMinutes: 5 }, manufacturingVigilance: ['Vérifier le rinçage'] },
+        ] }],
+    } });
+    await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
+    let dialog = screen.getByRole('dialog', { name: 'Temps, température et équipements' });
+    expect(within(dialog).getByRole('spinbutton', { name: 'Temps actif (min)' })).toBeDisabled();
+    expect(within(dialog).queryByRole('button', { name: 'Valider' })).not.toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Fermer' }));
+    await user.click(screen.getByRole('button', { name: /Vigilance, qualité et maîtrise sanitaire/ }));
+    dialog = screen.getByRole('dialog', { name: 'Vigilance, qualité et maîtrise sanitaire' });
+    expect(within(dialog).getByRole('textbox', { name: 'Points de vigilance 1' })).toBeDisabled();
+    await user.click(within(dialog).getByRole('button', { name: 'Fermer' }));
+    expect(mocks.save).not.toHaveBeenCalled();
   });
 
   it('préserve le réordonnancement des étapes avec leurs ingrédients', async () => {
