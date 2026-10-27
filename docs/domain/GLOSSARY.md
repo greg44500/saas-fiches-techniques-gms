@@ -1236,7 +1236,7 @@ Les zones proches de leurs limites de modulation doivent être signalées visuel
 
 ## Fiche process
 
-Document métier **du même Workspace et Dossier que sa Fiche technique M-004**, décrivant le **comment fabriquer**. Une Fiche technique a zéro ou une Fiche process ; aucune Fiche process autonome. Sa création exige que M-004 soit ACTIVE, validée officiellement, sans brouillon de révision ouvert et sans process déjà lié. Le process comporte brouillon, validation explicite et historique officiel immuable, indépendants des validations M-004.
+Document métier **du même Workspace et Dossier que sa Fiche technique M-004**, décrivant le **comment fabriquer**. Une Fiche technique a zéro ou une Fiche process ; aucune Fiche process autonome. Sa création exige que M-004 soit ACTIVE, validée officiellement, sans brouillon de révision ouvert et sans process déjà lié. Le process conserve **un contenu courant unique** et un état éditorial **Brouillon** ou **Validée**, indépendamment de la validation M-004. Le contenu validé peut être modifié : la première modification métier effectivement enregistrée le fait repasser en Brouillon jusqu'à revalidation. La consultation et les changements locaux non sauvegardés ne déclenchent pas cette transition. **Aucun historique des anciennes versions de Fiches process n'est conservé.** Les révisions techniques de concurrence et les événements d'audit ne sont pas des versions métier.
 
 La **composition et les quantités** proviennent exclusivement de la Fiche technique. Les ingrédients affectés au process peuvent se présenter sans quantités et être liés à plusieurs phases et étapes ; les lignes métier répétées restent distinguables quand nécessaire.
 
@@ -1256,7 +1256,7 @@ Référentiel de modèles de phases et d'étapes, soit **local au Dossier**, soi
 
 ## Composition de référence du process
 
-Version validée de la composition M-004 avec laquelle la version officielle de la Fiche process doit être cohérente. Le brouillon process peut être préparé plus tôt. Un écart ultérieur avec M-004 est signalable sans bloquer automatiquement le process.
+Version validée de la composition M-004 avec laquelle le **contenu courant** de la Fiche process doit être cohérent lors de sa validation. Le contenu en Brouillon peut être préparé avant la validation M-006. Un écart ultérieur avec M-004 est signalable sans bloquer automatiquement le process.
 
 ## Vigilance / contrôle qualité / maîtrise sanitaire
 
