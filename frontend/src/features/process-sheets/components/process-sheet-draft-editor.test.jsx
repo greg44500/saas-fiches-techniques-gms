@@ -169,6 +169,25 @@ describe('M-006 — éditeur compact du brouillon process', () => {
     });
   });
 
+  it('affiche un aperçu de lecture sans altérer la saisie ni la révision', async () => {
+    const user = userEvent.setup();
+    view();
+    const step = await addStep(user);
+    await user.type(within(step).getByRole('textbox', { name: 'Instructions' }), 'Assembler la tartine');
+    await user.click(screen.getByRole('button', { name: 'Aperçu du process' }));
+    const preview = screen.getByRole('region', { name: 'Aperçu du process' });
+    expect(within(preview).getByText('Assembler la tartine')).toBeInTheDocument();
+    expect(within(preview).getByText(/1\.1 Nouvelle étape/)).toBeInTheDocument();
+    expect(screen.getByText(/Modifications non enregistrées/)).toBeInTheDocument();
+    expect(within(preview).queryByRole('textbox')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Revenir à l’édition' }));
+    const reopened = screen.getByRole('article', { name: 'Étape 1' });
+    expect(within(reopened).getByRole('textbox', { name: 'Instructions' }))
+      .toHaveValue('Assembler la tartine');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    expect(mocks.save.mock.calls[0][0].phases[0].steps[0].instructions).toBe('Assembler la tartine');
+  });
+
   it('masque toutes les commandes de mutation à un lecteur tout en laissant la consultation', () => {
     view({ canEdit: false });
     expect(screen.queryByRole('button', { name: 'Ajouter une phase' })).not.toBeInTheDocument();
