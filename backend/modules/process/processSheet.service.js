@@ -12,7 +12,7 @@ import { TechnicalSheet } from '../technicalSheet/technicalSheet.model.js';
 import { TechnicalSheetDraft } from '../technicalSheet/technicalSheetDraft.model.js';
 import { TechnicalSheetValidation } from '../technicalSheet/technicalSheetValidation.model.js';
 import { TECHNICAL_SHEET_STATUS } from '../technicalSheet/technicalSheet.registry.js';
-import { ProcessSheet } from './processSheet.model.js';
+import { ProcessSheet, PROCESS_SHEET_EDITORIAL_STATE } from './processSheet.model.js';
 import { ProcessSheetDraft } from './processSheetDraft.model.js';
 import { toIngredientProjection } from './processSheetIngredientProjection.js';
 
@@ -26,7 +26,8 @@ const serializeProcess = (process) => ({
     technicalSheetName: process.technicalSheet?.name ?? null,
     title: process.title,
     status: process.status,
-    editorialState: process.currentValidatedState ? 'VALIDATED' : 'DRAFT',
+    editorialState: process.editorialState ?? PROCESS_SHEET_EDITORIAL_STATE.DRAFT,
+    validatedAt: process.validatedAt ?? null,
     revision: process.revision,
     sourceValidationId: process.sourceValidation.toString(),
     createdAt: process.createdAt,
