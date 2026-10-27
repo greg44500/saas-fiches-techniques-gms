@@ -5,10 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const mocks = vi.hoisted(() => ({
-  save: vi.fn(), reload: vi.fn(), phaseTitles: vi.fn(), createTitle: vi.fn(),
+  save: vi.fn(), validate: vi.fn(), reload: vi.fn(), phaseTitles: vi.fn(), createTitle: vi.fn(),
 }));
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useSaveProcessSheetDraftMutation: () => [mocks.save, { isLoading: false }],
+  useValidateProcessSheetMutation: () => [mocks.validate, { isLoading: false }],
   useListProcessPhaseTitlesQuery: (...args) => mocks.phaseTitles(...args),
   useCreateProcessPhaseTitleMutation: () => [mocks.createTitle, { isLoading: false }],
 }));
@@ -361,7 +362,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     view();
     await addStep(user);
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    expect(await screen.findByText('Brouillon enregistré.')).toHaveClass('text-success');
+    expect(screen.queryByText('Brouillon enregistré.')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
     let dialog = screen.getByRole('dialog', { name: 'Temps, température et équipements' });
     await user.type(within(dialog).getByRole('spinbutton', { name: 'Temps actif (min)' }), '25');
