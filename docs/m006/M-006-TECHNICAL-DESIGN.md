@@ -1,5 +1,24 @@
 # M-006 — Conception technique et séquencement de l'implémentation
 
+## Stabilisation de la modale de création M-006 — conflit 409 et sélecteur (2026-10-27)
+
+**Incident observé en test local AVANT ce correctif :** Vitest frontend M-006 affiche 8 suites, 55 tests : **54 réussis, 1 en échec** (`process-sheet-create-dialog.test.jsx` : scénario « refuse la création sur un conflit serveur et maintient le formulaire »). Au moment de l'échec, l'option « Tartine validée » n'est pas présente et le Select Base UI a `aria-expanded="false"`. La requête de création n'a donc pas encore été soumise ; ce log ne démontre pas un échec de la gestion HTTP 409.
+
+**Audit réalisé :** chaîne modale → liste M-004 éligible RTK Query → Select Base UI/shadcn → validation locale du formulaire → POST M-006 → réponse 409 et rechargement de la liste. Les tests normaux de création par clic passent dans ce même log. Le test 409 ne doit pas confondre la disponibilité du popup sous jsdom avec la gestion métier du conflit. Le parcours 409 est désormais exercé par clavier (la sélection par clic reste testée séparément), avec attente explicite de l'option et du message asynchrone.
+
+**Renforcement du comportement produit :**
+- Le submit est bloqué pendant `isLoading`/`isFetching` de la liste M-004, pendant la mutation, et en erreur de chargement.
+- L'identifiant choisi doit exister dans les options courantes ; une sélection obsolète après pagination/rafraîchissement ne peut plus être soumise depuis l'UI. La validation transactionnelle du serveur reste prioritaire.
+- Le 409 conserve le titre, efface uniquement la Fiche source devenue inéligible, recharge la liste via RTK Query, maintient le dialogue ouvert et laisse une erreur explicite.
+- Toute nouvelle édition du titre ou de la sélection efface un message d'échec devenu périmé ; les erreurs non-409 conservent le choix pour permettre une nouvelle tentative.
+
+**Régression couverte :** chemins d'ouverture au clic existants + sélection clavier, erreur 409, données de mutation, `refetch` unique, conservation du titre, désactivation de la soumission, disparition d'une référence lors de la mise à jour, reprise avec nouvelle Fiche technique, erreur non-409, indisponibilité de liste et rechargement, liste `isFetching`.
+
+**Limites de preuve :** lecture et modification sur GitHub uniquement ; **aucun test post-correctif, lint, build ou gate exécuté ici**. Confirmer sur le poste local en lançant les tests M-006 et en répétant la suite de création plusieurs fois, puis l'ensemble des gates. Il n'y a aucun changement Core, de schéma, de route backend ou de contrat M-006.
+
+---
+
+
 ## Stabilisation transversale M-006 — autorisation d'édition (2026-10-27)
 
 **Incident constaté par le propriétaire sur son environnement local avant correctif :** les 6 suites backend process (48 tests) réussissent ; les 7 suites frontend process exécutent 43 tests, dont 42 réussissent et 1 échoue dans `process-sheet-workspace-page.test.jsx` (attendu « Édition : oui », obtenu « Édition : non »). Ce sont des résultats **antérieurs** au présent lot ; ils ne prouvent pas l'état des commits correctifs.
