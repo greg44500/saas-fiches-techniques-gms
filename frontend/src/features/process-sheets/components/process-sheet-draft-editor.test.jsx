@@ -206,6 +206,9 @@ describe('M-006 — éditeur compact du brouillon process', () => {
     expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Recharger le brouillon' })).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: 'Titre de la phase' }), ' modifiée');
+    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
+    expect(screen.getByRole('alert')).toHaveTextContent('Une autre modification');
   });
 
   it('n’affecte rien automatiquement et signale les identités historiques', async () => {
