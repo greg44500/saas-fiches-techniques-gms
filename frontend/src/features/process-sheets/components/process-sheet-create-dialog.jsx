@@ -87,8 +87,6 @@ function ProcessSheetCreateDialog({
             <ProductVariantField
               filled={Boolean(title.trim())}
               floating
-              helpContent="Nommez votre procédure de fabrication. Ce titre peut différer du nom de la Fiche technique."
-              helpLabel="À propos du titre de la Fiche process"
               id="process-sheet-title"
               label="Titre de la Fiche process"
             >
@@ -108,8 +106,6 @@ function ProcessSheetCreateDialog({
             <ProductVariantField
               filled={Boolean(technicalSheetId)}
               floating
-              helpContent="Seules les Fiches actives, validées, sans brouillon de révision ouvert et sans Fiche process associée sont disponibles dans ce Dossier."
-              helpLabel="Critères de disponibilité des Fiches techniques"
               id="process-sheet-linked"
               label="Fiche technique associée"
               unavailable={loadingEligibility || eligible.isError || options.length === 0}
@@ -164,12 +160,9 @@ function ProcessSheetCreateDialog({
                       Actualisation des Fiches techniques éligibles…
                     </p>
                   )}
-                  {!loadingEligibility && options.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      Aucune Fiche technique éligible. Les Fiches en brouillon,
-                      en révision ou déjà liées à un process ne peuvent pas
-                      être sélectionnées. Une validation M-004 sans brouillon
-                      ouvert est nécessaire.
+                  {!eligible.isError && !loadingEligibility && options.length === 0 && (
+                    <p className="text-sm text-destructive" role="status">
+                      Aucune fiche technique éligible
                     </p>
                   )}
                   {(eligible.data?.pagination?.totalPages ?? 0) > 1 && (
