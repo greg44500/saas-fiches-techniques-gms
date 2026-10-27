@@ -84,7 +84,7 @@ const updateProcessSheetDraft = async ({
     }), {
         $set: { phases, unassignedReasons, updatedBy: actorId },
         $inc: { revision: 1 },
-    }, { new: true, session, runValidators: true });
+    }, { returnDocument: 'after', session, runValidators: true });
     if (!draft) throw conflict();
 
     const parentWrite = await ProcessSheet.updateOne(mongoose.trusted({
