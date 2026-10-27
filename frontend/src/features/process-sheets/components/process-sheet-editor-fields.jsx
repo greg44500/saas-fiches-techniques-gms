@@ -52,7 +52,8 @@ function StringListEditor({ label, items, disabled, onChange }) {
 
 
 function ingredientName(line) {
-  return (line.productVariantName ?? 'Référence indisponible') + ' (ligne ' + (line.sourcePosition + 1) + ')';
+  const position = Number.isInteger(line.sourcePosition) ? line.sourcePosition + 1 : '?';
+  return (line.productVariantName ?? 'Référence indisponible') + ' (ligne ' + position + ')';
 }
 
 // The composition is opened only on demand. A line may be assigned to multiple
