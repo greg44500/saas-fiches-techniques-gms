@@ -1,4 +1,35 @@
 # M-006 — Conception technique et séquencement de l'implémentation
+
+## Lot 2 — Rectification canonique du cycle de validation M-006 (2026-10-27)
+
+**Décision utilisateur validée, prioritaire sur les descriptions historiques des lots ci-dessous :** il existe au plus une Fiche process courante par Fiche technique M-004. Elle peut être modifiée après validation ; **la modification métier réellement enregistrée** la repasse en Brouillon, puis une **revalidation explicite** la remet en Validée. **Aucun historique de versions ni snapshot métier officiel M-006**. Les versions immuables de M-004 et les révisions de `ProcessLibraryRevision` ne changent pas. Les anciennes sections de ce document sont des comptes rendus datés, non des autorisations de recréer un historique process.
+
+### Modèle d'état à respecter lors du lot d'implémentation (non codé ici)
+
+| Opération | Contenu courant | État M-006 |
+| --- | --- | --- |
+| Création | Saisie initiale | Brouillon |
+| Sauvegarde d'un Brouillon | Mis à jour si changement | Brouillon |
+| Validation explicite réussie | Inchangé | Validée |
+| Consultation, ouverture de l'éditeur, modifications locales non sauvegardées | Inaltéré côté serveur | État serveur conservé |
+| Sauvegarde identique au contenu métier courant | Inchangé | Validée reste Validée |
+| Sauvegarde d'un changement métier sur une Fiche Validée | Remplacé sur la même fiche, même ID | Brouillon, revalidation requise |
+| Revalidation explicite réussie | Inchangé | Validée |
+
+**Architecture visée :** aucune collection `ProcessSheetValidation` ni `/history` métier M-006. Conserver `ProcessSheet` comme identité 1:1 et des données de fabrication courantes strictement scoped Workspace + Dossier ; un éventuel `ProcessSheetDraft` préexistant peut porter ce contenu, sous réserve d'une adaptation validée des services. **Ne pas déduire** que le schéma actuel est déjà conforme : `ProcessSheet.currentValidatedState` est aujourd'hui un ObjectId sans service de validation, et `ProcessSheet.sourceValidation` est immutable. Examiner ces champs et les données réellement persistées avant de fixer schéma/migration ; ne pas réutiliser un identifiant arbitraire pour simuler l'état Validée.
+
+**Traitement transactionnel futur :**
+- `PUT /:id/draft` : préserver la validation tant que la saisie n'est pas persistée ; comparer côté serveur le contenu métier normalisé (sans métadonnées techniques). Sur changement réel, sauvegarder les données et invalider l'état éditorial Validée atomiquement ; même revision fence `expectedRevision` pour préserver le 409. Un PUT sans différence métier ne doit pas invalider la validation.
+- `POST /:id/validate` (absent actuellement) : permission métier de validation à ajouter via le registre d'extension existant, vérification autoritative Workspace/Dossier, parent M-004 ACTIVE, composition M-004 officielle cohérente, au moins une phase et une étape documentée, champs facultatifs tels que décidés. Ne **pas** demander de justification des ingrédients non affectés. Enregistrer l'état Validée sur la fiche existante et l'événement d'audit minimal, transactionnellement, sans snapshot historique M-006.
+- En cas de concurrence entre sauvegarde et validation, refuser l'écrasement silencieux par contrôle de révision/état. Les deux transitions doivent être testées sous transactions MongoDB réelles.
+- `DELETE /:id` autonome est un **lot séparé** ; confirmation, permission, parent ACTIVE, transaction de purge du contenu courant et libération de l'association 1:1. Pas d'archivage autonome.
+- Les références aux versions M-004 restent nécessaires à la cohérence d'ingrédients et doivent être rapprochées explicitement lorsqu'une composition M-004 évolue ; aucune réconciliation par simple `productVariantId`. Le comportement exact d'adoption de composition et des données persistées doit être fermé avant toute mutation DB.
+
+**Tests obligatoires du prochain lot d'implémentation :** transitions Brouillon/Validée, PUT identique, saisie locale non sauvegardée, modification réelle après validation, revalidation, rôle sans droit, parent archivé/indisponible, cohérence M-004, conflit 409 et rollback, séparation tenants, aucun historique M-006, audit sans copie des contenus antérieurs ; RTL + Supertest et E2E ciblés. Les champs/versionnements des bibliothèques et de M-004 ne doivent pas régresser.
+
+**État de ce lot 2 : documentation exclusivement.** Aucun nouveau schéma, endpoint, migration ou code de production ; aucune preuve de tests/gates locaux post-lot 1 n'a été communiquée. Tous les anciens passages « snapshots officiels / historique » relatifs à M-006 dans les comptes rendus datés ci-dessous sont remplacés par ce contrat.
+
+---
 ## Lot UX — Structure dans l'arbre et contenu dans le panneau (2026-10-27)
 
 **Décision validée** : tout ajout de phase passe par la bibliothèque Workspace backend existante (aucun intitulé frontend statique). Le bouton général de création de phase est un bouton `FolderPlus` libellé « Phase » de style outline, distinct des `+` locaux d'ajout d'étape. L'arborescence devient le point de pilotage de la **structure du brouillon** : ajout d'une phase, ajout d'une étape, renommage inline d'une phase au crayon, suppression d'une phase à la corbeille et suppression d'une étape. Le panneau de droite présente pour la phase `Phase N : <intitulé>`, modifie uniquement ses **instructions et ingrédients**, et conserve les actions de réordonnancement avec info-bulles. Le nom n'y est plus édité ; le sélecteur redondant « Choisir dans la bibliothèque » est supprimé dans cette zone.
@@ -148,7 +179,7 @@ Un appel Mongoose M-006 utilise désormais `returnDocument: 'after'` au lieu de 
 - L'interface affiche les phases sous forme de cartes compactes, avec une seule phase ouverte à la fois et une seule étape active dans cette phase. La lecture du titre, de l'instruction et des associations reste possible sans ouvrir tous les champs.
 - Le titre et les instructions de l'étape sont prioritaires. Durées, température, équipements, vigilance, qualité et maîtrise sanitaire sont accessibles à la demande avec des volets natifs `details`.
 - La liste M-004 n'est plus répétée en cases à cocher ouvertes dans chaque opération : un sélecteur contextuel permet d'associer par clic des lignes individuelles, toujours distinguées par leur position même pour des Références Produit identiques. Les associations ne sont pas exclusives.
-- Les informations directement portées par la phase et les justifications de non-affectation sont repliées par défaut. Les non-affectations restent traçables et doivent être justifiées avant validation officielle conformément au contrat.
+- Les informations directement portées par la phase restent accessibles. Les non-affectations sont signalées sans justification obligatoire, conformément au contrat M-006 rectifié le 2026-10-27.
 - Ajout d'un aperçu chronologique de lecture du brouillon local, sans mutation, validation ni export. L'utilisateur peut revenir à l'édition en conservant l'état local.
 - Le bouton de sauvegarde reste explicite ; le protocole `expectedRevision`, les messages de conflit 409, la lecture seule/RBAC et les données enregistrées ne sont pas modifiés.
 - Séparation des responsabilités : `process-sheet-draft-editor.jsx` orchestre la sélection et la sauvegarde ; `process-sheet-editor-fields.jsx` rend les composants d'édition ; `process-sheet-preview.jsx` rend la lecture.
@@ -198,10 +229,10 @@ La migration `migration:m006-process-library` installe les index des deux modèl
 ## Lots suivants avant livraison complète
 
 1. **Identité stable des ingrédients M-004** : auditer et résoudre les doublons d'une Référence Produit, la relation brouillon/snapshot validé et la copie. Ne pas rétroéditer les snapshots M-004.
-2. **Agrégat process** : identité 1:1 unique avec Fiche technique ACTIVE, brouillon/versions immuables, affectations ingrédients aux phases/étapes, règles de validation et concurrence. Le lien doit être unique au niveau de l'index MongoDB. Ne pas activer l'API de création avant intégration de la cascade M-004.
+2. **Agrégat process** : identité 1:1 unique avec Fiche technique ACTIVE, contenu courant en Brouillon ou Validée **sans versions métier immuables M-006**, affectations ingrédients aux phases/étapes, règles de validation et concurrence. Le lien doit être unique au niveau de l'index MongoDB. Ne pas activer l'API de création avant intégration de la cascade M-004.
 3. **Transitions M-004 atomiques** : archivage, réactivation, corbeille, restauration, purge et copie dans les services existants ; tests transactionnels et rollback obligatoires.
 4. **Contrôles et révisions** : adoption explicite de bibliothèque, décalage de composition, durées parallèles, audit, suppression autonome physique conditionnée à parent ACTIVE et permissions.
-5. **Frontend** : onglet Dossier, sélection technique éligible, éditeur de phases/étapes, bibliothèque partagée/locale, consultations tablette/mobile, historiques, actions d'édition et impression sans document persistant.
+5. **Frontend** : onglet Dossier, sélection technique éligible, éditeur de phases/étapes, bibliothèque partagée/locale, consultations tablette/mobile, état Validée/Brouillon du contenu courant sans historique M-006, actions d'édition et impression sans document persistant.
 6. **Qualité** : migrations sur base de test dédiée, Vitest/Supertest, tests frontend RTL, E2E Playwright, contrôles tenancy/RBAC/concurrence puis `npm run release:check`. PR et fusion uniquement après validation des preuves et autorisation correspondante.
 
 **Hors lot M-006 V1 : illustrations/photographies, galerie, upload, stockage image, impression illustrée, journal de production et assistant IA.**
@@ -237,7 +268,7 @@ Autorisation : `process-sheet:read` par registre applicatif, membership Workspac
 
 Tests ajoutés : projection unitaire avec Référence Produit répétée, absence d'identité, snapshots legacy et sélection de lignes ; intégration HTTP (auth, RBAC, tenancy, Dossier et statut parent) ; non-régression de la validation M-004 réelle attestant la présence du `sourceLineId` ; registres de routes et de permissions.
 
-**Suite sécurisée :** implémenter l'agrégat 1:1, le brouillon et les versions validées, puis intégrer les cascades M-004 dans les transactions des services existants **avant** d'autoriser le premier endpoint de création M-006. La gestion des copies doit reconstruire les liens sur les nouvelles lignes cibles. Les tests du nouveau HEAD et la gate restent à exécuter ; aucun statut « vert » revendiqué.
+**Suite sécurisée (orientation historique rectifiée par le lot 2 du 2026-10-27) :** implémenter l'agrégat 1:1, le contenu courant et une validation explicite sans versions historiques M-006, puis intégrer les cascades M-004 dans les transactions des services existants **avant** d'autoriser le premier endpoint de création M-006. La gestion des copies doit reconstruire les liens sur les nouvelles lignes cibles. Les tests du nouveau HEAD et la gate restent à exécuter ; aucun statut « vert » revendiqué.
 
 ### Déploiement des permissions du lot 2
 
@@ -272,7 +303,7 @@ npm run release:check
 
 Les commandes doivent être exécutées localement sous le Node 24.x spécifié par le dépôt. **Aucun résultat vert n'est revendiqué pour ce nouveau lot**, et aucune PR/fusion n'est ouverte avant la validation complète.
 
-La prochaine implémentation fonctionnelle est l'agrégat M-006 1:1 avec M-004 et sa cascade transactionnelle ; ensuite seulement l'éditeur, la validation officielle, les historiques, les impressions et les bibliothèques dans l'UI.
+La prochaine implémentation fonctionnelle est l'agrégat M-006 1:1 avec M-004 et sa cascade transactionnelle ; ensuite seulement l'éditeur, la validation officielle **sans historique M-006**, les impressions et les bibliothèques dans l'UI.
 
 ## Lot 4 — Rectification du parcours et création stricte après validation M-004 (2026-10-26)
 
@@ -284,7 +315,7 @@ L'agrégat `ProcessSheet` est 1:1 avec la Fiche technique. `ProcessSheetDraft` e
 
 **Copie inter-Dossier, décision 28 amendée :** M-004 copie vers DRAFT ; aucune Fiche process enfant n'est créée avant validation M-004 cible. La reprise de contenu source pourra être proposée après cette validation, après conception du remappage des ingrédients et de la non-divulgation des bibliothèques locales. Ne pas contourner les préconditions de copie M-004.
 
-**Statut précis :** les API de liste, éligibilité, création et lecture et le frontend correspondant sont codés, avec tests de couverture ajoutés. **L'éditeur de phases/étapes, la sauvegarde métier, les versions validées, l'impression et la suppression autonome ne sont pas livrés. Les tests et la gate du nouveau HEAD ne sont pas exécutés dans cette conversation.**
+**Statut précis :** les API de liste, éligibilité, création et lecture et le frontend correspondant sont codés, avec tests de couverture ajoutés. **L'éditeur de phases/étapes et sa sauvegarde ont été livrés dans le lot 5 décrit plus bas ; la validation du contenu courant sans historique M-006, l'impression et la suppression autonome ne sont pas livrées. Les tests et la gate du nouveau HEAD ne sont pas exécutés dans cette conversation.**
 
 
 ### Stabilisation du shell Dossier — parse JSX (2026-10-26)
@@ -312,7 +343,7 @@ L'API d'éligibilité et les règles métier ne changent pas. La modale charge j
 
 ## Lot 5 — Éditeur transactionnel des brouillons M-006 (2026-10-26)
 
-**Périmètre implémenté :** phases/étapes ordonnées (création, suppression, réorganisation), descriptions/instructions, affectation des lignes exactes d'ingrédients, durées distinctes actif/repos/traitement, température, équipements, vigilance, contrôles qualité et sanitaire structurés. Les ingrédients sans affectation restent signalés avec justification possible. La validation officielle n'est **pas** implémentée : elle contrôlera plus tard les justifications obligatoires, le minimum une phase/une étape et la cohérence M-004 actuelle. Les bibliothèques locales/Workspace restent indépendantes ; adoption rapide des modèles et publication ne sont pas encore reliées à l'éditeur.
+**Périmètre implémenté :** phases/étapes ordonnées (création, suppression, réorganisation), descriptions/instructions, affectation des lignes exactes d'ingrédients, durées distinctes actif/repos/traitement, température, équipements, vigilance, contrôles qualité et sanitaire structurés. Les ingrédients sans affectation restent signalés par les compteurs, sans justification requise. La validation officielle n'est **pas** implémentée : elle contrôlera plus tard le minimum une phase/une étape documentée et la cohérence M-004 actuelle, sans justification des non-affectés. Les bibliothèques locales/Workspace restent indépendantes ; adoption rapide des modèles et publication ne sont pas encore reliées à l'éditeur.
 
 **Backend :** `PUT /api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets/:processSheetId/draft`, permission `process-sheet:edit`, Workspace/Dossier opérationnels, process et parent M-004 ACTIVE ; données strictement validées par Zod (pas de photo, prix, quantité M-004, ou objet libre), IDs uniques de phases/étapes, lignes M-004 autorisées exclusivement par les clés du snapshot immuable `sourceValidation` du process, un doublon de Référence Produit ne fusionne jamais deux lignes. Une ligne est autorisée dans plusieurs opérations différentes mais pas deux fois dans la même affectation. Motifs de non-affectation uniquement pour les clés connues et réellement non affectées. Taille de brouillon bornée : 40 phases, 40 étapes/phase, 200 clés par liste.
 
@@ -322,4 +353,4 @@ Sauvegarde **transactionnelle** : `expectedRevision` obligatoire, mise à jour a
 
 **Qualité :** tests unitaires Zod (structures/durées/températures/médias/doublons), Supertest (persistance, révision optimiste, contrôle ingrédients, audit, RBAC, statut parent), RTL (ajout de phases/étapes, clés identiques de variantes répétées mais lignes distinctes, motifs, lecture seule, conflit), RTK Query (contrat et tags), migration RBAC. **Ces tests et les gates ne sont pas exécutés depuis cette session ; aucun résultat vert revendiqué.**
 
-**Hors périmètre du lot :** validation officielle et snapshots immuables M-006, détection de simultanéité pour durée totale, modèle de bibliothèque appliqué à l'éditeur, suppression autonome, copie et remappage inter-Dossier, impression, images et photos. Les durées sont des champs explicites, pas encore un ordonnancement calculé.
+**Hors périmètre du lot :** validation officielle du contenu courant sans snapshots immuables M-006, détection de simultanéité pour durée totale, modèle de bibliothèque appliqué à l'éditeur, suppression autonome, copie et remappage inter-Dossier, impression, images et photos. Les durées sont des champs explicites, pas encore un ordonnancement calculé.
