@@ -1,5 +1,6 @@
 import { DOSSIER_STATUS } from '../dossier/dossier.registry.js';
 import { updateProcessSheetDraft } from './processSheetDraft.service.js';
+import { validateProcessSheet } from './processSheetValidation.service.js';
 import {
     createProcessSheet, getProcessSheet,
     listEligibleTechnicalSheets, listProcessSheets,
@@ -51,4 +52,13 @@ const saveDraft = async (req, res) => {
     res.status(200).json({ status: 'success', data: { draft } });
 };
 
-export { create, eligible, get, list, saveDraft };
+const validate = async (req, res) => {
+    const process = await validateProcessSheet({
+        ...scope(req),
+        processSheetId: req.validated.params.processSheetId,
+        actorId: req.user._id, ...req.validated.body,
+    });
+    res.status(200).json({ status: 'success', data: { process } });
+};
+
+export { create, eligible, get, list, saveDraft, validate };
