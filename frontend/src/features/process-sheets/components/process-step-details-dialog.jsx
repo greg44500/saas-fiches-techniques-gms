@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 
+import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
   DialogContent, DialogDescription, DialogFooter, DialogHeader,
@@ -240,10 +241,15 @@ function ProcessStepDetails({ step, disabled, onChange }) {
           <DialogOverlay className="backdrop-blur-none" />
           <DialogContent className="flex max-h-[min(90dvh,52rem)] max-w-2xl flex-col">
             <DialogHeader>
-              <DialogTitle>{title}</DialogTitle>
-              <DialogDescription>
-                Informations facultatives de l’étape. Les changements sont appliqués au brouillon
-                et seront enregistrés avec celui-ci.
+              <div className="flex items-center gap-2">
+                <DialogTitle>{title}</DialogTitle>
+                <InfoTooltip
+                  label={'À propos de ' + title}
+                  content="Ces informations sont facultatives. Valider applique les changements au brouillon local ; ils sont enregistrés sur le serveur uniquement avec le bouton Enregistrer le brouillon."
+                />
+              </div>
+              <DialogDescription className="sr-only">
+                Compléments facultatifs de l’étape. Valider modifie le brouillon local, pas la sauvegarde serveur.
               </DialogDescription>
             </DialogHeader>
             {draft && (
