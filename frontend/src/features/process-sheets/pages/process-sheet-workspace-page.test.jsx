@@ -7,7 +7,6 @@ import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/pr
 
 const mocks = vi.hoisted(() => ({
   detail: vi.fn(),
-  dossier: vi.fn(),
   can: vi.fn(),
 }));
 
@@ -18,10 +17,6 @@ vi.mock('react-router', async (original) => ({
 
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useGetProcessSheetQuery: mocks.detail,
-}));
-
-vi.mock('@/features/dossiers/api/dossiers-api', () => ({
-  useGetDossierByIdQuery: mocks.dossier,
 }));
 
 vi.mock('@/features/process-sheets/components/process-sheet-draft-editor', () => ({
@@ -62,6 +57,7 @@ const initialData = () => ({
   draft: { revision: 0, phases: [], unassignedReasons: [] },
   sourceIngredients: { lines: [{ lineKey: 'line:1' }] },
   compositionOutdated: false,
+  dossierOperational: true,
 });
 const detailResult = (data) => ({
   data, isError: false, isLoading: false, refetch: vi.fn(),
@@ -73,10 +69,6 @@ function expectReadOnly() {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.can.mockImplementation((permission) => permission === PROCESS_SHEET_PERMISSION.EDIT);
-  mocks.dossier.mockReturnValue({
-    data: { id: 'dossier-1', status: 'ACTIVE' },
-    isLoading: false, isFetching: false, isError: false,
-  });
   mocks.detail.mockReturnValue(detailResult(initialData()));
 });
 
@@ -89,9 +81,6 @@ describe('M-006 — ouverture du brouillon process', () => {
     expect(screen.getByText(/Édition : oui/)).toBeInTheDocument();
     expect(mocks.detail).toHaveBeenCalledWith({
       workspaceId: 'workspace-1', dossierId: 'dossier-1', processSheetId: 'process-1',
-    });
-    expect(mocks.dossier).toHaveBeenCalledWith({
-      workspaceId: 'workspace-1', dossierId: 'dossier-1',
     });
     expect(mocks.can).toHaveBeenCalledWith(PROCESS_SHEET_PERMISSION.EDIT);
   });
@@ -122,28 +111,17 @@ describe('M-006 — ouverture du brouillon process', () => {
     expectReadOnly();
   });
 
-  it.each(['PAUSED', 'ARCHIVED', 'DELETED'])(
-    'interdit l’édition si le Dossier est %s, comme le backend PUT',
-    (status) => {
-      mocks.dossier.mockReturnValue({
-        data: { status }, isLoading: false, isFetching: false, isError: false,
-      });
+  it.each([false, null, undefined])(
+    'interdit l’édition lorsque le serveur ne confirme pas le Dossier opérationnel (%s)',
+    (dossierOperational) => {
+      mocks.detail.mockReturnValue(detailResult({
+        ...initialData(), dossierOperational,
+      }));
       view();
       expectReadOnly();
+      expect(screen.getByRole('heading', { name: 'Fabrication tartine' })).toBeInTheDocument();
     },
   );
-
-  it.each([
-    { data: undefined, isLoading: true, isFetching: true, isError: false },
-    { data: undefined, isLoading: false, isFetching: false, isError: true },
-    { data: undefined, isLoading: false, isFetching: false, isError: false },
-    { data: { status: 'ACTIVE' }, isLoading: false, isFetching: true, isError: false },
-  ])('ne déduit jamais ACTIVE lorsque la vérification Dossier est incomplète : %#', (dossier) => {
-    mocks.dossier.mockReturnValue(dossier);
-    view();
-    expectReadOnly();
-    expect(screen.getByRole('heading', { name: 'Fabrication tartine' })).toBeInTheDocument();
-  });
 
   it('signale une composition M-004 modifiée sans remapper le contenu process', () => {
     mocks.detail.mockReturnValue(detailResult({
