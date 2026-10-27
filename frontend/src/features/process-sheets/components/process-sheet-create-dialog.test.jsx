@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -241,15 +241,18 @@ describe('M-006 — modale de création', () => {
       refreshed = true;
       return Promise.resolve();
     });
-    mocks.list.mockImplementation(() => ({
+    // RTK Query keeps the GET result reference stable until refetch.
+    // Do not create a fresh catalog on every unrelated React render.
+    const makeResult = (id, name) => ({
       data: {
-        technicalSheets: refreshed
-          ? [{ id: 'sheet-2', name: 'Salade validée' }]
-          : [{ id: 'sheet-1', name: 'Tartine validée' }],
+        technicalSheets: [{ id, name }],
         pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
       },
       isError: false, isFetching: false, isLoading: false, refetch: mocks.refetch,
-    }));
+    });
+    const beforeRefetch = makeResult('sheet-1', 'Tartine validée');
+    const afterRefetch = makeResult('sheet-2', 'Salade validée');
+    mocks.list.mockImplementation(() => (refreshed ? afterRefetch : beforeRefetch));
     renderDialog();
     const user = userEvent.setup();
     await user.type(screen.getByRole('textbox', {
@@ -278,7 +281,7 @@ describe('M-006 — modale de création', () => {
     expect(mocks.mutate).toHaveBeenNthCalledWith(2, {
       ...args, title: 'Fabrication tartine', technicalSheetId: 'sheet-2',
     });
-    expect(mocks.created).toHaveBeenCalledOnce();
+    await waitFor(() => expect(mocks.created).toHaveBeenCalledOnce());
     expect(mocks.created).toHaveBeenCalledWith({ id: 'process-retry' });
   });
 
