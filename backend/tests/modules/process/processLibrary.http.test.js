@@ -349,17 +349,18 @@ describe('M-006 — bibliothèques de fabrication', () => {
         await request(app).post(workspace + '/phases')
             .set(bearer(owner.token))
             .send({ definition: step() }).expect(400);
-        await request(app).post(workspace + '/phases')
+        const emptyPhase = await request(app).post(workspace + '/phases')
             .set(bearer(owner.token))
             .send({ definition: { title: 'Phase vide', steps: [] } })
-            .expect(400);
+            .expect(201);
+        expect(emptyPhase.body.data.template.definition.steps).toEqual([]);
         await request(app).post(workspace + '/steps')
             .set(bearer(owner.token))
             .send({ definition: step(), unknownField: 'ignored?' })
             .expect(400);
         expect(await ProcessLibraryTemplate.countDocuments({
             workspace: owner.workspace._id,
-        })).toBe(0);
+        })).toBe(1);
     });
 
     it('filtre et pagine sans interpréter la recherche comme une regex', async () => {

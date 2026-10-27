@@ -1,4 +1,12 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
+## Dette de suivi — bootstrap des modèles de phases M-006 (2026-10-27)
+
+**À requalifier après gates et QA :** le Core de création Workspace ne dispose pas d'un hook transactionnel métier dédié au provisionnement du catalogue M-006. Pour ne pas modifier le Core dans le SaaS dérivé, ce lot prévoit un runner de migration explicite pour les Workspaces existants et un provisionnement idempotent lors du premier GET des intitulés pour les Workspaces créés ensuite. Les lectures suivantes ne doivent ni réactiver un modèle archivé ni changer ses dates/révisions ; la concurrence initiale mérite une recette E2E sur MongoDB rs0.
+
+**Amélioration générique éventuelle :** si plusieurs produits exigent des ressources initiales au moment de la transaction de création d'un Workspace, cadrer dans `saas-core-api` un point d'extension générique, le tester, le versionner, puis l'intégrer via upgrade Core. Ne pas incorporer ce hook directement dans `workspace.service.js` du produit M-006.
+
+---
+
 
 
 ### GMS-M006-ILLUSTRATIONS — Illustrations et photos des étapes (décision du 2026-10-26)
