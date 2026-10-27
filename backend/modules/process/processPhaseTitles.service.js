@@ -52,20 +52,24 @@ const ensureDefaultProcessPhases = async ({ workspaceId, actorId, session }) => 
             },
             { upsert: true, new: true, session, setDefaultsOnInsert: true, timestamps: false },
         );
-        // A revision is guaranteed even if a prior provisioning run stopped.
-        await ProcessLibraryRevision.updateOne(
-            mongoose.trusted({ template: template._id, revision: 0 }),
-            {
-                $setOnInsert: {
-                    workspace: workspaceId,
-                    dossier: null,
-                    kind: PROCESS_LIBRARY_KIND.PHASE,
-                    definition: template.definition,
-                    createdBy: template.createdBy,
+        // Create the initial snapshot for new/default revision-zero models.
+        // Never fabricate revision zero from the *current* content of an
+        // existing model that may already have been revised.
+        if (template.revision === 0) {
+            await ProcessLibraryRevision.updateOne(
+                mongoose.trusted({ template: template._id, revision: 0 }),
+                {
+                    $setOnInsert: {
+                        workspace: workspaceId,
+                        dossier: null,
+                        kind: PROCESS_LIBRARY_KIND.PHASE,
+                        definition: template.definition,
+                        createdBy: template.createdBy,
+                    },
                 },
-            },
-            { upsert: true, session },
-        );
+                { upsert: true, session },
+            );
+        }
         result.push(template);
     }
     return result;
