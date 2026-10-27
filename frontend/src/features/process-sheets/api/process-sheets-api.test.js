@@ -33,13 +33,49 @@ describe('M-006 — contrats frontend RTK Query', () => {
     expect(processSheetsApi.endpoints).toBe(captured.endpoints);
     expect(Object.keys(captured.endpoints).sort()).toEqual([
       'createProcessSheet', 'getProcessSheet', 'getProcessSheetComposition',
-      'listEligibleProcessTechnicalSheets', 'listProcessSheets',
-      'saveProcessSheetDraft',
+      'listDossierPhaseTemplates', 'listEligibleProcessTechnicalSheets',
+      'listProcessSheets', 'listWorkspacePhaseTemplates', 'saveProcessSheetDraft',
     ].sort());
     expect(captured.tags).toEqual(expect.arrayContaining([
       'ProcessSheetComposition', 'ProcessSheetList', 'ProcessSheet',
-      'EligibleProcessTechnicalSheets',
+      'EligibleProcessTechnicalSheets', 'ProcessPhaseTemplates',
     ]));
+  });
+
+  it.each([
+    {
+      endpoint: 'listWorkspacePhaseTemplates',
+      url: '/workspaces/w/process-library/phases',
+    },
+    {
+      endpoint: 'listDossierPhaseTemplates',
+      url: '/workspaces/w/dossiers/d/process-library/phases',
+    },
+  ])('lit les modèles PHASE actifs du backend via $endpoint', ({ endpoint, url }) => {
+    const definition = captured.endpoints[endpoint];
+    expect(definition.query({ ...scope })).toEqual({
+      url,
+      params: { page: 1, limit: 100, status: 'ACTIVE' },
+    });
+    expect(definition.query({
+      ...scope, page: 2, limit: 15, search: 'cuisson',
+    })).toEqual({
+      url,
+      params: { page: 2, limit: 15, status: 'ACTIVE', search: 'cuisson' },
+    });
+    expect(definition.query({ ...scope, search: '' })).toEqual({
+      url,
+      params: { page: 1, limit: 100, status: 'ACTIVE' },
+    });
+    const data = {
+      templates: [{
+        id: 'phase-model-1', kind: 'PHASE', status: 'ACTIVE', title: 'Cuisson',
+        definition: { title: 'Cuisson', steps: [{ title: 'Cuire' }] },
+      }],
+      pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
+    };
+    expect(definition.transformResponse({ status: 'success', data })).toEqual(data);
+    expect(definition.providesTags).toEqual(['ProcessPhaseTemplates']);
   });
 
   it('sépare liste de process et liste éligible M-004', () => {

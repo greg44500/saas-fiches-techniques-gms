@@ -153,6 +153,96 @@ describe('M-006 — bibliothèques de fabrication', () => {
         expect(await ProcessLibraryTemplate.countDocuments()).toBe(2);
     });
 
+    it('sert les suggestions de phases ACTIVE selon leur Workspace et leur Dossier, avec recherche et pagination', async () => {
+        const sharedPath = workspacePath() + '/phases';
+        const localPath = dossierPath() + '/phases';
+        const create = async (path, title) => {
+            const result = await request(app).post(path)
+                .set(bearer(owner.token))
+                .send({
+                    definition: {
+                        title, instructions: '',
+                        steps: [step('Opération du modèle')],
+                    },
+                }).expect(201);
+            return result.body.data.template;
+        };
+
+        // Models shared at the Workspace level are not tied to a Dossier.
+        const anotherDossier = await Dossier.create({
+            workspace: owner.workspace._id,
+            name: 'Autre magasin du Workspace',
+            statusChangedBy: owner.owner._id,
+            createdBy: owner.owner._id,
+            updatedBy: owner.owner._id,
+        });
+        await create(sharedPath, 'Cuisson');
+        await request(app).post(workspacePath() + '/steps')
+            .set(bearer(owner.token))
+            .send({ definition: step('Contrôle de cuisson') }).expect(201);
+        const archived = await create(sharedPath, 'Présentation et dressage');
+        await request(app).post(sharedPath + '/' + archived.id + '/archive')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: archived.revision }).expect(200);
+
+        await create(localPath, 'Préparation du poste');
+        await create(localPath, 'Préparations initiales');
+
+        const shared = await request(app).get(sharedPath)
+            .query({ status: 'ACTIVE', page: 1, limit: 100 })
+            .set(bearer(owner.token)).expect(200);
+        expect(shared.body.data.templates.map(({ title }) => title))
+            .toEqual(['Cuisson']);
+        expect(shared.body.data.templates[0].dossierId).toBeNull();
+
+        // Both dossiers access the same Workspace routes for reusable models.
+        const sharedSteps = await request(app).get(workspacePath() + '/steps')
+            .query({ status: 'ACTIVE', page: 1, limit: 100 })
+            .set(bearer(owner.token)).expect(200);
+        expect(sharedSteps.body.data.templates.map(({ title }) => title))
+            .toContain('Contrôle de cuisson');
+        expect(sharedSteps.body.data.templates[0].dossierId).toBeNull();
+
+        // A Dossier-scoped GET does not pretend to include Workspace models.
+        // The frontend composes the two independent backend lists.
+        const otherLocal = await request(app).get(
+            dossierPath(anotherDossier._id) + '/phases',
+        ).query({ status: 'ACTIVE' })
+            .set(bearer(owner.token)).expect(200);
+        expect(otherLocal.body.data.templates).toEqual([]);
+        expect(otherLocal.body.data.pagination.total).toBe(0);
+
+        const firstLocal = await request(app).get(localPath)
+            .query({ status: 'ACTIVE', search: 'prépar', page: 1, limit: 1 })
+            .set(bearer(owner.token)).expect(200);
+        expect(firstLocal.body.data.pagination).toMatchObject({
+            page: 1, limit: 1, total: 2, totalPages: 2,
+        });
+        expect(firstLocal.body.data.templates).toHaveLength(1);
+        expect(firstLocal.body.data.templates[0].dossierId)
+            .toBe(dossier._id.toString());
+
+        const secondLocal = await request(app).get(localPath)
+            .query({ status: 'ACTIVE', search: 'prépar', page: 2, limit: 1 })
+            .set(bearer(owner.token)).expect(200);
+        expect(secondLocal.body.data.pagination).toMatchObject({
+            page: 2, limit: 1, total: 2, totalPages: 2,
+        });
+        expect(new Set([
+            firstLocal.body.data.templates[0].title,
+            secondLocal.body.data.templates[0].title,
+        ])).toEqual(new Set(['Préparation du poste', 'Préparations initiales']));
+
+        const localOnly = await request(app).get(localPath)
+            .query({ status: 'ACTIVE', search: 'Cuisson' })
+            .set(bearer(owner.token)).expect(200);
+        expect(localOnly.body.data.templates).toEqual([]);
+
+        const cannotReadWithoutAuthentication = await request(app)
+            .get(localPath).query({ status: 'ACTIVE' }).expect(401);
+        expect(cannotReadWithoutAuthentication.body.status).not.toBe('success');
+    });
+
     it('rejette un champ photographie et les doublons dans le même scope', async () => {
         const path = workspacePath() + '/steps';
         await request(app).post(path).set(bearer(owner.token))

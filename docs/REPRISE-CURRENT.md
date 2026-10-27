@@ -1,4 +1,12 @@
 # Reprise M-006 — Fiches process (2026-10-26)
+## Reprise — Correctif M-006 RTK Query et portée des étapes libres (2026-10-27)
+
+Suite au log Vitest local du propriétaire : **1 test en échec sur 70** avant correction, uniquement \`src/features/process-sheets/api/process-sheets-api.test.js\` car l'inventaire strict attendait 6 endpoints alors que le module RTK Query en déclare 8 depuis la connexion des bibliothèques backend. Le test d'inventaire est adapté et complété par des scénarios GET Workspace et Dossier avec filtre ACTIVE, recherche, pagination, transformation et cache. Le test d'intégration page/éditeur est étendu à l'insertion d'un intitulé Workspace, la saisie d'une étape libre non publiée et la sauvegarde PUT. Le test HTTP de bibliothèque couvre le partage des modèles Workspace entre Dossiers et maintient l'isolation du catalogue Dossier existant. Tests nouveaux **non exécutés ici** ; aucune gate déclarée verte.
+
+Clarification du propriétaire : modèles prédéfinis de phases/étapes communs au Workspace et donc utilisables dans tous ses Dossiers ; les étapes rédigées librement par un utilisateur dans une Fiche process n'ont pas à alimenter automatiquement la bibliothèque. La Fiche process et son brouillon gardent impérativement leur ownership Workspace + Dossier. Aucune diffusion inter-Workspace ni référentiel global d'étapes utilisateur n'a été validé. Les cinq noms de phases exprimés en conversation ne sont pas présumés enregistrés dans les données MongoDB ; \`phaseDefinitionSchema.steps.min(1)\` reste en vigueur pour les modèles PHASE de bibliothèque.
+
+---
+
 ## Reprise M-006 — suggestions de phases côté backend (2026-10-27)
 
 Suite à la demande explicite du propriétaire, les titres de phases proposés au bouton \`+\` et dans le formulaire d'édition proviennent exclusivement des modèles \`PHASE\` actifs stockés côté backend (bibliothèques commune Workspace et locale Dossier). Connexion à deux GET existants via RTK Query, avec \`process-library:read\`, recherche et pagination. Un \`Popover\` Base UI liste uniquement les modèles effectivement retournés, en affichant le scope ; l'action « Autre phase (intitulé libre) » permet une phase locale sans muter la bibliothèque. Aucun choix de nom n'importe automatiquement les étapes/consignes d'un modèle ; l'enregistrement explicite \`expectedRevision\` reste inchangé. Les phases sans étapes ne montrent ni sous-liste « Aucune étape » ni chevron, et chaque ligne d'étape dispose d'une suppression confirmée depuis l'arborescence.

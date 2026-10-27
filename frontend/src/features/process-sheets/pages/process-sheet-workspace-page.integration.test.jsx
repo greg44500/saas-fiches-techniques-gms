@@ -6,7 +6,10 @@ import { MemoryRouter } from 'react-router';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/process-sheet-permissions';
 
-const mocks = vi.hoisted(() => ({ detail: vi.fn(), save: vi.fn(), can: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  detail: vi.fn(), save: vi.fn(), can: vi.fn(),
+  localPhases: vi.fn(), commonPhases: vi.fn(),
+}));
 
 vi.mock('react-router', async (original) => ({
   ...(await original()),
@@ -16,8 +19,8 @@ vi.mock('react-router', async (original) => ({
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useGetProcessSheetQuery: mocks.detail,
   useSaveProcessSheetDraftMutation: () => [mocks.save, { isLoading: false }],
-  useListDossierPhaseTemplatesQuery: () => ({ data: { templates: [] }, isLoading: false }),
-  useListWorkspacePhaseTemplatesQuery: () => ({ data: { templates: [] }, isLoading: false }),
+  useListDossierPhaseTemplatesQuery: (...args) => mocks.localPhases(...args),
+  useListWorkspacePhaseTemplatesQuery: (...args) => mocks.commonPhases(...args),
 }));
 
 vi.mock('@/features/workspace/components/workspace-context', () => ({
@@ -65,6 +68,8 @@ async function addFreePhase(user) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.localPhases.mockReturnValue({ data: { templates: [] }, isLoading: false });
+  mocks.commonPhases.mockReturnValue({ data: { templates: [] }, isLoading: false });
   mocks.can.mockImplementation((permission) => permission === PROCESS_SHEET_PERMISSION.EDIT);
   mocks.detail.mockReturnValue({
     data: initialData(), isError: false, isLoading: false, refetch: vi.fn(),
@@ -112,6 +117,56 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     });
     expect(await screen.findByText('Brouillon enregistré.')).toBeInTheDocument();
     expect(screen.getByText('À jour')).toBeInTheDocument();
+  });
+
+  it('reprend un titre de phase Workspace puis sauvegarde une étape libre dans la Fiche process', async () => {
+    const user = userEvent.setup();
+    // Workspace models are shared across dossiers, unlike draft-specific steps.
+    mocks.can.mockImplementation((permission) => [
+      PROCESS_SHEET_PERMISSION.EDIT, 'process-library:read',
+    ].includes(permission));
+    mocks.commonPhases.mockReturnValue({
+      data: {
+        templates: [{
+          id: 'shared-phase-1', title: 'Cuisson', kind: 'PHASE', status: 'ACTIVE',
+          dossierId: null,
+          definition: {
+            title: 'Cuisson', instructions: 'Procédure standard',
+            steps: [{ title: 'Opération du modèle' }],
+          },
+        }],
+        pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
+      },
+      isLoading: false,
+    });
+    view();
+    await user.click(screen.getByRole('button', { name: 'Ajouter une phase' }));
+    expect(mocks.commonPhases).toHaveBeenCalledWith(
+      expect.objectContaining({ workspaceId: 'workspace-1' }),
+      expect.objectContaining({ skip: false }),
+    );
+    const options = screen.getByRole('list', { name: 'Propositions de phases' });
+    await user.click(within(options).getByRole('button', { name: /Cuisson/ }));
+    expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Cuisson');
+    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+    const step = screen.getByRole('article', { name: 'Étape 1' });
+    await user.clear(within(step).getByRole('textbox', { name: 'Titre de l’étape' }));
+    await user.type(within(step).getByRole('textbox', { name: 'Titre de l’étape' }), 'Contrôler mon four');
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+
+    expect(mocks.save).toHaveBeenCalledTimes(1);
+    const payload = mocks.save.mock.calls[0][0];
+    expect(payload).toMatchObject({
+      workspaceId: 'workspace-1', dossierId: 'dossier-1',
+      expectedRevision: 0, phases: [{
+        title: 'Cuisson', instructions: '', steps: [{
+          title: 'Contrôler mon four',
+        }],
+      }],
+    });
+    expect(payload.phases[0].steps).toHaveLength(1);
+    expect(payload.phases[0].steps[0]).not.toHaveProperty('templateId');
+    expect(payload.phases[0].steps[0].title).not.toBe('Opération du modèle');
   });
 
   it.each([
