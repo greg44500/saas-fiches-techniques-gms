@@ -154,6 +154,39 @@ function ProcessSheetDraftEditor({
     patchPhase(i, { ...phase, steps: [...phase.steps, step] });
     selectStep(phase.id, step.id);
   };
+  const renamePhase = (phaseId, title) => {
+    if (!editable || !title.trim()) return;
+    edit((current) => ({
+      ...current,
+      phases: current.phases.map((phase) => phase.id === phaseId
+        ? { ...phase, title } : phase),
+    }));
+  };
+  const deletePhase = (phaseId) => {
+    const i = form.phases.findIndex((phase) => phase.id === phaseId);
+    if (i < 0) return;
+    const remaining = form.phases.filter((phase) => phase.id !== phaseId);
+    edit((current) => ({
+      ...current,
+      phases: current.phases.filter((phase) => phase.id !== phaseId),
+    }));
+    if (activePhaseId === phaseId) {
+      const fallback = remaining[Math.min(i, remaining.length - 1)];
+      setActivePhaseId(fallback?.id ?? null);
+      setActiveStepId(null);
+    }
+    setExpandedPhaseIds((current) => current.filter((id) => id !== phaseId));
+  };
+  const requestDeletePhase = (phaseId) => {
+    if (!editable) return;
+    const phase = form.phases.find((item) => item.id === phaseId);
+    if (!phase) return;
+    const isEmpty = phase.steps.length === 0
+      && !(phase.instructions ?? '').trim()
+      && (phase.ingredientLineKeys ?? []).length === 0;
+    if (isEmpty) deletePhase(phaseId);
+    else setDanger({ kind: 'phase', phaseId });
+  };
   const togglePhase = (phaseId, open) => {
     setExpandedPhaseIds((current) => open
       ? current.includes(phaseId) ? current : [...current, phaseId]
@@ -219,15 +252,7 @@ function ProcessSheetDraftEditor({
     const i = form.phases.findIndex((phase) => phase.id === danger.phaseId);
     if (i < 0) { setDanger(null); return; }
     if (danger.kind === 'phase') {
-      const remaining = form.phases.filter((phase) => phase.id !== danger.phaseId);
-      edit((current) => ({
-        ...current,
-        phases: current.phases.filter((phase) => phase.id !== danger.phaseId),
-      }));
-      const fallback = remaining[Math.min(i, remaining.length - 1)];
-      setActivePhaseId(fallback?.id ?? null);
-      setActiveStepId(null);
-      setExpandedPhaseIds((current) => current.filter((id) => id !== danger.phaseId));
+      deletePhase(danger.phaseId);
     } else {
       const j = form.phases[i].steps.findIndex((step) => step.id === danger.stepId);
       if (j >= 0) {
@@ -331,6 +356,8 @@ function ProcessSheetDraftEditor({
                   onRequestDeleteStep={(phaseId, stepId) => setDanger({
                     kind: 'step', phaseId, stepId,
                   })}
+                  onRenamePhase={renamePhase}
+                  onRequestDeletePhase={requestDeletePhase}
                   phases={form.phases}
                 />
               </div>
@@ -346,19 +373,14 @@ function ProcessSheetDraftEditor({
                     key={currentPhase.id}
                     count={form.phases.length}
                     disabled={!editable}
-                    canReadPhaseLibrary={canReadPhaseLibrary}
-                    dossierId={dossierId}
-                    workspaceId={workspaceId}
                     index={currentPhaseIndex}
                     ingredients={ingredients}
-                    onAddStep={() => addStep(currentPhaseIndex)}
                     onChange={(next) => patchPhase(currentPhaseIndex, next)}
                     onChangeIngredients={(next) => changeIngredients(currentPhaseIndex, null, next)}
                     onMove={(direction) => edit((current) => ({
                       ...current,
                       phases: move(current.phases, currentPhaseIndex, direction),
                     }))}
-                    onRequestDelete={() => setDanger({ kind: 'phase', phaseId: currentPhase.id })}
                     phase={currentPhase}
                   />
                 )}

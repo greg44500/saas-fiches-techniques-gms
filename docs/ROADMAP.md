@@ -1,4 +1,10 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
+## M-006 — ergonomie pilotage phases/étapes (2026-10-27)
+
+Lot frontend : créer / renommer / supprimer des phases dans l'arborescence, titre contextuel « Phase N : Titre » et édition du contenu à droite, actions iconographiques réutilisant le composant Tooltip Base UI, icônes différenciées pour phase et étape, focus harmonisé localement, confirmation conservée pour phases non vides. Aucun changement Core ni persistance Mongoose. QA : clavier, souris, tactile, dark mode, suppression avec contenu, sauvegarde explicite, préservation des identifiants et association ingrédients. Gates/PR à faire après tests locaux.
+
+---
+
 ## M-006 — menu des phases et amorçage des titres communs (2026-10-27)
 
 Lot de continuité UX M-006 : affichage `Select` shadcn/Base UI alimenté par le backend Workspace, cinq intitulés prévus à l'initialisation de la base, migration rejouable pour Workspaces existants, saisie d'intitulés libres persistés dans la bibliothèque PHASE Workspace, sans publication automatique des étapes libres d'une Fiche process. Contrats Core et ownership inchangés. Gate, QA et déploiement à valider localement avant PR.

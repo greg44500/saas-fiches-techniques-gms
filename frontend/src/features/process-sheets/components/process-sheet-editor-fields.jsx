@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { ProcessSheetDisclosure } from '@/features/process-sheets/components/process-sheet-disclosure';
+import { ProcessIconAction } from '@/features/process-sheets/components/process-icon-action';
 
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -187,16 +188,23 @@ function ProcessStepFields({
         </div>
         {!disabled && (
           <div className="flex gap-1">
-            <Button aria-label={'Monter étape ' + (index + 1)}
-              disabled={index === 0} onClick={() => onMove(-1)} size="icon"
-              type="button" variant="ghost"><ArrowUp className="size-4" aria-hidden="true" /></Button>
-            <Button aria-label={'Descendre étape ' + (index + 1)}
-              disabled={index === count - 1} onClick={() => onMove(1)} size="icon"
-              type="button" variant="ghost"><ArrowDown className="size-4" aria-hidden="true" /></Button>
-            <Button aria-label={'Supprimer étape ' + (index + 1)}
-              onClick={onDelete} size="icon" type="button" variant="ghost">
-              <Trash2 className="size-4" aria-hidden="true" />
-            </Button>
+            <ProcessIconAction
+              disabled={index === 0}
+              icon={ArrowUp}
+              label={'Monter étape ' + (index + 1)}
+              onClick={() => onMove(-1)}
+            />
+            <ProcessIconAction
+              disabled={index === count - 1}
+              icon={ArrowDown}
+              label={'Descendre étape ' + (index + 1)}
+              onClick={() => onMove(1)}
+            />
+            <ProcessIconAction
+              icon={Trash2}
+              label={'Supprimer étape ' + (index + 1)}
+              onClick={onDelete}
+            />
           </div>
         )}
       </div>
@@ -210,7 +218,9 @@ function ProcessStepFields({
         />
       </ProductVariantField>
       <label className="grid gap-1 text-sm">Instructions
-        <Textarea disabled={disabled} maxLength={5000}
+        <Textarea
+          className="focus-visible:border-ring focus-visible:ring-0 focus-visible:ring-offset-0"
+          disabled={disabled} maxLength={5000}
           onChange={(event) => assign('instructions', event.target.value)}
           value={step.instructions ?? ''} />
       </label>

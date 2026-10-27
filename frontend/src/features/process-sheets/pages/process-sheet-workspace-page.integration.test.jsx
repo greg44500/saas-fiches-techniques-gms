@@ -93,7 +93,7 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     expect(screen.getByRole('heading', { name: 'Assemblage tartine' })).toBeInTheDocument();
     await addFreePhase(user);
     expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+    await user.click(within(screen.getByRole('navigation', { name: 'Navigation des phases et étapes' })).getByRole('button', { name: 'Ajouter une étape à la phase 1' }));
     const step = screen.getByRole('article', { name: 'Étape 1' });
     expect(within(screen.getByRole('complementary', { name: 'Suivi des ingrédients' }))
       .getByRole('status')).toHaveTextContent('0 affectés · 2 à affecter');
@@ -140,8 +140,8 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
       expect.objectContaining({ skip: false }),
     );
     await user.click(screen.getByRole('button', { name: 'Cuisson' }));
-    expect(screen.getByRole('textbox', { name: 'Titre de la phase' })).toHaveValue('Cuisson');
-    await user.click(screen.getByRole('button', { name: 'Ajouter une étape' }));
+    expect(screen.getByRole('heading', { name: 'Phase 1 : Cuisson' })).toBeInTheDocument();
+    await user.click(within(screen.getByRole('navigation', { name: 'Navigation des phases et étapes' })).getByRole('button', { name: 'Ajouter une étape à la phase 1' }));
     const step = screen.getByRole('article', { name: 'Étape 1' });
     await user.clear(within(step).getByRole('textbox', { name: 'Titre de l’étape' }));
     await user.type(within(step).getByRole('textbox', { name: 'Titre de l’étape' }), 'Contrôler mon four');

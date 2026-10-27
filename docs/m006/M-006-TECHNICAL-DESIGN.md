@@ -1,4 +1,16 @@
 # M-006 — Conception technique et séquencement de l'implémentation
+## Lot UX — Structure dans l'arbre et contenu dans le panneau (2026-10-27)
+
+**Décision validée** : tout ajout de phase passe par la bibliothèque Workspace backend existante (aucun intitulé frontend statique). Le bouton général de création de phase est un bouton `FolderPlus` libellé « Phase » de style outline, distinct des `+` locaux d'ajout d'étape. L'arborescence devient le point de pilotage de la **structure du brouillon** : ajout d'une phase, ajout d'une étape, renommage inline d'une phase au crayon, suppression d'une phase à la corbeille et suppression d'une étape. Le panneau de droite présente pour la phase `Phase N : <intitulé>`, modifie uniquement ses **instructions et ingrédients**, et conserve les actions de réordonnancement avec info-bulles. Le nom n'y est plus édité ; le sélecteur redondant « Choisir dans la bibliothèque » est supprimé dans cette zone.
+
+Renommer une phase dans l'arbre modifie seulement le **brouillon de Fiche process** et ne crée/renomme jamais un modèle réutilisable dans la bibliothèque Workspace. Entrée ou perte de focus valident le nom non vide (après trim), Échap annule, nom vide n'écrase pas la valeur existante. Pas de sauvegarde automatique : conservation de `expectedRevision` et gestion du 409 inchangées.
+
+**Suppression** : phase strictement vide (zéro étape, instructions vides, zéro ingrédient associé) = suppression immédiate du brouillon local **sans suppression backend avant PUT** ; phase avec étapes, instructions ou ingrédients = confirmation via le `Dialog` existant. La sélection se reporte sur une phase voisine uniquement si la phase supprimée était sélectionnée, sinon la sélection courante est conservée. Les étapes continuent d'exiger une confirmation. Boutons survol/focus pour souris et clavier, restant visibles sous le breakpoint desktop pour tactile ; étiquettes accessibles et `Tooltip` Base UI pour les actions iconographiques (ajout d'étape, renommage, suppression, déplacement). Le contrôle de focus des `Textarea` phase/étape évite une double bague : bordure `border-ring` contrastée et suppression de la bague externe localement, sans toucher à la primitive Core.
+
+**Périmètre** : composants de la feature process-sheets seulement, tests RTL et intégration page. Pas de modification MongoDB, seed, route ou contrat Core. Vérifications à exécuter en local : renommage Enter/Escape, suppression vide/non vide, focus clavier et tactile, actions tooltip, responsive, ancien éditeur d'étapes complet, conservation des associations ingrédients après déplacement et conflit 409, RTL/lint/build. Aucun test ne doit être déclaré vert sans log.
+
+---
+
 ## Lot M-006 — menu d'intitulés Workspace et provisionnement (2026-10-27)
 
 **Contrat validé à partir des demandes successives du propriétaire :** les phases proposées dans l'éditeur sont des titres provenant de MongoDB et partagés entre les Dossiers d'un Workspace. Intitulés par défaut : « Préparation du poste », « Préparations initiales », « Cuisson », « Assemblage », « Présentation / dressage ». Les étapes librement rédigées dans une fiche process restent dans cette fiche et ne sont pas publiées automatiquement au Workspace. Aucun partage inter-Workspace demandé.

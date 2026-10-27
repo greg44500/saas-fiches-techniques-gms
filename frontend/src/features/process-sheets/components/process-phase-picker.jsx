@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { FolderPlus, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -69,17 +69,21 @@ function ProcessPhasePicker({
           render={
             <Button
               aria-label={mode === 'create' ? 'Ajouter une phase' : 'Choisir un intitulé de phase'}
-              className={mode === 'create' ? 'size-8' : undefined}
+              className={mode === 'create' ? 'h-8 gap-1.5 px-2' : undefined}
               disabled={disabled}
-              size={mode === 'create' ? 'icon' : 'sm'}
+              size="sm"
               type="button"
-              variant={mode === 'create' ? 'ghost' : 'outline'}
+              variant="outline"
             />
           }
         >
           {mode === 'create'
-            ? <Plus aria-hidden="true" className="size-4" />
-            : 'Choisir dans la bibliothèque'}
+            ? (
+              <>
+                <FolderPlus aria-hidden="true" className="size-4" />
+                <span>Phase</span>
+              </>
+            ) : 'Choisir dans la bibliothèque'}
         </PopoverTrigger>
         <PopoverContent
           align="start"

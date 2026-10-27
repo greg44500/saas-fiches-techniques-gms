@@ -1,4 +1,12 @@
 # Reprise M-006 — Fiches process (2026-10-26)
+## Reprise — lot UX arborescence structurante M-006 (2026-10-27)
+
+Après captures et validation UX utilisateur, refonte frontend ciblée sur `feature/m006-fiches-process`. L'arbre pilote les phases : création via popover backend Workspace (libellé `FolderPlus Phase` distinct du `+` d'étape), renommage inline via crayon (Entrée / blur = commit du brouillon, Échap = annulation), suppression via corbeille visible au hover/focus et sur tactile. Phase réellement vide = suppression locale immédiate ; avec instructions/ingrédients/étapes = `Dialog` de confirmation. La suppression reste persistée uniquement lors de la prochaine sauvegarde explicite. Le panneau de phase indique `Phase N : Titre` et conserve seulement instructions et ingrédients (plus déplacement avec tooltip). Plus de champ titre ni de bouton « Choisir dans la bibliothèque » à droite. Les étapes continuent d'être complètes dans leur propre éditeur ; leurs boutons iconographiques utilisent un composant tooltip M-006 réutilisable. Focus de texte ajusté localement sans modification de la primitive Core.
+
+Tests RTL du brouillon et intégration page adaptés à l'absence du champ titre de phase dans le formulaire ; ajout de scénarios renommage, suppression et focus. Les tests et gates sont **à exécuter réellement** sur l'environnement Node 24/MongoDB local ; aucun passage au vert ne peut être annoncé depuis cette session. Aucun backend/Core modifié. L'ancien travail de seed Workspace et ses contrats n'est pas repris dans ce lot.
+
+---
+
 ## Test frontend M-006 — modal 409 et navigation inert (2026-10-27)
 
 Dernier log local : **20 tests réussis sur 21** dans `process-sheet-draft-editor.test.jsx`. L'unique échec concerne l'assertion du test « ne crée pas de phase dans le brouillon si la création serveur échoue » : après HTTP 409, le `Dialog` « Nouvel intitulé de phase » reste ouvert, ce qui est attendu, et Base UI rend le contenu derrière le modal `aria-hidden` / `inert`. La fonction de test `navigation()` utilisait `getByRole` sans `hidden` et ne pouvait donc pas trouver l'arbre tant que le modal était actif. Le test a été corrigé sans toucher à la production : il vérifie le message 409 et la conservation de la saisie **dans le dialogue**, le ferme via « Annuler », puis vérifie l'absence de phase, le statut « À jour » et l'absence de PUT. Cela préserve le comportement accessible de Base UI et les invariants métier. Exécution des tests après correctif encore à confirmer localement.
