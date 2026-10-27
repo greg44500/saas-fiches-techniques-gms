@@ -138,10 +138,12 @@ describe('M-006 — modale de création', () => {
     expect(title).toHaveFocus();
     await user.type(title, 'Fabrication');
     expect(title.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'filled');
-    await user.click(linked);
-    expect(screen.getByRole('option', { name: 'Tartine validée' }))
-      .toBeInTheDocument();
-    await user.click(screen.getByRole('option', { name: 'Tartine validée' }));
+    expect(screen.getByText('Fiche technique associée').parentElement)
+      .toHaveClass('group-focus-within:top-2');
+    // Le clic jsdom/Base UI peut laisser la combobox fermée sans sélection.
+    // Le chemin souris est déjà testé séparément ; ici, vérifier le contrat
+    // Outlined après une sélection clavier accessible et stable.
+    await selectByKeyboard(user);
     expect(linked.closest('[data-slot="field"]')).toHaveAttribute('data-label-state', 'filled');
     expect(linked).toHaveTextContent('Tartine validée');
     expect(screen.getByRole('button', { name: 'Créer et ouvrir' })).toBeEnabled();
