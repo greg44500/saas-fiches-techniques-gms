@@ -54,7 +54,8 @@ const MOBILE_VIEWS = [
 
 function ProcessSheetDraftEditor({
   initialDraft, sourceIngredients, canEdit, canValidate = false,
-  editorialState = 'DRAFT', compositionOutdated = false, canReadPhaseLibrary = false,
+  editorialState = 'DRAFT', compositionOutdated = false, processRevision = 0,
+  canReadPhaseLibrary = false,
   dossierId, processSheetId, workspaceId,
   onReload,
 }) {
@@ -235,7 +236,7 @@ function ProcessSheetDraftEditor({
     try {
       await validateSheet({
         workspaceId, dossierId, processSheetId,
-        expectedRevision: initialDraft?.processRevision ?? revision,
+        expectedRevision: processRevision,
       }).unwrap();
       await onReload();
     } catch (error) {
