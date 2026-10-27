@@ -1,5 +1,23 @@
 # M-006 — Conception technique et séquencement de l'implémentation
 
+## Lot UX — Refonte de l'éditeur de phasage (2026-10-27)
+
+**Statut : implémenté sur `feature/m006-fiches-process`, non testé localement et non livré.** Le cas d'usage principal confirmé est l'assemblage court, composé de plusieurs petites phases comportant une ou deux étapes.
+
+- L'interface affiche les phases sous forme de cartes compactes, avec une seule phase ouverte à la fois et une seule étape active dans cette phase. La lecture du titre, de l'instruction et des associations reste possible sans ouvrir tous les champs.
+- Le titre et les instructions de l'étape sont prioritaires. Durées, température, équipements, vigilance, qualité et maîtrise sanitaire sont accessibles à la demande avec des volets natifs `details`.
+- La liste M-004 n'est plus répétée en cases à cocher ouvertes dans chaque opération : un sélecteur contextuel permet d'associer par clic des lignes individuelles, toujours distinguées par leur position même pour des Références Produit identiques. Les associations ne sont pas exclusives.
+- Les informations directement portées par la phase et les justifications de non-affectation sont repliées par défaut. Les non-affectations restent traçables et doivent être justifiées avant validation officielle conformément au contrat.
+- Ajout d'un aperçu chronologique de lecture du brouillon local, sans mutation, validation ni export. L'utilisateur peut revenir à l'édition en conservant l'état local.
+- Le bouton de sauvegarde reste explicite ; le protocole `expectedRevision`, les messages de conflit 409, la lecture seule/RBAC et les données enregistrées ne sont pas modifiés.
+- Séparation des responsabilités : `process-sheet-draft-editor.jsx` orchestre la sélection et la sauvegarde ; `process-sheet-editor-fields.jsx` rend les composants d'édition ; `process-sheet-preview.jsx` rend la lecture.
+- Aucun changement de schéma Mongoose, Zod, API M-006, Core ou modèle de bibliothèque. Aucun drag and drop obligatoire ; les commandes de réordonnancement existantes restent disponibles. La génération PDF, l'impression, la validation officielle et les bibliothèques restent leurs lots fonctionnels distincts.
+
+**Vérifications à effectuer avant approbation** : Vitest/RTL M-006, lint frontend, build frontend, gate `release:check`, recette visuelle en thèmes clair/sombre, tailles desktop/tablette et navigation clavier. Les nouveaux tests couvrent le parcours court, les deux occurrences d'une Référence Produit, les affectations multiples phase/étape, le réordonnancement, le maintien de saisie, l'aperçu, les permissions et le conflit 409. Ces tests **n'ont pas été exécutés** depuis le connecteur GitHub.
+
+---
+
+
 **Statut : conception engagée, implémentation partielle — ne pas présenter le module M-006 comme livré.**  
 **Date : 2026-10-26**  
 **Branche :** `feature/m006-fiches-process`  
