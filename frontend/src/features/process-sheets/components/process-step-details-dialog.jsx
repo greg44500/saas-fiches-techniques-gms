@@ -34,7 +34,7 @@ function OutlinedDetailInput({
   );
 }
 
-function StringListFields({ idPrefix, title, placeholder, items, disabled, onChange }) {
+function StringListFields({ idPrefix, title, placeholder, items, maxLength, disabled, onChange }) {
   return (
     <fieldset className="space-y-3">
       <legend className="text-sm font-medium">{title}</legend>
@@ -46,7 +46,7 @@ function StringListFields({ idPrefix, title, placeholder, items, disabled, onCha
             disabled={disabled}
             id={idPrefix + '-' + index}
             label={title + ' ' + (index + 1)}
-            maxLength={1000}
+            maxLength={maxLength}
             onChange={(value) => onChange(items.map((old, i) => i === index ? value : old))}
             placeholder={placeholder}
             value={item}
@@ -78,8 +78,9 @@ function ControlFields({ idPrefix, title, controls, disabled, onChange }) {
   ];
   return (
     <fieldset className="space-y-3">
+      <legend className="sr-only">{title}</legend>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <legend className="text-sm font-medium">{title}</legend>
+        <h3 className="text-sm font-medium">{title}</h3>
         {!disabled && (
           <Button disabled={controls.length >= 30}
             onClick={() => onChange([...controls, { instruction: '' }])}
@@ -188,8 +189,18 @@ function ProcessStepDetails({ step, disabled, onChange }) {
         setError('La température doit être comprise entre -100 et 350 °C, au dixième près.');
         return;
       }
+      if (draft.equipment.some((item) => !item.trim() || item.trim().length > 160)) {
+        setError('Chaque équipement doit comporter un nom de 1 à 160 caractères.');
+        return;
+      }
       onChange({ ...step, duration, temperatureCelsius: temperature, equipment: draft.equipment });
     } else {
+      if (draft.manufacturingVigilance.some((item) => !item.trim())
+        || [...draft.qualityControls, ...draft.sanitaryControls]
+          .some((control) => !control.instruction?.trim())) {
+        setError('Renseignez chaque vigilance et chaque instruction de contrôle ajoutée, ou supprimez la ligne vide.');
+        return;
+      }
       onChange({
         ...step, manufacturingVigilance: draft.manufacturingVigilance,
         qualityControls: draft.qualityControls, sanitaryControls: draft.sanitaryControls,
@@ -254,13 +265,13 @@ function ProcessStepDetails({ step, disabled, onChange }) {
                         value={draft.temperatureCelsius}
                       />
                       <StringListFields disabled={disabled} idPrefix={'step-' + step.id + '-equipment'}
-                        items={draft.equipment} onChange={(items) => change('equipment', items)}
+                        items={draft.equipment} maxLength={160} onChange={(items) => change('equipment', items)}
                         placeholder="Ex. Four ventilé" title="Équipements" />
                     </>
                   ) : (
                     <>
                       <StringListFields disabled={disabled} idPrefix={'step-' + step.id + '-vigilance'}
-                        items={draft.manufacturingVigilance}
+                        items={draft.manufacturingVigilance} maxLength={1000}
                         onChange={(items) => change('manufacturingVigilance', items)}
                         placeholder="Ex. Surveiller la texture" title="Points de vigilance" />
                       <ControlFields controls={draft.qualityControls} disabled={disabled}
