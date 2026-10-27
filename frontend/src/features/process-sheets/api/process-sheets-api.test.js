@@ -50,6 +50,7 @@ describe('M-006 — contrats frontend RTK Query', () => {
       'listProcessPhaseTitles',
       'listDossierPhaseTemplates', 'listEligibleProcessTechnicalSheets',
       'listProcessSheets', 'listWorkspacePhaseTemplates', 'saveProcessSheetDraft',
+      'validateProcessSheet',
     ].sort());
     expect(captured.tags).toEqual(expect.arrayContaining([
       'ProcessSheetComposition', 'ProcessSheetList', 'ProcessSheet',
@@ -113,6 +114,25 @@ describe('M-006 — contrats frontend RTK Query', () => {
     })).toEqual({ id: 'phase-2', title: 'Découpe' });
     expect(create.invalidatesTags(undefined, undefined, { workspaceId: 'w' }))
       .toEqual([{ type: 'ProcessPhaseTitles', id: 'w' }]);
+  });
+
+  it('valide une Fiche process avec la révision de l’agrégat et invalide les caches', () => {
+    const endpoint = captured.endpoints.validateProcessSheet;
+    expect(endpoint.query({
+      workspaceId: 'w', dossierId: 'd', processSheetId: 'p', expectedRevision: 7,
+    })).toEqual({
+      url: '/workspaces/w/dossiers/d/process-sheets/p/validate',
+      method: 'POST',
+      body: { expectedRevision: 7 },
+    });
+    expect(endpoint.transformResponse({ data: { process: { editorialState: 'VALIDATED' } } }))
+      .toEqual({ editorialState: 'VALIDATED' });
+    expect(endpoint.invalidatesTags(null, null, {
+      workspaceId: 'w', dossierId: 'd', processSheetId: 'p',
+    })).toEqual([
+      { type: 'ProcessSheet', id: 'w:d:p' },
+      { type: 'ProcessSheetList', id: 'w:d' },
+    ]);
   });
 
   it('sépare liste de process et liste éligible M-004', () => {
