@@ -231,7 +231,7 @@ function ProcessSheetDraftEditor({
   };
   const validate = async () => {
     if (!canValidate || dirty || conflict || saving.isLoading || validating.isLoading
-      || editorialState === 'VALIDATED' || compositionOutdated) return;
+      || processRevision !== revision || editorialState === 'VALIDATED' || compositionOutdated) return;
     setValidationError('');
     try {
       await validateSheet({
@@ -335,7 +335,7 @@ function ProcessSheetDraftEditor({
           </Button>
           {canValidate && (
             <Button disabled={dirty || saving.isLoading || validating.isLoading || conflict
-              || editorialState === 'VALIDATED' || compositionOutdated}
+              || processRevision !== revision || editorialState === 'VALIDATED' || compositionOutdated}
               onClick={validate} size="sm" type="button" variant="outline">
               {validating.isLoading ? 'Validation…' : 'Valider la Fiche process'}
             </Button>
