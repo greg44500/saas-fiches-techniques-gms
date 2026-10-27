@@ -94,7 +94,7 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     expect(payload.phases[0].steps[0]).toMatchObject({
       instructions: 'Assembler les éléments', ingredientLineKeys: ['line:b'],
     });
-    expect(screen.getByText(/Révision 1 · À jour/)).toBeInTheDocument();
+    expect(await screen.findByText(/Révision 1 · À jour/)).toBeInTheDocument();
   });
 
   it.each([
