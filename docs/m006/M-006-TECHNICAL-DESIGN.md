@@ -1,3 +1,13 @@
+## Contrat effectif M-006 — identité d’ingrédient uniquement (2026-10-28)
+
+Par décision du propriétaire, le contrôle de décalage M-004/M-006 ne dépend **que** des occurrences d’ingrédients et de leur couple nom / identifiant de Référence Produit. `productVariantId` est la référence pertinente ; les prix, quantités, unités, ordre, fournisseurs, référence fournisseur, notes, optimisation et production n'imposent plus de réconciliation ou de revalidation M-006. Les snapshots M-004 sont comparés en **multi-ensemble** indépendant de l'ordre, en conservant les doublons. Le process peut utiliser sa validation M-004 source même si une validation officielle postérieure diffère uniquement sur ces champs ignorés : la lecture renvoie `compositionOutdated=false` et le POST valide avec contrôle atomique du parent. Un brouillon M-004 non officiel ouvert n'est pas un obstacle pour un process existant. En revanche, une différence de nom/référence, une référence source absente, un conflit de révision ou un défaut d'autorisation restent des blocages.
+
+Le parcours de réconciliation n'est disponible que si les identités ont changé et exige toujours une confirmation manuelle pour les associations d'occurrences incertaines, avec transaction/contrôle d'accès et traçabilité. Aucun rapprochement silencieux par nom seul ; les anciennes lignes et instructions sont conservées tant qu'elles sont cohérentes. En frontend, confirmation de validation **uniquement si des ingrédients ne sont pas affectés** et avertissement non bloquant. Barrette d'actions à icônes compacte sur la ligne du titre et tooltips courts. Cette règle remplace les passages historiques contraires ci-dessous ; voir `docs/m006/M-006-RECONCILIATION.md`.
+
+**État qualité :** code et tests adaptés, aucune exécution locale de gates prouvée. Lot 3 en attente de vérification.
+
+---
+
 ## Lot 3 — Réconciliation M-004/M-006 et parcours de validation (2026-10-28)
 
 Le contrat technique et UX effectif est détaillé dans `docs/m006/M-006-RECONCILIATION.md`. Il complète les corrections de révisions et les garde-fous déjà présents : `sourceValidation` reste la provenance initiale immuable, le champ optionnel `compositionValidation` devient la référence courante après une réconciliation confirmée, et l'absence de ce champ reste compatible avec les anciennes Fiches process. Les contrôles de validation, l'éditeur, l'audit, la comparaison officielle et la double révision de concurrence sont alignés. N'introduire ni modification Core ni historique de versions métier M-006. Code et tests committés, aucune gate réellement exécutée.
