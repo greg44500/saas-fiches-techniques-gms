@@ -153,7 +153,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     const tree = await screen.findByRole('navigation', { name: 'Navigation des phases et étapes' });
     expect(within(tree).queryByRole('button', { name: /Sélectionner phase/ }))
       .not.toBeInTheDocument();
-    expect(screen.getByText('À jour')).toBeInTheDocument();
+    expect(screen.getByText('Enregistré')).toBeInTheDocument();
     expect(mocks.save).not.toHaveBeenCalled();
   });
 
