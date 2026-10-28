@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter } from 'react-router';
+import { Link, MemoryRouter } from 'react-router';
 
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/process-sheet-permissions';
@@ -27,6 +27,11 @@ vi.mock('@/features/process-sheets/components/process-sheet-draft-editor', () =>
     mocks.editorProps(props);
     return (
       <div>
+        <header>
+          <Link to={props.backPath}>Fiches process</Link>
+          <span>|</span>
+          <h1>{props.processTitle}</h1>
+        </header>
         Éditeur M-006 : {props.initialDraft?.revision}
         {' | '}Ingrédients : {props.sourceIngredients?.lines?.length ?? 0}
         {' | '}Édition : {props.canEdit ? 'oui' : 'non'}
@@ -86,17 +91,18 @@ describe('M-006 — ouverture du brouillon process', () => {
       canOpenCompositionReview: false,
     }));
     expect(mocks.editorProps).toHaveBeenLastCalledWith(expect.objectContaining({
-      compositionHelp: expect.stringContaining('déjà la composition officielle courante'),
+      compositionHelp: 'Ingrédients à jour',
     }));
   });
 
-  it('permet d’ouvrir la résolution lorsque M-004 est en modification', () => {
+  it('ne bloque pas l’actualisation sur une simple révision M-004 en cours', () => {
     mocks.detail.mockReturnValue(detailResult({
       ...initialData(), parentDraftOpen: true,
     }));
     view();
     expect(mocks.editorProps).toHaveBeenLastCalledWith(expect.objectContaining({
-      canOpenCompositionReview: true,
+      canOpenCompositionReview: false,
+      compositionOutdated: false,
     }));
   });
 
