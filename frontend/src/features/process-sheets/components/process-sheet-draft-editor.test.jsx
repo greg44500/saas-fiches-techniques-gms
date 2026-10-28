@@ -376,7 +376,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Valider' }));
     expect(screen.getByText('Enregistré')).toHaveClass('text-success');
-    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toHaveAttribute('aria-disabled', 'true');
     expect(mocks.save).toHaveBeenCalledTimes(1);
   });
 
@@ -613,7 +613,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     expect(await screen.findByText('Enregistrement à vérifier')).toHaveClass('text-muted-foreground');
     expect(screen.getByRole('heading', { name: 'Phase 1 : Nouvelle phase modifiée' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toHaveAttribute('aria-disabled', 'true');
     await user.click(screen.getByRole('button', { name: 'Recharger le brouillon' }));
     expect(screen.getByRole('dialog', { name: 'Recharger le brouillon ?' }))
       .toHaveTextContent('Les modifications locales non enregistrées');
@@ -632,9 +632,9 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
         ] }],
     } });
     expect(screen.queryByRole('button', { name: 'Ajouter une phase' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Disponibilité de l’enregistrement' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('group', { name: 'Actions de la Fiche process' })).toBeInTheDocument();
     await user.click(within(navigation()).getByRole('button', { name: 'Replier phase 1' }));
     await user.click(within(navigation()).getByRole('button', { name: 'Déplier phase 1' }));
     expect(within(navigation()).getByRole('button', { name: 'Sélectionner étape 1 : Rincer' }))
@@ -650,7 +650,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await user.click(screen.getByRole('button', { name: 'Aperçu du process' }));
     expect(screen.getByRole('region', { name: 'Aperçu du process' }))
       .toHaveTextContent('Assembler la tartine');
-    await user.click(screen.getByRole('button', { name: 'Revenir à l’édition' }));
+    await user.click(screen.getByRole('button', { name: 'Aperçu du process' }));
     expect(screen.getByRole('textbox', { name: 'Instructions' })).toHaveValue('Assembler la tartine');
     expect(mocks.save).not.toHaveBeenCalled();
   });
@@ -742,14 +742,14 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
 
   it('explique pourquoi une Fiche process déjà validée ne peut pas être validée à nouveau', () => {
     view({ canValidate: true, editorialState: 'VALIDATED' });
-    expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Disponibilité de la validation' }))
+    expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('group', { name: 'Actions de la Fiche process' }))
       .toBeInTheDocument();
   });
 
   it('bloque la validation en présence de changements locaux ou de M-004 décalée', () => {
     view({ canValidate: true, processRevision: 0, compositionOutdated: true });
-    expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toHaveAttribute('aria-disabled', 'true');
     expect(mocks.validate).not.toHaveBeenCalled();
   });
 
