@@ -1,3 +1,19 @@
+# M-006 — Correctif ciblé du clic Valider (2026-10-28)
+
+**Constat utilisateur :** lors de `POST /:processSheetId/validate`, une `CastError` Mongoose sur `editorialState` signalait `{ $ne: 'VALIDATED' }`. La configuration de production applique `mongoose.set('sanitizeFilter', true)` dans `backend/config/db.js`. Le `mongoose.trusted()` entourant le filtre complet ne suffit pas à signaler comme fiable la valeur opérateur du champ imbriqué.
+
+**Correction confirmée statiquement :** `backend/modules/process/processSheetValidation.service.js` exige désormais `editorialState: PROCESS_SHEET_EDITORIAL_STATE.DRAFT` dans le filtre atomique `findOneAndUpdate`. Cette égalité explicite élimine `$ne` et maintient le verrou de révision `expectedRevision`, la transaction, RBAC et les vérifications M-004. Le schéma, le Core et les migrations restent inchangés.
+
+**Régression ajoutée :** dans `backend/tests/modules/process/processSheet.http.test.js`, chargement explicite de la configuration réelle `backend/config/db.js`, puis scénario de validation HTTP 200 d'un process possédant une phase et une étape documentée **sans aucun ingrédient affecté** ni justification. Vérification de `sanitizeFilter === true`, de l'état `VALIDATED`, de la révision, d'une seule écriture d'audit, du refus d'une seconde validation (409), de l'absence de snapshot M-006 et de la référence officielle M-004 conservée. Ce scénario matérialise les décisions du contrat du 2026-10-27 : les affectations manquantes ne bloquent pas.
+
+**Audit statique complémentaire :** autres opérateurs consultés dans les services process ; `$in` et `$ne` des recherches Mongoose déjà transmis comme valeurs `mongoose.trusted`, et `$type` de l'agrégation est distinct du filtrage Mongoose. Aucun changement opportuniste d'autre module.
+
+**Preuves non obtenues :** aucun test Vitest/Supertest, lint, build, E2E ni `release:check` exécuté après le correctif ; aucun accès à la base MongoDB locale ou au runtime Node 24 du poste de développement. Vérification locale requise avec une base dédiée `_test` : `npx vitest run backend/tests/modules/process/processSheet.http.test.js`, puis `npx vitest run backend/tests/modules/process`, `npm run lint`, `npm --prefix frontend run test -- src/features/process-sheets`, `npm --prefix frontend run lint`, `npm --prefix frontend run build`, et `npm run release:check` une fois l'environnement E2E préparé. Refaire en navigateur le cycle validation → sauvegarde modifiée → revalidation, et consulter MongoDB après l'erreur ancienne pour vérifier l'absence d'état partiel.
+
+**Périmètre :** correction d'incident du lot 3 uniquement. La modale de contrôle préalable à la validation et le renommage du compteur d'ingrédients sont des propositions UX **non implémentées**, à traiter séparément après stabilisation. Pas de lot 4, pas de PR ni de merge.
+
+---
+
 # Reprise M-006 — Stabilisation statique du lot 3 (2026-10-28)
 
 **Statut : correctifs et tests committés sur `feature/m006-fiches-process`, non validés par exécution locale.** Le HEAD de départ vérifié était `ec21588561242adb994339613186f5354b6413de`. Ne pas ouvrir le lot 4, de PR ou de merge tant que le lot 3 n'est pas accepté après vérification locale.
