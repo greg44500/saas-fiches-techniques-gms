@@ -47,7 +47,13 @@ const fetchPlan = async ({ workspaceId, dossierId, process, draft, parent, sessi
         workspace: workspaceId, dossier: dossierId,
     })).session(session);
     if (!previous || !current) return { status: 'REFERENCE_UNAVAILABLE' };
-    const plan = buildReconciliationPlan({ previous, current, draft });
+    let plan;
+    try {
+        plan = buildReconciliationPlan({ previous, current, draft });
+    } catch {
+        throw failure('PROCESS_SHEET_ASSOCIATIONS_INCOHERENT',
+            'Certaines associations anciennes ne peuvent pas être identifiées. Contactez un responsable.');
+    }
     return {
         status: 'REVIEW_REQUIRED', ...plan,
         currentValidationId: currentId,
