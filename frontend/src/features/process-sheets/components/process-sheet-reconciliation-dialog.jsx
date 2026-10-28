@@ -185,15 +185,17 @@ function ProcessSheetReconciliationDialog({
                   ? choices[item.from] : item.proposedTo;
                 return (
                   <div key={item.from} className="space-y-2 border-t border-border pt-3">
-                    <label className="block text-sm font-medium" id={'mapping-' + item.from}>
-                      {item.name} · occurrence {item.position + 1}
-                    </label>
-                    <InfoTooltip
-                      label={'À propos de la correspondance de ' + item.name}
-                      content={item.proposedTo && !Object.hasOwn(choices, item.from)
-                        ? 'Une correspondance a été reconnue. Vous pouvez la modifier avant confirmation.'
-                        : 'Choisissez la nouvelle occurrence de cet ingrédient ou retirez explicitement son association.'}
-                    />
+                    <div className="flex items-center gap-1">
+                      <label className="text-sm font-medium" id={'mapping-' + item.from}>
+                        {item.name} · occurrence {item.position + 1}
+                      </label>
+                      <InfoTooltip
+                        label={'À propos de la correspondance de ' + item.name}
+                        content={item.proposedTo && !Object.hasOwn(choices, item.from)
+                          ? 'Une correspondance a été reconnue. Vous pouvez la modifier avant confirmation.'
+                          : 'Choisissez la nouvelle occurrence de cet ingrédient ou retirez explicitement son association.'}
+                      />
+                    </div>
                     <Select
                       items={[
                         { value: '__REMOVE__', label: 'Retirer cette association' },
