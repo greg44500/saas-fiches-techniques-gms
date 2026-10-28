@@ -33,7 +33,7 @@ const fetchPlan = async ({ workspaceId, dossierId, process, draft, parent, sessi
     }
     const parentDraft = await TechnicalSheetDraft.exists(mongoose.trusted({
         workspace: workspaceId, dossier: dossierId, technicalSheet: parent._id,
-    })).session(session);
+    })).session(session ?? null);
     if (parentDraft) return { status: 'PARENT_REVISION_OPEN' };
     const referenceId = processReferenceId(process).toString();
     const currentId = parent.currentValidatedState.toString();
@@ -41,11 +41,11 @@ const fetchPlan = async ({ workspaceId, dossierId, process, draft, parent, sessi
     const previous = await TechnicalSheetValidation.findOne(mongoose.trusted({
         _id: referenceId, technicalSheet: parent._id,
         workspace: workspaceId, dossier: dossierId,
-    })).session(session);
+    })).session(session ?? null);
     const current = await TechnicalSheetValidation.findOne(mongoose.trusted({
         _id: currentId, technicalSheet: parent._id,
         workspace: workspaceId, dossier: dossierId,
-    })).session(session);
+    })).session(session ?? null);
     if (!previous || !current) return { status: 'REFERENCE_UNAVAILABLE' };
     let plan;
     try {
@@ -89,12 +89,12 @@ const reconcileProcessSheet = async ({
 }) => mongoose.connection.transaction(async (session) => {
     const dossier = await Dossier.findOne(mongoose.trusted({
         _id: dossierId, workspace: workspaceId, status: DOSSIER_STATUS.ACTIVE,
-    })).session(session);
+    })).session(session ?? null);
     if (!dossier) throw failure('PROCESS_SHEET_DOSSIER_INACTIVE', 'Le dossier doit être actif.');
     const process = await ProcessSheet.findOne(mongoose.trusted({
         ...scope({ workspaceId, dossierId, processSheetId }),
         status: TECHNICAL_SHEET_STATUS.ACTIVE, revision: expectedRevision,
-    })).session(session);
+    })).session(session ?? null);
     if (!process) throw failure('PROCESS_SHEET_CHANGED',
         'Cette Fiche process a changé. Actualisez les données avant de continuer.');
 
@@ -112,7 +112,7 @@ const reconcileProcessSheet = async ({
     const draft = await ProcessSheetDraft.findOne(mongoose.trusted({
         processSheet: process._id, workspace: workspaceId, dossier: dossierId,
         revision: expectedDraftRevision,
-    })).session(session);
+    })).session(session ?? null);
     if (!draft) throw failure('PROCESS_SHEET_CHANGED',
         'Le contenu a changé. Actualisez la Fiche process avant de continuer.');
 
