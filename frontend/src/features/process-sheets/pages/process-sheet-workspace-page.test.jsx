@@ -7,6 +7,7 @@ import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/pr
 
 const mocks = vi.hoisted(() => ({
   detail: vi.fn(),
+  review: vi.fn(), reconcile: vi.fn(),
   can: vi.fn(),
 }));
 
@@ -17,6 +18,8 @@ vi.mock('react-router', async (original) => ({
 
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useGetProcessSheetQuery: mocks.detail,
+  useGetProcessSheetReconciliationQuery: (...args) => mocks.review(...args),
+  useReconcileProcessSheetMutation: () => [mocks.reconcile, { isLoading: false }],
 }));
 
 vi.mock('@/features/process-sheets/components/process-sheet-draft-editor', () => ({
@@ -70,6 +73,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.can.mockImplementation((permission) => permission === PROCESS_SHEET_PERMISSION.EDIT);
   mocks.detail.mockReturnValue(detailResult(initialData()));
+  mocks.review.mockReturnValue({ data: null, isLoading: false, isFetching: false });
 });
 
 describe('M-006 — ouverture du brouillon process', () => {
@@ -136,7 +140,7 @@ describe('M-006 — ouverture du brouillon process', () => {
       compositionOutdated: true,
     }));
     view();
-    expect(screen.getByRole('note')).toHaveTextContent('La composition M-004 a évolué');
+    expect(screen.getByRole('button', { name: 'Composition à actualiser' })).toBeInTheDocument();
     expectReadOnly();
     expect(screen.getByText(/Ingrédients : 1/)).toBeInTheDocument();
   });
@@ -146,7 +150,7 @@ describe('M-006 — ouverture du brouillon process', () => {
       ...initialData(), compositionOutdated: true,
     }));
     view();
-    expect(screen.getByRole('note')).toHaveTextContent('aucune correspondance');
+    expect(screen.getByRole('button', { name: 'Composition à actualiser' })).toBeInTheDocument();
     expect(screen.getByText(/Édition : oui/)).toBeInTheDocument();
   });
 
