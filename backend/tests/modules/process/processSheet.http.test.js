@@ -620,8 +620,12 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
         expect(await TechnicalSheetDraft.exists({
             technicalSheet: valid.created.sheet.id,
         })).toBeTruthy();
-        await request(app).post(uri + '/validate').set(bearer(owner.token))
+        const review = (await request(app).get(uri + '/composition-review')
+            .set(bearer(owner.token)).expect(200)).body.data;
+        expect(review.status).toBe('PARENT_REVISION_OPEN');
+        const blocked = await request(app).post(uri + '/validate').set(bearer(owner.token))
             .send({ expectedRevision: 1 }).expect(409);
+        expect(blocked.body.code).toBe('PROCESS_SHEET_PARENT_REVISION_OPEN');
         expect((await ProcessSheet.findById(process.id)).editorialState).toBe('DRAFT');
         expect(await BusinessActivityEvent.countDocuments({
             entityId: process.id, action: 'PROCESS_SHEET_VALIDATED',
