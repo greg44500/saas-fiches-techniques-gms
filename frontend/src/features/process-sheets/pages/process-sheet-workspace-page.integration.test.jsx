@@ -95,8 +95,11 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
   it('enregistre une étape et la bonne occurrence M-004 depuis une réponse GET réelle en forme', async () => {
     const user = userEvent.setup();
     view();
-    expect(screen.getByRole('heading', { name: 'Assemblage tartine' })).toBeInTheDocument();
-    const controls = screen.getByRole('group', { name: 'Actions de la Fiche process' });
+    const title = screen.getByRole('heading', { name: 'Assemblage tartine' });
+    const header = title.closest('header');
+    expect(header).not.toBeNull();
+    expect(within(header).getByRole('link', { name: 'Fiches process' })).toBeInTheDocument();
+    const controls = within(header).getByRole('group', { name: 'Actions de la Fiche process' });
     expect(within(controls).getAllByRole('button')).toHaveLength(4);
     expect(within(controls).getByRole('button', { name: 'Actualiser la composition' }))
       .toHaveAttribute('aria-disabled', 'true');
