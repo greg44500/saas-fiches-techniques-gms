@@ -72,7 +72,7 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
     const panel = screen.getByRole('group', { name: 'Actions de la Fiche process' });
     expect(screen.getByText('Validée')).toBeInTheDocument();
     expect(within(panel).getAllByRole('button')).toHaveLength(4);
-    await user.click(within(panel).getByRole('button', { name: 'Aperçu du process' }));
+    await user.click(within(panel).getByRole('button', { name: 'Revenir à l’édition' }));
     await user.click(within(panel).getByRole('button', { name: 'Actualiser la composition' }));
     await user.click(within(panel).getByRole('button', { name: 'Enregistrer le brouillon' }));
     await user.click(within(panel).getByRole('button', { name: 'Valider la Fiche process' }));
