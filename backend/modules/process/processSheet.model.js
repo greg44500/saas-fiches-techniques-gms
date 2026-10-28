@@ -19,6 +19,9 @@ const processSheetSchema = new Schema({
     // Mirrors M-004 only; independent process archiving is forbidden.
     status: { type: String, enum: Object.values(TECHNICAL_SHEET_STATUS), default: TECHNICAL_SHEET_STATUS.ACTIVE, required: true },
     sourceValidation: { type: Schema.Types.ObjectId, ref: 'TechnicalSheetValidation', required: true, immutable: true },
+    // The origin stays immutable. Explicit reconciliation may adopt a newer
+    // official M-004 validation without replacing the process or its history.
+    compositionValidation: { type: Schema.Types.ObjectId, ref: 'TechnicalSheetValidation', default: null },
     revision: { type: Number, default: 0, min: 0, required: true },
     // The process keeps one mutable current content; no M-006 validation snapshots.
     editorialState: {
