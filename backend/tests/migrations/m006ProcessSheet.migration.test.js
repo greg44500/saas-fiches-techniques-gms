@@ -22,11 +22,13 @@ describe('M-006 — migration ProcessSheet', () => {
             $pull: { permissions: { $in: [
                 PROCESS_SHEET_PERMISSION.CREATE,
                 PROCESS_SHEET_PERMISSION.EDIT,
+                PROCESS_SHEET_PERMISSION.VALIDATE,
             ] } },
         });
         await backfillRegisteredSystemRolePermissions();
         const role = await Role.findById(owner.membership.role._id);
         expect(role.permissions).toContain(PROCESS_SHEET_PERMISSION.CREATE);
         expect(role.permissions).toContain(PROCESS_SHEET_PERMISSION.EDIT);
+        expect(role.permissions).toContain(PROCESS_SHEET_PERMISSION.VALIDATE);
     });
 });
