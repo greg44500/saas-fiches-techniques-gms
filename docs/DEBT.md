@@ -1,3 +1,9 @@
+## M-006 — QA des commandes persistantes et info-bulles (2026-10-28)
+
+**À vérifier localement :** `Actualiser la composition`, `Valider`, `Enregistrer` et `Confirmer l’actualisation` restent visibles dans les états habilité/non habilité, composition actuelle/décalée, parent en révision, brouillon local modifié, plan en chargement ou en erreur, cas d'associations incertaines. Vérifier que les contrôles `disabled` correspondent aux gardes backend, que les info-bulles restent utilisables clavier/tactile et que les modales ne perdent pas leurs noms/descriptions accessibles. Tests codés mais non exécutés. Périmètre UI M-006 uniquement, lot 3 non validé.
+
+---
+
 ## M-006 — Vérification de réconciliation et UX de validation (2026-10-28)
 
 **Code prêt pour revue, gates inconnues :** nouveau rapprochement entre validations officielles M-004, état courant M-006, correspondances de lignes et dialogues de résolution. Tests écrits mais non exécutés ; la récursion de permissions, la concurrence/rollback, les anciennes validations, l’absence de perte d'associations, la compatibilité Core et la QA accessible restent à démontrer. Document de référence : `docs/m006/M-006-RECONCILIATION.md`. Le lot 3 reste bloquant pour PR et lot 4.
