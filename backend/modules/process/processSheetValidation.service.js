@@ -15,12 +15,14 @@ import { assertLineAssignments } from './processSheetDraft.service.js';
 import { ProcessSheet, PROCESS_SHEET_EDITORIAL_STATE } from './processSheet.model.js';
 import { ProcessSheetDraft } from './processSheetDraft.model.js';
 import { toIngredientProjection } from './processSheetIngredientProjection.js';
+import { processReferenceId } from './processSheetReconciliation.js';
 import { serializeProcess } from './processSheet.service.js';
 
-const conflict = () => new AppError(
-    'La Fiche process a changé ou sa composition M-004 n’est plus à jour. Rechargez-la avant validation.',
-    409,
-);
+const conflict = (code = 'PROCESS_SHEET_CHANGED', message = 'Cette Fiche process a changé. Actualisez-la avant de valider.') => {
+    const error = new AppError(message, 409);
+    error.code = code;
+    return error;
+};
 
 // Only the current content is validated; no M-006 version/snapshot is created.
 const validateProcessSheet = async ({
@@ -29,20 +31,22 @@ const validateProcessSheet = async ({
     const dossier = await Dossier.findOne(mongoose.trusted({
         _id: dossierId, workspace: workspaceId, status: DOSSIER_STATUS.ACTIVE,
     })).session(session);
-    if (!dossier) throw conflict();
+    if (!dossier) throw conflict('PROCESS_SHEET_DOSSIER_INACTIVE', 'Le dossier doit être actif pour valider.');
 
     const process = await ProcessSheet.findOne(mongoose.trusted({
         _id: processSheetId, workspace: workspaceId, dossier: dossierId,
         status: TECHNICAL_SHEET_STATUS.ACTIVE,
     })).session(session);
     if (!process) throw new AppError('Fiche process active introuvable.', 404);
-    if (process.revision !== expectedRevision
-        || process.editorialState === PROCESS_SHEET_EDITORIAL_STATE.VALIDATED) throw conflict();
+    if (process.revision !== expectedRevision) throw conflict();
+    if (process.editorialState === PROCESS_SHEET_EDITORIAL_STATE.VALIDATED) {
+        throw conflict('PROCESS_SHEET_ALREADY_VALIDATED', 'Cette Fiche process est déjà validée.');
+    }
 
     const draft = await ProcessSheetDraft.findOne(mongoose.trusted({
         processSheet: process._id, workspace: workspaceId, dossier: dossierId,
     })).session(session);
-    if (!draft) throw conflict();
+    if (!draft) throw conflict('PROCESS_SHEET_DRAFT_UNAVAILABLE', 'Le contenu de fabrication est indisponible.');
     if (!draft.phases?.length || !draft.phases.some(
         (phase) => phase.steps?.some((step) => step.title?.trim() && step.instructions?.trim()),
     )) {
@@ -54,11 +58,11 @@ const validateProcessSheet = async ({
     const parent = await TechnicalSheet.findOneAndUpdate(mongoose.trusted({
         _id: process.technicalSheet, workspace: workspaceId, dossier: dossierId,
         status: TECHNICAL_SHEET_STATUS.ACTIVE,
-        currentValidatedState: process.sourceValidation,
+        currentValidatedState: processReferenceId(process),
     }), { $inc: { processEligibilityRevision: 1 } }, {
         session, returnDocument: 'after', timestamps: false,
     });
-    if (!parent) throw conflict();
+    if (!parent) throw conflict('PROCESS_SHEET_PARENT_CHANGED', 'La Fiche technique a été mise à jour. Comparez les compositions avant de valider.');
 
     // A pending M-004 revision is not an official composition. A previously
     // created process stays readable, but cannot be newly validated until the
@@ -69,13 +73,13 @@ const validateProcessSheet = async ({
         workspace: workspaceId,
         dossier: dossierId,
     })).session(session);
-    if (openParentDraft) throw conflict();
+    if (openParentDraft) throw conflict('PROCESS_SHEET_PARENT_REVISION_OPEN', 'Une modification de la Fiche technique est encore en cours.');
 
     const source = await TechnicalSheetValidation.findOne(mongoose.trusted({
-        _id: process.sourceValidation, technicalSheet: process.technicalSheet,
+        _id: processReferenceId(process), technicalSheet: process.technicalSheet,
         workspace: workspaceId, dossier: dossierId,
     })).session(session);
-    if (!source) throw conflict();
+    if (!source) throw conflict('PROCESS_SHEET_REFERENCE_UNAVAILABLE', 'La composition liée à cette Fiche process est indisponible.');
     assertLineAssignments({
         phases: draft.phases, unassignedReasons: draft.unassignedReasons ?? [],
         projection: toIngredientProjection({ sourceKind: 'VALIDATION', source }),
