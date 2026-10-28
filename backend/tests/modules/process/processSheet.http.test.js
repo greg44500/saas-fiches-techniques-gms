@@ -709,6 +709,43 @@ describe('M-006 — réconciliation officielle après revalidation M-004', () =>
         })).toBe(0);
     });
 
+    it('valide un Brouillon sans actualisation après modification des seules quantités', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id;
+        const detail = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        const phases = [{
+            id: 'phase-quantity-1', title: 'Préparation', instructions: '',
+            ingredientLineKeys: [], steps: [{
+                id: 'step-quantity-1', title: 'Assembler',
+                instructions: 'Assembler et servir', ingredientLineKeys: [],
+            }],
+        }];
+        await request(app).put(uri + '/draft')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 0, phases, unassignedReasons: [] }).expect(200);
+        await supersedeM004Validation(
+            valid.validated.validation.id, valid.created.sheet.id, { quantity: '20' },
+        );
+        const review = (await request(app).get(uri + '/composition-review')
+            .set(bearer(owner.token)).expect(200)).body.data;
+        expect(review.status).toBe('CURRENT');
+        const fresh = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        expect(fresh.compositionOutdated).toBe(false);
+        expect(fresh.sourceIngredients.lines).toHaveLength(detail.sourceIngredients.lines.length);
+        await request(app).post(uri + '/validate')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 1 }).expect(200);
+        const persisted = await ProcessSheet.findById(process.id);
+        expect(persisted.editorialState).toBe('VALIDATED');
+        expect(persisted.compositionValidation).toBeNull();
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: process.id, action: 'PROCESS_SHEET_COMPOSITION_RECONCILED',
+        })).toBe(0);
+    });
+
     it('demande une correspondance explicite si le nom d’un ingrédient change, puis valide', async () => {
         const valid = await createValidated();
         const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
@@ -733,6 +770,9 @@ describe('M-006 — réconciliation officielle après revalidation M-004', () =>
             status: 'REVIEW_REQUIRED', compositionChanged: true,
             unresolvedCount: 1,
         });
+        const blockedValidation = await request(app).post(uri + '/validate')
+            .set(bearer(owner.token)).send({ expectedRevision: 1 }).expect(409);
+        expect(blockedValidation.body.code).toBe('PROCESS_SHEET_PARENT_CHANGED');
         const payload = {
             expectedRevision: 1, expectedDraftRevision: 1,
             currentValidationId: review.currentValidationId, decisions: [],
