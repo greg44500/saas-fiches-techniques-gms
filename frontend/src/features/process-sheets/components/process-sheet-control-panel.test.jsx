@@ -50,10 +50,17 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
   it('garde le tooltip accessible au focus sans déclencher les actions indisponibles', async () => {
     const user = userEvent.setup();
     const { callbacks } = view();
+    const preview = screen.getByRole('button', { name: 'Aperçu du process' });
     const compare = screen.getByRole('button', { name: 'Actualiser la composition' });
-    compare.focus();
+    // Navigate with the keyboard, as a real user would. Base UI renders its
+    // tooltip popup without role="tooltip"; assert visible content instead.
+    await user.tab();
+    expect(preview).toHaveFocus();
+    await user.tab();
     expect(compare).toHaveFocus();
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('La composition est déjà à jour.');
+    expect(await screen.findByText('La composition est déjà à jour.')).toBeVisible();
+    await user.keyboard('{Enter}');
+    await user.keyboard(' ');
     await user.click(compare);
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     await user.click(screen.getByRole('button', { name: 'Valider la Fiche process' }));
@@ -61,6 +68,34 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
     expect(callbacks.onSave).not.toHaveBeenCalled();
     expect(callbacks.onValidate).not.toHaveBeenCalled();
   });
+
+  it.each([
+    {
+      label: 'Enregistrer le brouillon',
+      help: 'Aucune modification à enregistrer.',
+      callback: 'onSave',
+    },
+    {
+      label: 'Valider la Fiche process',
+      help: 'Enregistrez avant de valider.',
+      callback: 'onValidate',
+    },
+  ])('explique au focus pourquoi $label est indisponible, sans exécuter l’action',
+    async ({ label, help, callback }) => {
+      const user = userEvent.setup();
+      const { callbacks } = view();
+      const action = screen.getByRole('button', { name: label });
+
+      expect(action).toHaveAttribute('aria-disabled', 'true');
+      action.focus();
+      expect(action).toHaveFocus();
+      expect(await screen.findByText(help)).toBeVisible();
+
+      await user.keyboard('{Enter}');
+      await user.keyboard(' ');
+      await user.click(action);
+      expect(callbacks[callback]).not.toHaveBeenCalled();
+    });
 
   it('exécute uniquement les commandes autorisées sans changer leur emplacement', async () => {
     const user = userEvent.setup();
