@@ -1,3 +1,9 @@
+## M-006 — Référence courante de composition (2026-10-28)
+
+Une Fiche process possède une origine M-004 immuable (`sourceValidation`) et peut adopter explicitement une référence courante distincte (`compositionValidation`). Le contenu de fabrication reste mutable et unique pour le couple Fiche technique/Fiche process. La réconciliation ne modifie jamais les versions officielles de Fiches techniques, ne crée pas d'historique M-006 et exige une transaction/droits/vérification des occurrences d'ingrédients ; cf. `docs/m006/M-006-RECONCILIATION.md`.
+
+---
+
 # SAAS-FICHES-TECHNIQUES-GMS — Modèle de domaine
 ## Extension M-004 validée — Gammes de Fiches techniques
 
