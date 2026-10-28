@@ -1,4 +1,6 @@
 import '../../setup.js';
+// Match the production Mongoose filter-sanitization setting in HTTP tests.
+import '../../../config/db.js';
 
 import mongoose from 'mongoose';
 import request from 'supertest';
