@@ -125,7 +125,7 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
       instructions: 'Assembler les éléments', ingredientLineKeys: ['line:b'],
     });
     expect(screen.queryByText('Brouillon enregistré.')).not.toBeInTheDocument();
-    expect(screen.getByText('À jour')).toBeInTheDocument();
+    expect(screen.getByText('Enregistré')).toBeInTheDocument();
   });
 
   it('reprend un titre de phase Workspace puis sauvegarde une étape libre dans la Fiche process', async () => {
