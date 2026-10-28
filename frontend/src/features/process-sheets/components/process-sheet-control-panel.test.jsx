@@ -14,7 +14,6 @@ const actions = () => ({
 function view(overrides = {}) {
   const callbacks = actions();
   const props = {
-    editorialState: 'DRAFT', saveStatus: 'Enregistré',
     previewActive: false, compositionDisabled: true,
     compositionHelp: 'La composition est déjà à jour.',
     saveDisabled: true, saveHelp: 'Aucune modification à enregistrer.',
@@ -32,18 +31,20 @@ function view(overrides = {}) {
 }
 
 describe('M-006 — panneau de contrôle de la Fiche process', () => {
-  it('présente les états et quatre actions à icône dans un seul groupe', () => {
+  it('présente cinq icônes sans statut métier ni statut de sauvegarde', () => {
     view();
-    expect(screen.getByText('Brouillon')).toBeInTheDocument();
-    expect(screen.getByText('Enregistré')).toBeInTheDocument();
+    expect(screen.queryByText('Brouillon')).not.toBeInTheDocument();
+    expect(screen.queryByText('Enregistré')).not.toBeInTheDocument();
     const panel = screen.getByRole('group', { name: 'Actions de la Fiche process' });
-    expect(within(panel).getAllByRole('button')).toHaveLength(4);
+    expect(within(panel).getAllByRole('button')).toHaveLength(5);
     expect(within(panel).getByRole('button', { name: 'Aperçu du process' })).toBeInTheDocument();
     expect(within(panel).getByRole('button', { name: 'Actualiser la composition' }))
       .toHaveAttribute('aria-disabled', 'true');
     expect(within(panel).getByRole('button', { name: 'Enregistrer le brouillon' }))
       .toHaveAttribute('aria-disabled', 'true');
     expect(within(panel).getByRole('button', { name: 'Valider la Fiche process' }))
+      .toHaveAttribute('aria-disabled', 'true');
+    expect(within(panel).getByRole('button', { name: 'Exporter la Fiche process en PDF' }))
       .toHaveAttribute('aria-disabled', 'true');
   });
 
@@ -66,6 +67,7 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
     await user.click(compare);
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     await user.click(screen.getByRole('button', { name: 'Valider la Fiche process' }));
+    await user.click(screen.getByRole('button', { name: 'Exporter la Fiche process en PDF' }));
     expect(callbacks.onReconcile).not.toHaveBeenCalled();
     expect(callbacks.onSave).not.toHaveBeenCalled();
     expect(callbacks.onValidate).not.toHaveBeenCalled();
@@ -101,20 +103,39 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
       expect(callbacks[callback]).not.toHaveBeenCalled();
     });
 
+  it('garde l’export PDF visible et non actionnable tant qu’il n’existe pas', async () => {
+    const user = userEvent.setup();
+    const { callbacks } = view({ saveDisabled: false, validationDisabled: false });
+    const exportAction = screen.getByRole('button', {
+      name: 'Exporter la Fiche process en PDF',
+    });
+    expect(exportAction).toHaveAttribute('aria-disabled', 'true');
+    exportAction.focus();
+    expect(exportAction).toHaveFocus();
+    expect(await screen.findByText('Export PDF à venir')).toBeInTheDocument();
+    await user.keyboard('{Enter}');
+    await user.keyboard(' ');
+    await user.click(exportAction);
+    expect(callbacks.onSave).not.toHaveBeenCalled();
+    expect(callbacks.onValidate).not.toHaveBeenCalled();
+  });
+
   it('exécute uniquement les commandes autorisées sans changer leur emplacement', async () => {
     const user = userEvent.setup();
     const { callbacks } = view({
-      editorialState: 'VALIDATED',
       previewActive: true, compositionDisabled: false,
       saveDisabled: false, validationDisabled: false,
     });
     const panel = screen.getByRole('group', { name: 'Actions de la Fiche process' });
-    expect(screen.getByText('Validée')).toBeInTheDocument();
-    expect(within(panel).getAllByRole('button')).toHaveLength(4);
+    expect(screen.queryByText('Validée')).not.toBeInTheDocument();
+    expect(within(panel).getAllByRole('button')).toHaveLength(5);
     await user.click(within(panel).getByRole('button', { name: 'Revenir à l’édition' }));
     await user.click(within(panel).getByRole('button', { name: 'Actualiser la composition' }));
     await user.click(within(panel).getByRole('button', { name: 'Enregistrer le brouillon' }));
     await user.click(within(panel).getByRole('button', { name: 'Valider la Fiche process' }));
+    expect(within(panel).getByRole('button', {
+      name: 'Exporter la Fiche process en PDF',
+    })).toHaveAttribute('aria-disabled', 'true');
     expect(callbacks.onPreview).toHaveBeenCalledOnce();
     expect(callbacks.onReconcile).toHaveBeenCalledOnce();
     expect(callbacks.onSave).toHaveBeenCalledOnce();
