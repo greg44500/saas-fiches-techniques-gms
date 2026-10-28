@@ -1,3 +1,9 @@
+## M-006 — Vérification de réconciliation et UX de validation (2026-10-28)
+
+**Code prêt pour revue, gates inconnues :** nouveau rapprochement entre validations officielles M-004, état courant M-006, correspondances de lignes et dialogues de résolution. Tests écrits mais non exécutés ; la récursion de permissions, la concurrence/rollback, les anciennes validations, l’absence de perte d'associations, la compatibilité Core et la QA accessible restent à démontrer. Document de référence : `docs/m006/M-006-RECONCILIATION.md`. Le lot 3 reste bloquant pour PR et lot 4.
+
+---
+
 ## M-006 — Incident sanitizeFilter de validation (2026-10-28)
 
 **Corrigé en code, vérification locale ouverte :** l'opérateur de filtre `$ne` sur le champ String `ProcessSheet.editorialState` causait une `CastError` lors de la validation avec `sanitizeFilter: true`. Remplacé dans le filtre atomique par l'égalité avec `DRAFT`. Le test HTTP reproduit la configuration Mongoose réelle et exige une validation réussie sans affectation exhaustive des ingrédients. Les tests, lint, build et la gate de release restent à exécuter ; la correction ne suffit pas à qualifier le lot 3 de validé. Le cycle de validation/revalidation et les permissions effectives doivent être confirmés sur la base locale.
