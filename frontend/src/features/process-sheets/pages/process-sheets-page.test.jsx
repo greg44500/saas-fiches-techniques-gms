@@ -113,7 +113,12 @@ describe('M-006 — liste des Fiches process uniquement', () => {
     expect(screen.getByText('Fabrication tartine')).toBeInTheDocument();
     expect(screen.getByText('Tartine auvergnate')).toBeInTheDocument();
     expect(screen.getByText('Préparation bourguignon')).toBeInTheDocument();
-    expect(screen.getByText('Validée')).toBeInTheDocument();
+    expect(screen.getByText('Brouillon')).toHaveClass(
+      'rounded-full', 'text-warning',
+    );
+    expect(screen.getByText('Validée')).toHaveClass(
+      'rounded-full', 'text-success',
+    );
     expect(screen.queryByRole('columnheader', { name: 'Statut' })).not.toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'État' })).toBeInTheDocument();
     expect(screen.queryByText('Composition de référence M-004')).not.toBeInTheDocument();
@@ -125,6 +130,21 @@ describe('M-006 — liste des Fiches process uniquement', () => {
       limit: 10,
       search: undefined,
     });
+  });
+
+  it('affiche un badge neutre si l’état métier est inconnu, sans déduire Brouillon', () => {
+    mocks.list.mockReturnValue({
+      data: {
+        processes: [{ ...processes[0], editorialState: 'UNEXPECTED' }],
+        pagination: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      },
+      isLoading: false, isFetching: false, isError: false, refetch: vi.fn(),
+    });
+    renderPage();
+    expect(screen.getByText('État indisponible')).toHaveClass(
+      'rounded-full', 'text-muted-foreground',
+    );
+    expect(screen.queryByText('Brouillon')).not.toBeInTheDocument();
   });
 
   it('ouvre le process sélectionné et non sa Fiche technique', async () => {
