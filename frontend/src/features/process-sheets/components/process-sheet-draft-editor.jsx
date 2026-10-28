@@ -82,6 +82,16 @@ function ProcessSheetDraftEditor({
   const [validateSheet, validating] = useValidateProcessSheetMutation();
   const [validationError, setValidationError] = useState('');
   const [validationErrorCode, setValidationErrorCode] = useState('');
+  const [confirmValidation, setConfirmValidation] = useState(false);
+  const usedIngredients = new Set(form.phases.flatMap((phase) => [
+    ...(phase.ingredientLineKeys ?? []),
+    ...phase.steps.flatMap((step) => step.ingredientLineKeys ?? []),
+  ]));
+  const unassignedCount = (sourceIngredients?.lines ?? []).filter(
+    (line) => !usedIngredients.has(line.lineKey),
+  ).length;
+  const documented = form.phases.some((phase) =>
+    phase.steps.some((step) => step.title?.trim() && step.instructions?.trim()));
   const editable = canEdit && !saving.isLoading;
 
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
@@ -374,7 +384,7 @@ function ProcessSheetDraftEditor({
             <Button disabled={dirty || saving.isLoading || validating.isLoading || conflict
               || serverRevisions.draft !== revision || processRevision > serverRevisions.process
               || editorialState === 'VALIDATED' || compositionOutdated}
-              onClick={validate} size="sm" type="button" variant="outline">
+              onClick={() => setConfirmValidation(true)} size="sm" type="button" variant="outline">
               {validating.isLoading ? 'Validation…' : 'Valider la Fiche process'}
             </Button>
           )}
@@ -392,6 +402,43 @@ function ProcessSheetDraftEditor({
           Consultation uniquement : droits d’édition ou Dossier actif requis.
         </p>
       )}
+      <DialogRoot open={confirmValidation}
+        onOpenChange={(open) => setConfirmValidation(open)}>
+        <DialogPortal>
+          <DialogOverlay className="backdrop-blur-none" />
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmer la validation</DialogTitle>
+              <DialogDescription>
+                La validation rend officielle la procédure de fabrication courante.
+                Une modification enregistrée ultérieurement nécessitera une nouvelle validation.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4 space-y-2 text-sm">
+              <p>{form.phases.length} phase(s) · {form.phases.reduce(
+                (sum, phase) => sum + phase.steps.length, 0,
+              )} étape(s)</p>
+              {!documented && (
+                <p role="status">Au moins une étape avec des instructions est nécessaire.</p>
+              )}
+              {unassignedCount > 0 && (
+                <p className="text-muted-foreground" role="status">
+                  {unassignedCount} ingrédient(s) non affecté(s). Cela n’empêche pas la validation.
+                </p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setConfirmValidation(false)}>
+                Annuler
+              </Button>
+              <Button type="button" disabled={!documented || validating.isLoading}
+                onClick={() => { setConfirmValidation(false); validate(); }}>
+                Confirmer la validation
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </DialogPortal>
+      </DialogRoot>
       <DialogRoot
         open={Boolean(validationError || (saveError && !conflict))}
         onOpenChange={(open) => {
