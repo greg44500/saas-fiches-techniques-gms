@@ -8,7 +8,7 @@ import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/pr
 const mocks = vi.hoisted(() => ({
   detail: vi.fn(),
   review: vi.fn(), reconcile: vi.fn(),
-  can: vi.fn(),
+  can: vi.fn(), editorProps: vi.fn(),
 }));
 
 vi.mock('react-router', async (original) => ({
@@ -23,13 +23,16 @@ vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
 }));
 
 vi.mock('@/features/process-sheets/components/process-sheet-draft-editor', () => ({
-  ProcessSheetDraftEditor: ({ initialDraft, sourceIngredients, canEdit }) => (
-    <div>
-      Éditeur M-006 : {initialDraft?.revision}
-      {' | '}Ingrédients : {sourceIngredients?.lines?.length ?? 0}
-      {' | '}Édition : {canEdit ? 'oui' : 'non'}
-    </div>
-  ),
+  ProcessSheetDraftEditor: (props) => {
+    mocks.editorProps(props);
+    return (
+      <div>
+        Éditeur M-006 : {props.initialDraft?.revision}
+        {' | '}Ingrédients : {props.sourceIngredients?.lines?.length ?? 0}
+        {' | '}Édition : {props.canEdit ? 'oui' : 'non'}
+      </div>
+    );
+  },
 }));
 
 vi.mock('@/features/workspace/components/workspace-context', () => ({
@@ -79,10 +82,12 @@ beforeEach(() => {
 describe('M-006 — ouverture du brouillon process', () => {
   it('garde l’actualisation visible lorsqu’elle est inutile', () => {
     view();
-    expect(screen.getByRole('button', { name: 'Actualiser la composition' })).toBeDisabled();
-    expect(screen.getByRole('button', {
-      name: 'Disponibilité de l’actualisation de la composition',
-    })).toBeInTheDocument();
+    expect(mocks.editorProps).toHaveBeenLastCalledWith(expect.objectContaining({
+      canOpenCompositionReview: false,
+    }));
+    expect(mocks.editorProps).toHaveBeenLastCalledWith(expect.objectContaining({
+      compositionHelp: expect.stringContaining('déjà la composition officielle courante'),
+    }));
   });
 
   it('permet d’ouvrir la résolution lorsque M-004 est en modification', () => {
@@ -90,7 +95,9 @@ describe('M-006 — ouverture du brouillon process', () => {
       ...initialData(), parentDraftOpen: true,
     }));
     view();
-    expect(screen.getByRole('button', { name: 'Actualiser la composition' })).toBeEnabled();
+    expect(mocks.editorProps).toHaveBeenLastCalledWith(expect.objectContaining({
+      canOpenCompositionReview: true,
+    }));
   });
 
   it('ouvre un vrai brouillon ACTIVE et autorise l’édition avec permission et Dossier actif', () => {
@@ -156,7 +163,9 @@ describe('M-006 — ouverture du brouillon process', () => {
       compositionOutdated: true,
     }));
     view();
-    expect(screen.getByRole('button', { name: 'Actualiser la composition' })).toBeDisabled();
+    expect(mocks.editorProps).toHaveBeenLastCalledWith(expect.objectContaining({
+      canOpenCompositionReview: false,
+    }));
     expectReadOnly();
     expect(screen.getByText(/Ingrédients : 1/)).toBeInTheDocument();
   });
@@ -166,7 +175,9 @@ describe('M-006 — ouverture du brouillon process', () => {
       ...initialData(), compositionOutdated: true,
     }));
     view();
-    expect(screen.getByRole('button', { name: 'Actualiser la composition' })).toBeEnabled();
+    expect(mocks.editorProps).toHaveBeenLastCalledWith(expect.objectContaining({
+      canOpenCompositionReview: true,
+    }));
     expect(screen.getByText(/Édition : oui/)).toBeInTheDocument();
   });
 
