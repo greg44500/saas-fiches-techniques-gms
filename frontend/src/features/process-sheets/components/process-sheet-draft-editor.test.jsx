@@ -670,9 +670,9 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     const user = userEvent.setup();
     view({ canValidate: true, processRevision: 0 });
     await user.click(screen.getByRole('button', { name: 'Valider la Fiche process' }));
-    expect(screen.getByRole('dialog', { name: 'Confirmer la validation' }))
+    expect(screen.getByRole('dialog', { name: 'Valider quand même' }))
       .toHaveTextContent('Au moins une étape avec des instructions est nécessaire');
-    expect(screen.getByRole('button', { name: 'Confirmer la validation' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Valider quand même' })).toBeDisabled();
     expect(mocks.validate).not.toHaveBeenCalled();
   });
 
@@ -686,10 +686,10 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     }) });
     mocks.reload.mockResolvedValue({ data: { draft: readyDraft } });
     await user.click(button);
-    expect(screen.getByRole('dialog', { name: 'Confirmer la validation' }))
-      .toHaveTextContent('2 ingrédient(s) non affecté(s)');
+    expect(screen.getByRole('dialog', { name: 'Valider quand même' }))
+      .toHaveTextContent('2 ingrédient(s) ne sont associés');
     expect(mocks.validate).not.toHaveBeenCalled();
-    await user.click(screen.getByRole('button', { name: 'Confirmer la validation' }));
+    await user.click(screen.getByRole('button', { name: 'Valider quand même' }));
     expect(mocks.validate).toHaveBeenCalledWith({
       workspaceId: 'workspace-1', dossierId: 'dossier-1',
       processSheetId: 'process-1', expectedRevision: 0,
@@ -709,7 +709,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     }) });
     mocks.reload.mockResolvedValue({ data: { draft: initialDraft } });
     await user.click(button);
-    await user.click(screen.getByRole('button', { name: 'Confirmer la validation' }));
+    await user.click(screen.getByRole('button', { name: 'Valider quand même' }));
     expect(mocks.validate).toHaveBeenCalledWith(expect.objectContaining({
       expectedRevision: 2,
     }));
@@ -735,7 +735,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     }) });
     mocks.reload.mockResolvedValue({ data: { draft: { ...props.initialDraft, revision: 2 } } });
     await user.click(button);
-    await user.click(screen.getByRole('button', { name: 'Confirmer la validation' }));
+    await user.click(screen.getByRole('button', { name: 'Valider quand même' }));
     expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ expectedRevision: 1 }));
     expect(mocks.validate).toHaveBeenCalledWith(expect.objectContaining({ expectedRevision: 3 }));
   });
