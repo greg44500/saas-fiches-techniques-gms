@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 
+import { ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router';
+
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
@@ -59,6 +62,7 @@ function ProcessSheetDraftEditor({
   dossierId, processSheetId, workspaceId,
   onReload, onDirtyChange, onRequestReconciliation,
   canOpenCompositionReview = false, compositionHelp = '',
+  backPath = null, processTitle = null,
 }) {
   const [form, setForm] = useState(() => normalize(initialDraft));
   const [revision, setRevision] = useState(initialDraft?.revision ?? 0);
@@ -359,29 +363,29 @@ function ProcessSheetDraftEditor({
     || processRevision > serverRevisions.process
     || editorialState === 'VALIDATED' || compositionOutdated;
   const validationHelp = !canValidate
-    ? 'Votre rôle ou l’état du dossier ne permet pas de valider cette Fiche process.'
+    ? 'Validation non autorisée'
     : compositionOutdated
-      ? 'La Fiche technique a changé ou une modification est ouverte. Utilisez « Actualiser la composition » pour connaître les étapes nécessaires.'
+      ? 'Ingrédients à actualiser'
       : editorialState === 'VALIDATED'
-        ? 'Cette Fiche process est déjà validée. Une modification enregistrée nécessitera une nouvelle validation.'
+        ? 'Déjà validée'
         : dirty
-          ? 'Enregistrez vos modifications avant de valider.'
+          ? 'Enregistrer d’abord'
           : conflict || serverRevisions.draft !== revision
             || processRevision > serverRevisions.process
-            ? 'La Fiche process a changé. Rechargez les données courantes avant de valider.'
+            ? 'Actualiser les données'
             : saving.isLoading || validating.isLoading
-              ? 'Une opération est en cours.'
-              : 'Vérifiez le récapitulatif avant de confirmer la validation.';
+              ? 'Opération en cours'
+              : 'Valider';
   const saveDisabled = !canEdit || !dirty || saving.isLoading || conflict;
   const saveHelp = !canEdit
-    ? 'Votre rôle ou l’état du dossier ne permet pas de modifier cette Fiche process.'
+    ? 'Édition non autorisée'
     : conflict
-      ? 'Une autre modification a été détectée. Rechargez le brouillon après avoir vérifié vos saisies.'
+      ? 'Actualiser les données'
       : !dirty
-        ? 'Aucune modification locale à enregistrer.'
+        ? 'Aucune modification'
         : saving.isLoading
-          ? 'Enregistrement en cours.'
-          : 'Enregistre les modifications de la procédure sans modifier la Fiche technique.';
+          ? 'Enregistrement en cours'
+          : 'Enregistrer';
 
   const dangerTitle = danger?.kind === 'phase' ? 'Supprimer cette phase ?'
     : danger?.kind === 'step' ? 'Supprimer cette étape ?'
@@ -394,7 +398,20 @@ function ProcessSheetDraftEditor({
 
   return (
     <div className="space-y-3" aria-label="Atelier de fabrication">
-      <ProcessSheetControlPanel
+      <header className="sticky top-0 z-10 flex min-w-0 flex-wrap items-center gap-3 bg-background py-1">
+        {backPath && (
+          <Button asChild size="sm" variant="outline" className="shrink-0">
+            <Link to={backPath}>
+              <ArrowLeft aria-hidden="true" className="size-4" />
+              Fiches process
+            </Link>
+          </Button>
+        )}
+        {processTitle && (
+          <h1 className="min-w-0 flex-1 truncate text-xl font-semibold"
+            title={processTitle}>{processTitle}</h1>
+        )}
+        <ProcessSheetControlPanel
         editorialState={editorialState}
         saveStatus={conflict ? 'Enregistrement à vérifier'
           : saveError ? 'Non enregistré'
@@ -411,8 +428,12 @@ function ProcessSheetDraftEditor({
         onPreview={() => setShowPreview((value) => !value)}
         onReconcile={onRequestReconciliation}
         onSave={save}
-        onValidate={() => setConfirmValidation(true)}
+        onValidate={() => {
+          if (unassignedCount > 0) setConfirmValidation(true);
+          else validate();
+        }}
       />
+      </header>
       <div className="flex items-center gap-2">
         <h2 className="text-base font-semibold">Déroulement de fabrication</h2>
         <InfoTooltip label="À propos du brouillon process"
@@ -429,32 +450,20 @@ function ProcessSheetDraftEditor({
           <DialogContent>
             <DialogHeader>
               <div className="flex items-center gap-2">
-                <DialogTitle>Confirmer la validation</DialogTitle>
-                <InfoTooltip
-                  label="À propos de la validation officielle"
-                  content="La validation rend officielle la procédure courante. Une modification réellement enregistrée nécessitera une nouvelle validation."
-                />
+                <DialogTitle>Valider avec des ingrédients non affectés ?</DialogTitle>
+
               </div>
               <DialogDescription className="sr-only">
                 Vérifiez les phases et étapes de la Fiche process avant confirmation.
               </DialogDescription>
             </DialogHeader>
             <div className="mt-4 space-y-2 text-sm">
-              <p>{form.phases.length} phase(s) · {form.phases.reduce(
-                (sum, phase) => sum + (phase.steps?.length ?? 0), 0,
-              )} étape(s)</p>
-              {!documented && (
-                <p role="status">Au moins une étape avec des instructions est nécessaire.</p>
-              )}
-              {unassignedCount > 0 && (
-                <div className="flex items-center gap-1 text-muted-foreground" role="status">
-                  <span>{unassignedCount} ingrédient(s) non affecté(s)</span>
-                  <InfoTooltip
-                    label="À propos des ingrédients non affectés"
-                    content="Il n’est pas obligatoire d’associer tous les ingrédients à une phase ou étape pour valider la Fiche process."
-                  />
-                </div>
-              )}
+              <p role="status">
+                {unassignedCount} ingrédient(s) ne sont associés à aucune phase ou étape.
+              </p>
+              <p className="text-muted-foreground">
+                Vous pouvez néanmoins valider la Fiche process.
+              </p>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setConfirmValidation(false)}>
@@ -462,7 +471,7 @@ function ProcessSheetDraftEditor({
               </Button>
               <Button type="button" disabled={!documented || validating.isLoading}
                 onClick={() => { setConfirmValidation(false); validate(); }}>
-                Confirmer la validation
+                Valider quand même
               </Button>
             </DialogFooter>
           </DialogContent>
