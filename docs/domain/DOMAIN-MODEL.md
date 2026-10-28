@@ -1,3 +1,9 @@
+## M-006 — Critère de synchronisation pertinent (2026-10-28)
+
+La provenance `sourceValidation` M-004 reste immuable ; une nouvelle validation M-004 ne déclenche une réconciliation de la Fiche process que si l'ensemble des occurrences d'ingrédients change sur le **nom ou l'identité de Référence Produit**. Les prix, quantités, unités, source fournisseur et ordre ne provoquent pas de désynchronisation du process. Une Fiche process peut donc rester liée à sa validation M-004 source et être (re)validée même lorsque sa Fiche technique a été revalidée avec les mêmes ingrédients. La sauvegarde et les validations conservent les contrôles de tenancy, RBAC, concurrence et audit. Un brouillon M-004 non officiel ne bloque pas la Fiche process existante.
+
+---
+
 ## M-006 — Référence courante de composition (2026-10-28)
 
 Une Fiche process possède une origine M-004 immuable (`sourceValidation`) et peut adopter explicitement une référence courante distincte (`compositionValidation`). Le contenu de fabrication reste mutable et unique pour le couple Fiche technique/Fiche process. La réconciliation ne modifie jamais les versions officielles de Fiches techniques, ne crée pas d'historique M-006 et exige une transaction/droits/vérification des occurrences d'ingrédients ; cf. `docs/m006/M-006-RECONCILIATION.md`.
