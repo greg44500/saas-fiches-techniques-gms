@@ -27,6 +27,18 @@ const validateProcessSheetSchema = z.strictObject({
     expectedRevision: z.number().int().min(0),
 });
 
+// A null target explicitly removes an obsolete association. Unknown keys and
+// repeated mappings are validated against the two official M-004 snapshots.
+const reconcileProcessSheetSchema = z.strictObject({
+    expectedRevision: z.number().int().min(0),
+    expectedDraftRevision: z.number().int().min(0),
+    currentValidationId: objectIdSchema,
+    decisions: z.array(z.strictObject({
+        from: z.string().min(1).max(110),
+        to: z.string().min(1).max(110).nullable(),
+    })).max(200),
+});
+
 const processCreateSchema = z.strictObject({
     title: z.string().trim().min(1).max(160),
     technicalSheetId: objectIdSchema,
@@ -41,4 +53,5 @@ export {
     eligibleTechnicalSheetQuerySchema,
     processCreateSchema,
     validateProcessSheetSchema,
+    reconcileProcessSheetSchema,
 };
