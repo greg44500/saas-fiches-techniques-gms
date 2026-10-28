@@ -71,6 +71,12 @@ const lineOptimizationSnapshotSchema = new Schema(
 
 const lineSnapshotSchema = new Schema(
     {
+        // New validations retain their originating draft line identity.
+        // Legacy snapshots remain unchanged and may omit this field.
+        sourceLineId: {
+            type: Schema.Types.ObjectId,
+            default: null,
+        },
         kind: {
             type: String,
             enum: Object.values(TECHNICAL_SHEET_LINE_KIND),

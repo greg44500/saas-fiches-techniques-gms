@@ -37,6 +37,8 @@ import {
   SECTION_TAB_NAV_CLASS_NAME,
   SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
 } from '@/components/ui/section-tab-styles';
+import { useListProcessSheetsQuery } from '@/features/process-sheets/api/process-sheets-api';
+import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/process-sheet-permissions';
 import {
   useGetDossierByIdQuery,
   useGetDossierMetadataQuery,
@@ -110,16 +112,21 @@ function DossierWorkspacePage() {
     + '/technical-sheets/[^/]+(?:/optimization)?/?$',
   ).test(location.pathname);
 
+  const isProcessSheetDetail = new RegExp(
+    '/dossiers/' + dossierId + '/process-sheets/[^/]+/?$',
+  ).test(location.pathname);
+  const isFocusedDetail = isTechnicalSheetDetail || isProcessSheetDetail;
+
   const dossierQuery = useGetDossierByIdQuery(
     {
       workspaceId: workspace.id,
       dossierId,
     },
-    { skip: isTechnicalSheetDetail },
+    { skip: isFocusedDetail },
   );
   const metadataQuery = useGetDossierMetadataQuery(
     workspace.id,
-    { skip: isTechnicalSheetDetail },
+    { skip: isFocusedDetail },
   );
   const activeSheetsQuery = useListTechnicalSheetsQuery(
     {
@@ -131,7 +138,22 @@ function DossierWorkspacePage() {
     },
     {
       skip: (
-        isTechnicalSheetDetail
+        isFocusedDetail
+        || !can(TECHNICAL_SHEET_PERMISSION.READ)
+      ),
+    },
+  );
+  const processCountQuery = useListProcessSheetsQuery(
+    {
+      workspaceId: workspace.id,
+      dossierId,
+      page: 1,
+      limit: 1,
+    },
+    {
+      skip: (
+        isFocusedDetail
+        || !can(PROCESS_SHEET_PERMISSION.READ)
         || !can(TECHNICAL_SHEET_PERMISSION.READ)
       ),
     },
@@ -143,13 +165,13 @@ function DossierWorkspacePage() {
     },
     {
       skip: (
-        isTechnicalSheetDetail
+        isFocusedDetail
         || !can(TECHNICAL_SHEET_PERMISSION.READ)
       ),
     },
   );
 
-  if (isTechnicalSheetDetail) {
+  if (isFocusedDetail) {
     return <Outlet />;
   }
 
@@ -189,8 +211,11 @@ function DossierWorkspacePage() {
   const operational = dossier.status === 'ACTIVE';
   const canReadSuppliers = canAny(DOSSIER_SUPPLIER_PAGE_PERMISSIONS);
   const canReadTechnicalSheets = can(TECHNICAL_SHEET_PERMISSION.READ);
+  const canReadProcessSheets = can(PROCESS_SHEET_PERMISSION.READ)
+    && canReadTechnicalSheets;
   const canManageMargin = can(TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE);
   const activeSheetCount = activeSheetsQuery.data?.pagination?.total;
+  const processCount = processCountQuery.data?.pagination?.total;
   const marginBasisPoints = marginQuery.data?.defaultTargetMarginBasisPoints;
   const marginLabel = Number.isInteger(marginBasisPoints)
     ? 'Marge cible ' + formatBasisPoints(marginBasisPoints)
@@ -296,7 +321,7 @@ function DossierWorkspacePage() {
         </Card>
       )}
 
-      {(canReadSuppliers || canReadTechnicalSheets) && (
+      {(canReadSuppliers || canReadTechnicalSheets || canReadProcessSheets) && (
         <nav
           aria-label="Navigation du Dossier"
           className={SECTION_TAB_NAV_CLASS_NAME}
@@ -328,6 +353,22 @@ function DossierWorkspacePage() {
                 Fiches techniques
                 {Number.isInteger(activeSheetCount)
                   ? ' (' + activeSheetCount + ')'
+                  : ''}
+              </NavLink>
+            )}
+            {canReadProcessSheets && (
+              <NavLink
+                className={({ isActive }) => cn(
+                  SECTION_TAB_TRIGGER_BASE_CLASS_NAME,
+                  isActive
+                    ? SECTION_TAB_ACTIVE_CLASS_NAME
+                    : SECTION_TAB_INACTIVE_CLASS_NAME,
+                )}
+                to={`/workspaces/${workspace.id}/dossiers/${dossier.id}/process-sheets`}
+              >
+                Fiches process
+                {Number.isInteger(processCount)
+                  ? ' (' + processCount + ')'
                   : ''}
               </NavLink>
             )}

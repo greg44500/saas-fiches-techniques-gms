@@ -1,3 +1,15 @@
+## M-006 — Critère de synchronisation pertinent (2026-10-28)
+
+La provenance `sourceValidation` M-004 reste immuable ; une nouvelle validation M-004 ne déclenche une réconciliation de la Fiche process que si l'ensemble des occurrences d'ingrédients change sur le **nom ou l'identité de Référence Produit**. Les prix, quantités, unités, source fournisseur et ordre ne provoquent pas de désynchronisation du process. Une Fiche process peut donc rester liée à sa validation M-004 source et être (re)validée même lorsque sa Fiche technique a été revalidée avec les mêmes ingrédients. La sauvegarde et les validations conservent les contrôles de tenancy, RBAC, concurrence et audit. Un brouillon M-004 non officiel ne bloque pas la Fiche process existante.
+
+---
+
+## M-006 — Référence courante de composition (2026-10-28)
+
+Une Fiche process possède une origine M-004 immuable (`sourceValidation`) et peut adopter explicitement une référence courante distincte (`compositionValidation`). Le contenu de fabrication reste mutable et unique pour le couple Fiche technique/Fiche process. La réconciliation ne modifie jamais les versions officielles de Fiches techniques, ne crée pas d'historique M-006 et exige une transaction/droits/vérification des occurrences d'ingrédients ; cf. `docs/m006/M-006-RECONCILIATION.md`.
+
+---
+
 # SAAS-FICHES-TECHNIQUES-GMS — Modèle de domaine
 ## Extension M-004 validée — Gammes de Fiches techniques
 
@@ -1368,24 +1380,29 @@ Les deux peuvent partager les mécanismes d'approvisionnement sans partager les 
 
 ---
 
-## 15. Fiche process
+## 15. Fiche process — M-006, décisions fonctionnelles approuvées (2026-10-26)
 
-Une Fiche process est reliée au travail d'un dossier et décrit la fabrication.
+Une Fiche process ne peut être créée que depuis une Fiche technique ACTIVE, officiellement validée, sans brouillon de révision M-004 ouvert. L'association est initialisée en transaction ; toute copie M-004 en brouillon reporte la reprise du process à sa validation. La liste principale du Dossier affiche les process, non les Fiches techniques.
 
-Concepts déjà identifiés :
+Une Fiche technique M-004 (**composition**) peut posséder **0 ou 1** Fiche process (**fabrication**). La Fiche process dépend d'exactement une Fiche technique du même Workspace et du même Dossier. Le lien est unique y compris si le process possède un brouillon ou se trouve archivé par cascade.
 
-- étapes ;
-- durées ;
-- denrées ;
-- points critiques ;
-- critères d'acceptabilité.
+Concepts métier M-006 (certains implémentés, validation et suppression autonome encore à réaliser) :
+- identité durable de Fiche process et lien 1:1 avec M-004 ;
+- **un seul contenu métier courant**, état éditorial Brouillon ou Validée ; un changement réel enregistré après validation retourne ce même process en Brouillon jusqu'à revalidation ; pas d'historique ni de snapshot officiel M-006 ; composition M-004 de référence conservée ;
+- phases ordonnées, étapes ordonnées, associations d'ingrédients issues des lignes de composition M-004 ; aucun moteur économique distinct ;
+- modèles d'étape/de phase et révisions de bibliothèque : scope Dossier ou Workspace, adoption non automatique ;
+- temps actif, attente/repos, cuisson/traitement, possibilité de simultanéité ;
+- consignes, éléments de fabrication, vigilance, qualité et maîtrise sanitaire ; critères et actions correctives facultatifs ;
+- validation minimale d'une phase et d'une étape documentée, sans justification obligatoire des ingrédients non affectés ;
+- suivi non bloquant du décalage de composition et proposition de révision après changement M-004 ;
+- cascade d'archivage, corbeille, restauration et purge liée à M-004 ; aucun archivage autonome ;
+- suppression autonome physique définitive après permission/confirmation **uniquement lorsque M-004 est ACTIVE** ;
+- copie inter-Dossier : process cible **non créé tant que M-004 cible est en brouillon** ; reprise guidée du contenu courant source seulement après validation M-004 cible, en process cible Brouillon ;
+- permissions applicatives, accès Dossier, audit d'événements sans versions anciennes, consultation responsive et impression du contenu courant identifié Brouillon/Validée.
 
-**À cadrer :**
+**Limites V1 :** pas d'illustrations ni photographie, champ image, stockage dédié ou galerie ; pas de journal de production ni certification HACCP automatique ; pas de partage inter-Workspace. Les illustrations feront l'objet d'un cadrage distinct.
 
-- relation avec la fiche technique ;
-- versionnement ;
-- réutilisation ;
-- données process présentes directement dans la fiche technique.
+**Statut actualisé le 2026-10-27 :** contrat fonctionnel rectifié : l'agrégat 1:1, les brouillons, l'éligibilité et les liens de cycle de vie M-004 existent dans le code ; la validation explicite sans historique de versions M-006 et la suppression autonome sécurisée restent à implémenter. Les champs techniques existants doivent être audités avant migration. Autorité : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`.
 
 ---
 
@@ -1660,3 +1677,8 @@ Les quantités et prix complémentaires sont des projections backend
 négociés et Prix facturés restent strictement Dossier ; les Articles
 privés restent Workspace, les références globales restent partagées.
 Core v1.2.1 non modifié par la PR #44.
+
+
+### M-006 — Brouillon d'édition et origine des ingrédients (lot 5)
+
+Le `ProcessSheetDraft` contient la liste ordonnée `phases[]` avec `steps[]`, les clés `ingredientLineKeys` et les justifications `unassignedReasons[]`, tous **scopés au ProcessSheet et à sa validation M-004 source**. Les affectations ne créent ni nouvelles lignes M-004, ni relations persistantes dans les modèles de bibliothèque. L'enregistrement incrémente sa `revision` et la `revision` parent dans une transaction auditée ; la présence d'une révision M-004 ultérieure n'altère ni les clés historiques ni les phases. La validation officielle M-006 demeure une transition ultérieure distincte.

@@ -12,6 +12,9 @@ import {
   suppliersFrontendRouteModule,
 } from '@/features/suppliers/suppliers-routes';
 import {
+  dossierProcessSheetFrontendRoutes,
+} from '@/features/process-sheets/process-sheets-routes';
+import {
   dossierTechnicalSheetFrontendRoutes,
   technicalSheetsFrontendRouteModule,
 } from '@/features/technical-sheets/technical-sheets-routes';
@@ -126,6 +129,7 @@ const dossierWorkspaceFrontendRouteModule = Object.freeze({
         }),
         ...dossierSupplierFrontendRoutes,
         ...dossierTechnicalSheetFrontendRoutes,
+        ...dossierProcessSheetFrontendRoutes,
       ]),
     }),
   ]),

@@ -64,6 +64,68 @@ describe('application backend route composition', () => {
         );
     });
 
+    it('monte réellement les bibliothèques de fabrication M-006 aux deux scopes', () => {
+        const expected = [
+            {
+                key: 'process-library-workspace',
+                mountPath: '/api/workspaces/:workspaceId/process-library',
+            },
+            {
+                key: 'process-library-dossier',
+                mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/process-library',
+            },
+        ];
+
+        const use = vi.fn();
+        mountApplicationRoutes({ use });
+        for (const definition of expected) {
+            const module = APPLICATION_BACKEND_ROUTE_MODULES.find(
+                ({ key }) => key === definition.key,
+            );
+            expect(module).toMatchObject({
+                ...definition,
+                router: expect.any(Function),
+            });
+            expect(use).toHaveBeenCalledWith(
+                definition.mountPath,
+                module.router,
+            );
+        }
+    });
+
+    it('enregistre réellement les routes de titres de phases Workspace', () => {
+        const expectedPath = '/api/workspaces/:workspaceId/process-phase-titles';
+        const phaseTitleModules = APPLICATION_BACKEND_ROUTE_MODULES.filter(
+            ({ key }) => key === 'process-phase-titles',
+        );
+        expect(phaseTitleModules).toHaveLength(1);
+        expect(phaseTitleModules[0]).toMatchObject({
+            key: 'process-phase-titles',
+            mountPath: expectedPath,
+            router: expect.any(Function),
+        });
+
+        const use = vi.fn();
+        mountApplicationRoutes({ use });
+        expect(use).toHaveBeenCalledWith(
+            expectedPath,
+            phaseTitleModules[0].router,
+        );
+    });
+
+    it('monte le module process avec liste, création et composition M-004', () => {
+        const module = APPLICATION_BACKEND_ROUTE_MODULES.find(
+            ({ key }) => key === 'process-sheets',
+        );
+        expect(module).toMatchObject({
+            mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets',
+            router: expect.any(Function),
+        });
+        const use = vi.fn();
+        mountApplicationRoutes({ use });
+        expect(use).toHaveBeenCalledWith(module.mountPath, module.router);
+    });
+
     it('monte un router métier sur son point de composition explicite', () => {
         const use = vi.fn();
         const app = { use };

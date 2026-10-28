@@ -95,6 +95,13 @@ const technicalSheetSchema = new Schema(
             default: 0,
             required: true,
         },
+        // Internal write fence: serializes M-006 creation and M-004 draft
+        // opening. It is not an externally visible technical-sheet revision.
+        processEligibilityRevision: {
+            type: Number,
+            min: 0,
+            default: 0,
+        },
         createdBy: {
             type: Schema.Types.ObjectId,
             ref: 'User',

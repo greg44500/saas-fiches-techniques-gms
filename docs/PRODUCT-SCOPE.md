@@ -1693,22 +1693,23 @@ Les alertes et graphiques détaillés peuvent être différés ; les données n�
 
 ---
 
-## 10. Fiche process
+## 10. Fiche process — cadrage fonctionnel M-006 approuvé en principe le 2026-10-26
 
-Le produit doit également gérer des fiches process de fabrication.
+La Fiche technique M-004 définit **ce qui compose le produit** et demeure la seule source autoritative des ingrédients, quantités et valeurs économiques. La **Fiche process M-006** décrit **comment le fabriquer**. Toute Fiche process dépend obligatoirement d'une Fiche technique du **même Workspace et Dossier** ; relation **0..1** côté Fiche technique, sans process autonome ni doublon.
 
-Le cahier des charges initial prévoit notamment :
+Une Fiche process est préparée en brouillon, constituée de phases et étapes ordonnées, avec ingrédients repris de M-004, équipements, consignes, temps de travail/attente/cuisson, vigilance de fabrication, qualité et maîtrise sanitaire. Les phases et étapes sont réutilisables dans les bibliothèques locale Dossier et commune Workspace ; leurs mises à jour ne modifient jamais automatiquement un process existant.
 
-- denrées ;
-- temps / durées ;
-- étapes de fabrication ;
-- points critiques ;
-- critères d'acceptabilité ;
-- génération future possible d'une infographie synthétique.
+La **création d'une Fiche process** n'est autorisée que depuis une Fiche technique M-004 **ACTIVE, officiellement validée, sans brouillon de révision ouvert et sans process déjà associé**. Une **validation M-006** nécessite une composition M-004 validée et cohérente ; un process déjà créé subsiste lors de révisions M-004 ultérieures. Les validations M-004 et M-006 restent indépendantes : **M-004 conserve ses versions officielles immuables**, mais **M-006 ne conserve qu'une Fiche process courante**, avec un état Brouillon ou Validée. Elle reste modifiable après validation ; l'enregistrement d'un changement métier réel la repasse en Brouillon et une nouvelle validation est requise. Aucun historique des anciennes versions de Fiches process. Les ingrédients volontairement non affectés ne requièrent pas de justification. La validation minimale M-006 comprend au moins une phase et une étape documentée ; durées et contrôles facultatifs. Un changement de composition M-004 propose une révision M-006 sans la forcer et peut créer un indicateur non bloquant de décalage.
 
-Les exemples de fiches techniques contiennent déjà des colonnes « mode opératoire » et « temps ».
+L'archivage, la corbeille, la restauration et la purge du process suivent le parent M-004. Il n'existe **aucun archivage autonome M-006**. La suppression autonome d'un process est en revanche **physique et définitive**, limitée à un parent M-004 `ACTIVE`, soumise à permission et confirmation, sans supprimer la Fiche technique ni les modèles communs. La copie M-004 entre Dossiers produit d'abord une Fiche technique cible en brouillon : aucun process cible n'est créé avant la validation de cette Fiche technique. La reprise éventuelle des phases/étapes du process source est proposée ensuite sans importer d'anciennes versions M-006 (non conservées).
 
-**Point ouvert :** définir la frontière exacte entre les informations process visibles dans une fiche technique et la fiche process détaillée reliée.
+L'édition est privilégiée sur ordinateur, la consultation sur tablette/téléphone ; l'impression doit permettre la Fiche process courante Validée ou Brouillon (identifié explicitement), sans enregistrer durablement les sorties. Le module est prévu dans **tous les plans en V1**, sans nouveau quota de process et dans le respect des permissions métier et limites de stockage existantes pertinentes.
+
+**Hors M-006 V1 :** illustrations et photographies des étapes (cadrage reporté), galerie/stockage photo, infographie, assistant IA, journal de contrôles exécutés en production, qualification automatique de conformité HACCP, partage inter-Workspace et exports documentaires avancés.
+
+La page principale Dossier → « Fiches process » ne liste que les **Fiches process existantes** ; la sélection d'une M-004 éligible se fait exclusivement dans une **modale de création**, avec titre et infobulles (i).
+
+**Statut :** contrat fonctionnel final M-006 **validé** et implémentation **autorisée** le 2026-10-26. Premier lot backend « bibliothèques de fabrication » engagé ; la majeure partie du module reste à livrer et tester. Référence : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`. Les détails de représentation des ingrédients, de durée, d'API et de transactions parent/enfant restent à concevoir pour les lots suivants.
 
 ---
 

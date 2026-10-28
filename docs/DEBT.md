@@ -1,4 +1,113 @@
+## M-006 — Export PDF / impression, fonctionnalité à cadrer (2026-10-28)
+
+**Besoin utilisateur :** exporter une Fiche process dans un vrai document PDF imprimable depuis le panneau d'actions. L'icône est réservée (présente, désactivée, tooltip « Export PDF à venir »), sans simulation de téléchargement ou d'impression. Le moteur PDF M-004 ne fournit pas aujourd'hui de contrat d'export M-006 ; avant de l'activer, cadrer le périmètre du document (brouillon versus validée, données M-004 affichées ou non, confidentialité, règles de RBAC et quotas/capabilities, contenu de phases/étapes et contrôles sanitaires, pagination/format, historique et tenue de l'export) puis implémenter et tester dans un lot métier séparé. Ne pas ouvrir prématurément le lot 4 de suppression.
+
+**Gate UX restante :** tests RTL de statuts, cinq icônes et confirmation sans phrase redondante ajoutés/modifiés, mais non exécutés ; vérifier rendu desktop/mobile, thème clair/sombre, lecteur d'écran, focus et touches clavier avant PR.
+
+---
+
+## M-006 — Preuve post-correction des deux fixtures HTTP (2026-10-28)
+
+**À vérifier localement :** les deux échecs `CURRENT` / `REVIEW_REQUIRED` inversés dans `processSheet.http.test.js` provenaient de mutations de fixture contradictoires (nom vs quantité). Scénarios corrigés et assertions ajoutées pour snapshots, absence de mutations sous 400/409, remappage explicite, révisions et audit. Exécution utilisateur antérieure : 68/70 réussis ; nouvelle exécution **inconnue**. Relancer d'abord le fichier isolé, puis les huit fichiers M-006, lint et gates applicables avant d'envisager la fin du lot 3. Aucune extension Core ou lot 4.
+
+---
+
+## M-006 — Preuves de la règle « nom ou référence uniquement » (2026-10-28)
+
+Nouveau contrat métier : les prix, quantités, fournisseurs, unités, ordre et données de production M-004 n'empêchent pas la validation M-006. Les changements de nom/référence d'ingrédient et les occurrences ambiguës imposent encore une revue explicite. Tests ajoutés/actualisés mais pas exécutés sur la machine de l'utilisateur. Vérifier les suites backend process/Supertest, RTL process-sheets, lint, build, E2E, `release:check`, ainsi que la non-perte d'affectations historiques, les révisions concurrentes, les permissions et le responsive de la barre sur une ligne. Lot 3 non validé.
+
+---
+
+## M-006 — Vérification post-correctif du test de tooltip Base UI (2026-10-28)
+
+Le log utilisateur pré-correctif donne 111/112 tests frontend réussis, 1 échec sur l'hypothèse erronée de `role=tooltip` dans `process-sheet-control-panel.test.jsx`. Assertion remplacée par focus clavier + texte popup + état ouvert, avec tests additionnels d'absence d'action sous clic/Entrée/Espace pour les trois commandes indisponibles. Audit des 12 fichiers de tests M-006 : aucune autre assertion au rôle tooltip trouvée. **Dette de preuve :** relancer toute la suite frontend M-006, lint et build sur la machine Node 24 du projet. Ne pas annoncer 112/112 sans la sortie du test relancé.
+
+---
+
+## M-006 — Gate UI panneau de contrôle (2026-10-28)
+
+**En attente de preuves d'exécution et de QA :** après regroupement des quatre actions dans `ProcessSheetControlPanel` et adoption de `aria-disabled` pour préserver l'accès aux tooltips, exécuter tests RTL M-006, lint frontend et build ; tester explicitement le non-déclenchement des callbacks sous clavier/souris sur les commandes indisponibles, le focus visible, l'usage tactile, les thèmes et le responsive. Le contrôle statique n'est pas un test vert. Lot 3 toujours non validé ; ne pas ouvrir le lot 4.
+
+---
+
+## M-006 — QA des commandes persistantes et info-bulles (2026-10-28)
+
+**À vérifier localement :** `Actualiser la composition`, `Valider`, `Enregistrer` et `Confirmer l’actualisation` restent visibles dans les états habilité/non habilité, composition actuelle/décalée, parent en révision, brouillon local modifié, plan en chargement ou en erreur, cas d'associations incertaines. Vérifier que les contrôles `disabled` correspondent aux gardes backend, que les info-bulles restent utilisables clavier/tactile et que les modales ne perdent pas leurs noms/descriptions accessibles. Tests codés mais non exécutés. Périmètre UI M-006 uniquement, lot 3 non validé.
+
+---
+
+## M-006 — Vérification de réconciliation et UX de validation (2026-10-28)
+
+**Code prêt pour revue, gates inconnues :** nouveau rapprochement entre validations officielles M-004, état courant M-006, correspondances de lignes et dialogues de résolution. Tests écrits mais non exécutés ; la récursion de permissions, la concurrence/rollback, les anciennes validations, l’absence de perte d'associations, la compatibilité Core et la QA accessible restent à démontrer. Document de référence : `docs/m006/M-006-RECONCILIATION.md`. Le lot 3 reste bloquant pour PR et lot 4.
+
+---
+
+## M-006 — Incident sanitizeFilter de validation (2026-10-28)
+
+**Corrigé en code, vérification locale ouverte :** l'opérateur de filtre `$ne` sur le champ String `ProcessSheet.editorialState` causait une `CastError` lors de la validation avec `sanitizeFilter: true`. Remplacé dans le filtre atomique par l'égalité avec `DRAFT`. Le test HTTP reproduit la configuration Mongoose réelle et exige une validation réussie sans affectation exhaustive des ingrédients. Les tests, lint, build et la gate de release restent à exécuter ; la correction ne suffit pas à qualifier le lot 3 de validé. Le cycle de validation/revalidation et les permissions effectives doivent être confirmés sur la base locale.
+
+**Amélioration UX distincte, non approuvée pour implémentation :** examiner plus tard un récapitulatif avant validation (obligations bloquantes versus alertes facultatives) et un compteur « non affectés », sans transformer l'absence d'association de certains ingrédients en erreur. Ne pas mélanger avec le correctif technique.
+
+---
+
+## M-006 — Lot 3 à valider localement (2026-10-28)
+
+**Dette de vérification ouverte :** après correctifs de séparation des révisions process/brouillon et blocage d'une validation si révision M-004 ouverte, obtenir les preuves réelles Vitest backend + frontend, ESLint, build, RBAC/tenancy, gestion 409, E2E et `release:check`. Confirmer la base MongoDB ciblée et l'application de la migration existante `m006-process-validate-permission` avant toute nouvelle mutation de rôles. Aucune preuve de cette exécution n'a encore été fournie ; ne pas annoncer le lot 3 validé. Le lot 4 demeure bloqué.
+
+---
+
 # SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
+## GMS-M006-VALIDATION-CURRENT — Cycle courant sans historique (2026-10-27)
+
+**Décision métier :** une Fiche process courante par Fiche technique, état Brouillon ou Validée ; validation explicite ; une modification métier réellement enregistrée sur une fiche validée repasse celle-ci en Brouillon ; revalidation ensuite. Aucune archive de versions M-006. Les versions officielles M-004 et les révisions de bibliothèque ne changent pas.
+
+**Dette de conception bloquante avant lot 3 :** auditer les modèles persistés `ProcessSheet.currentValidatedState` (ObjectId historiquement prévu pour un état validé immuable), `ProcessSheet.sourceValidation` immutable et `ProcessSheetDraft`. Définir une stratégie d'évolution compatible avec les données existantes, sans inventer de valeur d'état ou de collection d'historique ; décider de la comparaison serveur de contenu normalisé avant d'invalider, du `expectedRevision` partagé validation/PUT et du traitement de la cohérence de composition M-004. Permission métier `process-sheet:validate` à cadrer dans le registre applicatif et migrations RBAC à ajouter si nécessaire. Tests unitaires/Zod, transaction MongoDB, Supertest, RTL, E2E et audit minimal requis.
+
+**Séparation stricte :** la suppression autonome définitive est un lot distinct. Aucune mutation de DB, migration, permission ou route n'a été ajoutée par le lot 2 documentaire ; aucune gate locale verte n'est revendiquée.
+
+---
+
+## M-006 — choix d'une primitive adaptée aux menus d'actions (2026-10-27)
+
+Le \`Select\` Base UI a été utilisé pour une action « Autre phase… » qui ouvre un Dialog ; le test jsdom de l'éditeur ne parvenait pas à ouvrir sa liste (\`aria-expanded=false\`). Plutôt que de continuer à modifier une sélection de valeur comme s'il s'agissait d'un menu d'actions, le composant réutilisable Popover/PopoverTrigger/PopoverContent du dépôt est maintenant utilisé avec des boutons, sans champ de recherche. Il reste à confirmer au travers des tests RTL réels (particulièrement les tests dépendant du helper \`addFreePhase\`) et des recettes clavier/mobile.
+
+---
+
+## Qualité M-006 — propagation de tests en cascade et hooks API non exportés (2026-10-27)
+
+Douze échecs RTL observés dans \`process-sheet-draft-editor.test.jsx\` après changement de sélection de phase. Les scénarios partagent le helper de création qui échoue sur le menu Select non ouvert ; les erreurs sont groupées par cause. La conversion d'un Popover testé en Select shadcn/Base UI n'a pas réutilisé entièrement le contrat du composant du dépôt (options \`items\`, \`SelectValue\` dans le trigger icône). Les hooks RTK Query nouvellement créés étaient destructurés mais pas exportés, ce que les mocks de test masquaient. Ajouter une vérification de module API non mockée en build et test de composant autonome avant d'intégrer plusieurs scénarios. Risque à solder avant PR par logs locaux : tests frontend, lint, build, gate backend pertinente.
+
+---
+
+## Incident évité par gate — route M-006 ajoutée dans un commentaire (2026-10-27)
+
+La branche M-006 a introduit \`processPhaseTitlesRouter\` sans l'enregistrer effectivement dans \`APPLICATION_BACKEND_ROUTE_MODULES\` : le descriptor se trouvait dans le bloc d'exemple commenté. L'appel GET/POST retournait 404. Correction métier ciblée et ajout d'un test de composition du registre, complémentaire aux tests HTTP Supertest de bout en bout. **Aucun constat de succès après correction tant que la gate locale n'est pas exécutée**. Cet incident souligne que la simple présence d'un import et d'un chemin en source ne suffit pas : contrôler l'inscription dans le tableau exécuté et le comportement HTTP avant PR.
+
+---
+
+## Dette de suivi — bootstrap des modèles de phases M-006 (2026-10-27)
+
+**À requalifier après gates et QA :** le Core de création Workspace ne dispose pas d'un hook transactionnel métier dédié au provisionnement du catalogue M-006. Pour ne pas modifier le Core dans le SaaS dérivé, ce lot prévoit un runner de migration explicite pour les Workspaces existants et un provisionnement idempotent lors du premier GET des intitulés pour les Workspaces créés ensuite. Les lectures suivantes ne doivent ni réactiver un modèle archivé ni changer ses dates/révisions ; la concurrence initiale mérite une recette E2E sur MongoDB rs0.
+
+**Amélioration générique éventuelle :** si plusieurs produits exigent des ressources initiales au moment de la transaction de création d'un Workspace, cadrer dans `saas-core-api` un point d'extension générique, le tester, le versionner, puis l'intégrer via upgrade Core. Ne pas incorporer ce hook directement dans `workspace.service.js` du produit M-006.
+
+---
+
+
+
+### GMS-M006-ILLUSTRATIONS — Illustrations et photos des étapes (décision du 2026-10-26)
+
+**Statut : report fonctionnel explicite — hors M-006 V1, non implémenté.** Le propriétaire du produit a approuvé les recommandations fonctionnelles 21–35 du cadrage M-006, **à l'exception de toute mise en œuvre des illustrations**, dont le cadrage est repoussé. Aucun champ image/photo, stockage dédié, galerie, upload, affichage illustré ou intégration des photographies à l'impression ne doit être créé dans la V1 M-006, même à titre « préparatoire ».
+
+Cadrage ultérieur indépendant requis : formats, taille/limites, ownership, stockage et rétention, permissions, import/suppression, affichage consultation et impression, sécurité et tests. Respecter le point d'extension fichiers Core réellement intégré plutôt que développer une infrastructure parallèle si un stockage est finalement nécessaire. Ne pas confondre ce report avec l'infographie synthétique et l'IA, également différées.
+
+### GMS-M006-EDITOR — Editeur et validation du process (lot suivant)
+
+**Dette/lot actif, non implémenté :** le brouillon 1:1 M-006 et la modale sont initialisés avec `phases: []` et composition validée M-004. La sauvegarde optimiste et les associations ingrédients aux phases/étapes existent désormais ; restent l'adoption contrôlée des modèles locaux/Workspace, les contrôles et durées simultanées, la **validation explicite du contenu courant sans historique de versions M-006**, l'invalidation de l'état Validée lors d'un changement enregistré, le décalage de composition, l'impression, la suppression autonome irréversible avec confirmation et la reprise inter-Dossier après validation M-004 cible. Les règles approuvées 21/26/28 **modifiées** le 2026-10-26 interdisent toute création M-006 sur M-004 en brouillon. Ne pas considérer la page de détail initiale comme un éditeur terminé. Tests/QA et gate du lot 4 restent à fournir.
+
+### GMS-M006-DESIGN — Risques à résoudre avant implémentation (2026-10-26)
+
+**Statut : vigilance de conception, lots ultérieurs M-006.** Les décisions 21–35, le contrat fonctionnel final et le lancement de l'implémentation sont approuvés le 2026-10-26. Le premier lot bibliothèques backend est engagé, sans résoudre encore ces risques. Identité de ligne M-004 : nouvelles validations enrichies avec `sourceLineId` (lot 2), mais **historiques anciens sans identifiant** et remappage entre versions toujours à traiter manuellement en cas d'ambiguïté ; vérifier la non-régression sur la suite locale complète. Auditer ensuite la copie inter-Dossier avec modèles locaux, la simultanéité des temps, les révisions bibliothèque, les cascades transactionnelles M-004 et le périmètre des métadonnées d'audit après suppression physique définitive. Les points sont repris dans `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`, section 16. Les traiter en conception technique sans modifier les versions M-004 historiques ni les primitives du Core.
 
 **Statut :** source de vérité documentaire pour les dettes non résolues  
 **Dernière mise à jour :** 2026-10-16  
@@ -953,3 +1062,8 @@ interface et mérite une extraction **Core générique versionnée**
 si plusieurs modules la partagent durablement. Ne pas la réaliser
 silencieusement sur la branche métier. L'ergonomie M-004 et ses tests
 restent prioritaires avant une éventuelle maintenance Core distincte.
+
+
+### GMS-M006-EDITOR-NEXT — Finalisation du process après éditeur brouillon (2026-10-26)
+
+L'éditeur de brouillon existe (phases/étapes, ingrédients, durées, contrôles et sauvegarde avec expectedRevision). Restent : application/adoption contrôlée des révisions de bibliothèques Dossier/Workspace et création rapide de modèle local, validation officielle réitérable sans historique de versions M-006, transition automatique vers Brouillon à l'enregistrement d'une modification réelle, cohérence des non-affectés et des compositions M-004 évolutives, gestion des temps simultanés, copie guidée inter-Dossier après validation du parent, impression, suppression autonome définitive avec confirmation. Ne pas réutiliser la validation M-004 à la place de M-006. QA et migration de la permission EDIT restent à exécuter localement.

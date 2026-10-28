@@ -1,3 +1,9 @@
+import {
+    PROCESS_LIBRARY_ROLE_PERMISSION_MODULE,
+} from '../modules/process/processLibrary.registry.js';
+import {
+    PROCESS_SHEET_ROLE_PERMISSION_MODULE,
+} from '../modules/process/processSheetPermission.registry.js';
 import { CORE_PERMISSION } from '../constants/permissions.constants.js';
 import {
     DOSSIER_ROLE_PERMISSION_MODULE,
@@ -42,6 +48,8 @@ const APPLICATION_ROLE_PERMISSION_MODULES = Object.freeze([
     PRODUCT_CATALOG_ROLE_PERMISSION_MODULE,
     SUPPLIER_CATALOG_ROLE_PERMISSION_MODULE,
     TECHNICAL_SHEET_ROLE_PERMISSION_MODULE,
+    PROCESS_LIBRARY_ROLE_PERMISSION_MODULE,
+    PROCESS_SHEET_ROLE_PERMISSION_MODULE,
 ]);
 
 const applicationRolePermissionExtensions =

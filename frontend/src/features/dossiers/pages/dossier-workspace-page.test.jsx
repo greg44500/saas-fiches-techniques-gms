@@ -10,12 +10,16 @@ import {
 import {
   TECHNICAL_SHEET_PERMISSION,
 } from '@/features/technical-sheets/constants/technical-sheet-permissions';
+import {
+  PROCESS_SHEET_PERMISSION,
+} from '@/features/process-sheets/constants/process-sheet-permissions';
 
 const mocks = vi.hoisted(() => ({
   detailQuery: vi.fn(),
   marginQuery: vi.fn(),
   metadataQuery: vi.fn(),
   activeSheetsQuery: vi.fn(),
+  processCountQuery: vi.fn(),
   location: vi.fn(),
   params: vi.fn(),
   workspaceContext: vi.fn(),
@@ -34,6 +38,10 @@ vi.mock('react-router', async (importOriginal) => {
 vi.mock('@/features/dossiers/api/dossiers-api', () => ({
   useGetDossierByIdQuery: mocks.detailQuery,
   useGetDossierMetadataQuery: mocks.metadataQuery,
+}));
+
+vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
+  useListProcessSheetsQuery: mocks.processCountQuery,
 }));
 
 vi.mock('@/features/technical-sheets/api/technical-sheets-api', () => ({
@@ -95,6 +103,7 @@ describe('DossierWorkspacePage', () => {
         SUPPLIER_PERMISSION.APPLICABLE_PRICE_READ,
         TECHNICAL_SHEET_PERMISSION.READ,
         TECHNICAL_SHEET_PERMISSION.SETTINGS_MANAGE,
+        PROCESS_SHEET_PERMISSION.READ,
       ].includes(permission)),
       canAny: vi.fn(() => true),
       workspace: { id: 'workspace-1', name: 'Acme' },
@@ -102,6 +111,10 @@ describe('DossierWorkspacePage', () => {
     mocks.metadataQuery.mockReturnValue(queryResult(metadata));
     mocks.marginQuery.mockReturnValue(queryResult({
       defaultTargetMarginBasisPoints: 3000,
+    }));
+    mocks.processCountQuery.mockReturnValue(queryResult({
+      processes: [],
+      pagination: { page: 1, limit: 1, total: 2, totalPages: 2 },
     }));
     mocks.activeSheetsQuery.mockReturnValue(queryResult({
       sheets: [],
@@ -155,9 +168,24 @@ describe('DossierWorkspacePage', () => {
       'href',
       '/workspaces/workspace-1/dossiers/dossier-1/suppliers',
     );
+    expect(screen.getByRole('link', { name: 'Fiches process (2)' })).toHaveAttribute(
+      'href',
+      '/workspaces/workspace-1/dossiers/dossier-1/process-sheets',
+    );
+
     expect(screen.getByRole('link', { name: 'Fiches techniques (3)' })).toHaveAttribute(
       'href',
       '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets',
+    );
+
+    expect(mocks.processCountQuery).toHaveBeenCalledWith(
+      {
+        workspaceId: 'workspace-1',
+        dossierId: 'dossier-1',
+        page: 1,
+        limit: 1,
+      },
+      { skip: false },
     );
 
     expect(mocks.activeSheetsQuery).toHaveBeenCalledWith(
@@ -209,6 +237,7 @@ describe('DossierWorkspacePage', () => {
   it.each([
     '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets/sheet-1',
     '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets/sheet-1/optimization',
+    '/workspaces/workspace-1/dossiers/dossier-1/process-sheets/process-1',
   ])(
     'masque le shell Dossier volumineux dans le poste de travail d’une Fiche (%s)',
     (pathname) => {
@@ -219,6 +248,28 @@ describe('DossierWorkspacePage', () => {
       }));
 
       renderPage(pathname);
+
+      expect(mocks.processCountQuery).toHaveBeenCalledWith(
+        {
+          workspaceId: 'workspace-1',
+          dossierId: 'dossier-1',
+          page: 1,
+          limit: 1,
+        },
+        { skip: true },
+      );
+      expect(mocks.activeSheetsQuery).toHaveBeenCalledWith(
+        expect.objectContaining({ dossierId: 'dossier-1' }),
+        { skip: true },
+      );
+      expect(mocks.detailQuery).toHaveBeenCalledWith(
+        expect.objectContaining({ dossierId: 'dossier-1' }),
+        { skip: true },
+      );
+      expect(mocks.metadataQuery).toHaveBeenCalledWith(
+        'workspace-1',
+        { skip: true },
+      );
 
       expect(screen.queryByRole('heading', {
         name: 'Nantes Centre',
@@ -268,6 +319,59 @@ describe('DossierWorkspacePage', () => {
     await user.click(screen.getByRole('button', { name: 'Nantes Centre' }));
     expect(await screen.findByText('Aucune coordonnée complémentaire renseignée.'))
       .toBeInTheDocument();
+  });
+
+  it('ne montre Fiches process que si les deux lectures process et M-004 sont autorisées', () => {
+    mocks.detailQuery.mockReturnValue(queryResult({
+      id: 'dossier-1', name: 'Nantes Centre', status: 'ACTIVE',
+    }));
+    mocks.workspaceContext.mockReturnValue({
+      can: (permission) => permission === PROCESS_SHEET_PERMISSION.READ,
+      canAny: () => false,
+      workspace: { id: 'workspace-1', name: 'Acme' },
+    });
+    const view = renderPage();
+    expect(screen.queryByRole('link', { name: 'Fiches process (2)' })).not.toBeInTheDocument();
+    expect(mocks.processCountQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dossierId: 'dossier-1' }),
+      { skip: true },
+    );
+    view.unmount();
+
+    mocks.workspaceContext.mockReturnValue({
+      can: (permission) => permission === TECHNICAL_SHEET_PERMISSION.READ,
+      canAny: () => false,
+      workspace: { id: 'workspace-1', name: 'Acme' },
+    });
+    renderPage();
+    expect(screen.queryByRole('link', { name: 'Fiches process (2)' })).not.toBeInTheDocument();
+    expect(mocks.processCountQuery).toHaveBeenLastCalledWith(
+      expect.objectContaining({ dossierId: 'dossier-1' }),
+      { skip: true },
+    );
+  });
+
+  it('affiche uniquement le total serveur des process et aucun compteur trompeur', () => {
+    mocks.detailQuery.mockReturnValue(queryResult({
+      id: 'dossier-1', name: 'Nantes Centre', status: 'ACTIVE',
+    }));
+    mocks.processCountQuery.mockReturnValue(queryResult({
+      processes: [],
+      pagination: { page: 1, limit: 1, total: 0, totalPages: 0 },
+    }));
+    const view = renderPage();
+    expect(screen.getByRole('link', { name: 'Fiches process (0)' }))
+      .toBeInTheDocument();
+    view.unmount();
+
+    mocks.processCountQuery.mockReturnValue({
+      data: undefined, isError: true, isLoading: false, refetch: vi.fn(),
+    });
+    renderPage();
+    expect(screen.getByRole('link', { name: 'Fiches process' }))
+      .toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Fiches process (0)' }))
+      .not.toBeInTheDocument();
   });
 
   it('masque la recherche de prix et l’édition de marge sans permissions', () => {

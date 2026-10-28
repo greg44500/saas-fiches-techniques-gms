@@ -190,6 +190,54 @@
       "script": "migration:m004-usage-reconcile",
       "runner": "backend/migrations/runReconcileM004TechnicalSheetUsageMetricMigration.js",
       "dependsOn": []
+    },
+    {
+      "id": "m006-process-library",
+      "script": "migration:m006-process-library",
+      "runner": "backend/migrations/runEnsureM006ProcessLibraryMigration.js",
+      "dependsOn": [
+        "m004-technical-sheets"
+      ]
+    },
+    {
+      "id": "m006-process-composition-permission",
+      "script": "migration:m006-process-composition-permission",
+      "runner": "backend/migrations/runBackfillM006ProcessCompositionPermissionMigration.js",
+      "dependsOn": [
+        "m006-process-library"
+      ]
+    },
+    {
+      "id": "m006-process-sheets",
+      "script": "migration:m006-process-sheets",
+      "runner": "backend/migrations/runEnsureM006ProcessSheetMigration.js",
+      "dependsOn": [
+        "m006-process-composition-permission"
+      ]
+    },
+    {
+      "id": "m006-default-phase-titles",
+      "script": "migration:m006-default-phase-titles",
+      "runner": "backend/migrations/runSeedM006DefaultProcessPhasesMigration.js",
+      "dependsOn": [
+        "m006-process-library"
+      ]
+    },
+    {
+      "id": "m006-process-editor-permission",
+      "script": "migration:m006-process-editor-permission",
+      "runner": "backend/migrations/runBackfillM006ProcessEditPermissionMigration.js",
+      "dependsOn": [
+        "m006-process-sheets"
+      ]
+    },
+    {
+      "id": "m006-process-validate-permission",
+      "script": "migration:m006-process-validate-permission",
+      "runner": "backend/migrations/runBackfillM006ProcessValidatePermissionMigration.js",
+      "dependsOn": [
+        "m006-process-editor-permission"
+      ]
     }
   ]
 }

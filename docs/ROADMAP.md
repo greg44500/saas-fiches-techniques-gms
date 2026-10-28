@@ -1,4 +1,51 @@
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
+## M-006 — progression lot par lot après décision de validation simplifiée (2026-10-27)
+
+**Branche unique :** `feature/m006-fiches-process`. La PR et le merge sont réservés au propriétaire après réussite des gates locaux et QA. Pas de branche supplémentaire ni de livraison présumée.
+
+| Lot | Périmètre | Avancement |
+| --- | --- | --- |
+| 1 | Prévisualisation épurée, noms d'ingrédients sans numéros de ligne | Code et tests committés ; validation locale non communiquée |
+| 2 | Contrat courant Brouillon ↔ Validée, revalidation après changement enregistré, pas d'historique M-006 | Documentation rectifiée ; aucun code modifié |
+| 3 | Validation, revalidation, réconciliation sur nom/référence d'ingrédient seulement, UX compacte | Règle du 2026-10-28 implémentée en source, tests adaptés mais gates et QA locales non exécutées ; lot non validé |
+| 4 | Suppression définitive autonome avec confirmation, droits, transaction et réouverture de l'unicité 1:1 | À implémenter séparément |
+| 5 | Gates M-006/globales, QA responsive, PR/merge par le propriétaire | En attente |
+
+La `revision` technique anti-concurrence ne crée pas de version métier conservée. L'absence d'historique M-006 ne modifie ni les versions immuables M-004 ni les révisions des bibliothèques.
+
+---
+
+## M-006 — ergonomie pilotage phases/étapes (2026-10-27)
+
+Lot frontend : créer / renommer / supprimer des phases dans l'arborescence, titre contextuel « Phase N : Titre » et édition du contenu à droite, actions iconographiques réutilisant le composant Tooltip Base UI, icônes différenciées pour phase et étape, focus harmonisé localement, confirmation conservée pour phases non vides. Aucun changement Core ni persistance Mongoose. QA : clavier, souris, tactile, dark mode, suppression avec contenu, sauvegarde explicite, préservation des identifiants et association ingrédients. Gates/PR à faire après tests locaux.
+
+---
+
+## M-006 — menu des phases et amorçage des titres communs (2026-10-27)
+
+Lot de continuité UX M-006 : affichage `Select` shadcn/Base UI alimenté par le backend Workspace, cinq intitulés prévus à l'initialisation de la base, migration rejouable pour Workspaces existants, saisie d'intitulés libres persistés dans la bibliothèque PHASE Workspace, sans publication automatique des étapes libres d'une Fiche process. Contrats Core et ownership inchangés. Gate, QA et déploiement à valider localement avant PR.
+
+---
+
+## M-006 — propositions de phases issues du backend (2026-10-27)
+
+**Lot frontend sur la branche M-006, non livré et gates à exécuter :** les intitulés proposés dans l'arbre et le formulaire de phase proviennent des bibliothèques backend PHASE actives (Dossier + Workspace) via RTK Query, pas d'une liste statique React. Selection d'un titre seulement ; adoption automatique d'instructions ou d'étapes interdite. Recherche/pagination serveur, permission \`process-library:read\`, titre libre de repli. Masquage complet des sous-listes vides et suppression contextuelle des étapes. Aucun changement de contrat de modèles : les PHASE en bibliothèque imposent au moins une étape, les phases de brouillon peuvent rester vides. Enregistrement en bibliothèque d'un intitulé vierge et peuplement de titres prédéfinis restent à cadrer distinctement ; pas de seed inventé.
+
+---
+
+## M-006 — lot UX arbre de fabrication (2026-10-27)
+
+**Implémentation sur la branche de travail, contrôles en attente.** Refonte du déroulement phases/étapes en arborescence verticale Base UI avec éditeur contextuel unique, conservation du rail ingrédients et en-tête compact « Fiches process | Titre ». Affichage mobile adapté via SegmentedControl et suppressions confirmées par Dialog. Aucun ajout de sous-étapes ni changement de contrats M-006/Backend/Core. Tests frontend révisés ; exécution réelle, QA et gate globale restent à effectuer avant PR. Les autres lots M-006 (bibliothèques, validation, impression, cycles de vie et copies) restent distincts.
+
+---
+
+
+## Lot M-006 — Refonte UX/UI de l'éditeur (2026-10-27)
+
+**En cours, sur `feature/m006-fiches-process`, non livré et sans gate exécutée.** Cas d'usage UX validé : courtes procédures d'assemblage divisées en petites phases (une ou deux étapes par phase). Refonte frontend engagée : cartes repliables, édition contextuelle, ingrédients par sélection à la demande, revue des non-affectés et aperçu chronologique. Pas de changement du contrat métier ni du backend. Les tests ajoutés doivent être exécutés localement ; QA visuelle et E2E restent à confirmer avant PR. Le drag and drop n'est pas une dépendance de la V1 UX. PDF/impression, validation officielle et bibliothèque intégrée demeurent des lots M-006 futurs séparés.
+
+---
+
 
 ## Complément UX M-003 joint au lot Gammes M-004 — 2026-10-26
 
@@ -381,14 +428,15 @@ Stabilisation finale confirmée le 2026-10-02 :
 Les exports et la diffusion restent un bloc V1 séparé et ne sont pas implicitement ouverts par cette clôture. La priorité suivante est l'audit/cadrage des Produits globaux ; le bloc Exports et diffusion reprend ensuite.
 
 
-### 2.5 Fiches process
+### 2.5 Fiches process — lot M-006 prioritaire, cadrage consolidé (2026-10-26)
 
-**État : DIFFÉRÉ — non bloquant pour M-001**
+**État actualisé le 2026-10-27 : contrat de création M-006 confirmé et cycle éditorial simplifié par décision du propriétaire : une Fiche process courante, modifiable après validation, revalidation explicite après modification réellement enregistrée, sans historique de versions M-006. Backend : bibliothèques, projection M-004, agrégat 1:1, éligibilité, brouillon sauvegardé et cascades parent-enfant ; frontend : liste, création, atelier d'édition et prévisualisation. Validation officielle et suppression autonome non livrées ; tests du HEAD et gate à vérifier localement.**
 
-Le domaine reste prévu mais son cadrage détaillé n'est plus une condition préalable au démarrage.
+Branche existante : `feature/m006-fiches-process`. Cadrage : `docs/m006/M-006-FICHES-PROCESS-CADRAGE-PROPOSITION.md`. Le lot ajoute au Dossier les modes opératoires associés 1:1 aux Fiches techniques : création guidée, phases/étapes, affectation des ingrédients M-004, bibliothèques Dossier/Workspace, contrôles structurés facultatifs, validation explicite renouvelable **sans historique des versions M-006**, cycle de vie parent-enfant, suppression autonome définitive autorisée et impression.
 
-Il sera cadré avant son implémentation : relation avec la Fiche technique, étapes, durées, points critiques, critères d'acceptabilité, versionnement et données communes/séparées.
+**Lot ultérieur, exclu de M-006 V1 : illustrations et photographies**, y compris champs photo, stockage, affichage, galerie et impression illustrée. Le cadrage des formats, tailles, permissions, rétention et coûts doit être distinct. Sont également différés : journaux d'exécution des contrôles, aide IA, infographies et diffusion documentaire avancée.
 
+Suite ordonnée : bibliothèques backend (code et tests créés, **non exécutés**) → conception de l'identité ingrédients M-004 → agrégat Fiche process/backend → intégrations transactionnelles parent/enfant → frontend/RTL → E2E → `npm run release:check` → recette et éventuelle PR **sur autorisation**. La migration M-006 n'a pas été exécutée dans cette conversation.
 
 ### 2.6 Utilisateurs, RBAC, capabilities et quotas
 
@@ -756,3 +804,5 @@ Finition QA du 2026-10-23 (M-002) : les trois tableaux « Référentiel », « �
 Finition du lot UI/UX du 2026-10-23 : menu Fiches techniques réordonné Modifier → Prévisualiser → Optimiser → Supprimer, listage des Fiches avec en-tête sticky et scroll interne, même disposition des tableaux Fournisseurs et prix (Références, Catalogues, Tarifs négociés, Prix facturés, Prix indicatifs). Action isolée « Retirer du Dossier » représentée par un bouton direct icône + texte, rouge au survol/focus, sans modifier les permissions ni les mutations. L'outil de hauteur de tableau est mutualisé sans toucher au Core. Gates Windows et QA à confirmer, aucune PR/merge avant accord.
 
 Lot de finition UI/UX du 2026-10-23 : Fournisseurs, Articles et Catalogues (page Fournisseurs) ainsi que Tous les produits et Favoris (page Produits) disposent de lignes à défilement interne, d'un en-tête sticky et du footer de pagination serveur laissé hors du scroll. Réutilisation du hook transverse UI et de `DataPagination` existant ; pas de changement Core, backend, RBAC ou données. Tests RTL ciblés intégrés ; validation locale Windows, lint/build, gate et QA visuelle toujours en attente, sans PR ni fusion.
+
+- **Lot 5 backend/frontend :** éditeur de brouillon M-006 avec phases et étapes ordonnées, affectation des ingrédients par identité de ligne M-004, consignes, durées et contrôles, sauvegarde transactionnelle avec révision optimiste, audit et permission EDIT/migration associée. **Tests non exécutés ici**, validation officielle M-006 et bibliothèque intégrée à l'éditeur non livrées.

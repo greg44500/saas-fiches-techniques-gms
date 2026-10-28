@@ -1,3 +1,15 @@
+## Changement d’ingrédient pertinent pour M-006 — 2026-10-28
+
+Seuls les changements de nom ou de Référence Produit d'une occurrence d'ingrédient au sein de la composition officielle M-004 ont un impact sur la synchronisation de la Fiche process. Référence = `productVariantId`, non référence d'Article fournisseur. Prix, quantités, unités, ordre et données économiques ne sont pas des changements pertinents pour M-006 ; les doublons d'ingrédients restent conservés. Voir le cadrage M-006, décision du 2026-10-28.
+
+---
+
+## Réconciliation de composition — M-006 (2026-10-28)
+
+Action explicite permettant à une Fiche process existante de prendre pour référence la validation M-004 officielle courante, après comparaison et vérification des associations d'ingrédients. Une modification de fabrication nécessite une revalidation M-006 ; une simple revalorisation ne crée pas automatiquement une nouvelle version de Fiche process. Voir `docs/m006/M-006-RECONCILIATION.md`.
+
+---
+
 # SAAS-FICHES-TECHNIQUES-GMS — Glossaire métier
 ## Gamme de Fiches techniques — M-004
 
@@ -1236,9 +1248,33 @@ Les zones proches de leurs limites de modulation doivent être signalées visuel
 
 ## Fiche process
 
-Document/donnée métier décrivant la fabrication : étapes, durées, points critiques et critères d'acceptabilité.
+Document métier **du même Workspace et Dossier que sa Fiche technique M-004**, décrivant le **comment fabriquer**. Une Fiche technique a zéro ou une Fiche process ; aucune Fiche process autonome. Sa création exige que M-004 soit ACTIVE, validée officiellement, sans brouillon de révision ouvert et sans process déjà lié. Le process conserve **un contenu courant unique** et un état éditorial **Brouillon** ou **Validée**, indépendamment de la validation M-004. Le contenu validé peut être modifié : la première modification métier effectivement enregistrée le fait repasser en Brouillon jusqu'à revalidation. La consultation et les changements locaux non sauvegardés ne déclenchent pas cette transition. **Aucun historique des anciennes versions de Fiches process n'est conservé.** Les révisions techniques de concurrence et les événements d'audit ne sont pas des versions métier.
 
-La frontière exacte entre les données process portées par la fiche technique et la fiche process détaillée reste à définir.
+La **composition et les quantités** proviennent exclusivement de la Fiche technique. Les ingrédients affectés au process peuvent se présenter sans quantités et être liés à plusieurs phases et étapes ; les lignes métier répétées restent distinguables quand nécessaire.
+
+L'archivage, la corbeille, la restauration et la purge suivent le parent ; pas d'archivage autonome. La suppression autonome d'un process est physique, définitive et contrôlée, seulement si le parent est `ACTIVE`.
+
+## Phase de fabrication
+
+Ensemble ordonné d'étapes d'une Fiche process. Une phase peut recevoir des ingrédients directement, indépendamment de ceux affectés à ses étapes.
+
+## Étape de fabrication
+
+Action documentée et ordonnée dans une phase, paramétrable selon la recette (consignes, équipements, températures, durées, vigilance, qualité et maîtrise sanitaire). Une définition d'étape peut être réutilisée depuis une bibliothèque.
+
+## Bibliothèque de fabrication
+
+Référentiel de modèles de phases et d'étapes, soit **local au Dossier**, soit **commun au Workspace**. Publication locale vers Workspace soumise à permission ; révisions proposées et adoptées explicitement, sans mutation rétroactive des process existants.
+
+## Composition de référence du process
+
+Version validée de la composition M-004 avec laquelle le **contenu courant** de la Fiche process doit être cohérent lors de sa validation. Le contenu en Brouillon peut être préparé avant la validation M-006. Un écart ultérieur avec M-004 est signalable sans bloquer automatiquement le process.
+
+## Vigilance / contrôle qualité / maîtrise sanitaire
+
+Trois catégories distinctes de consignes ou contrôles possibles dans une étape. Les champs facultatifs peuvent décrire consigne, critère attendu et action corrective. Leur présence ne constitue ni un journal d'exécution ni une qualification automatique de point critique HACCP.
+
+**Illustrations des étapes :** aucune illustration ou photographie en M-006 V1 ; vocabulaire et cycle de vie documentaire à définir ultérieurement.
 
 ---
 

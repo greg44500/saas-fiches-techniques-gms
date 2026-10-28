@@ -1,3 +1,9 @@
+import { processSheetRouter } from '../modules/process/processSheet.routes.js';
+import { processPhaseTitlesRouter } from '../modules/process/processPhaseTitles.routes.js';
+import {
+    processLibraryDossierRouter,
+    processLibraryWorkspaceRouter,
+} from '../modules/process/processLibrary.routes.js';
 import { dossierRouter } from '../modules/dossier/dossier.routes.js';
 import {
     productCatalogGlobalRouter,
@@ -141,6 +147,26 @@ const mountApplicationRoutes = (
  * ]);
  */
 const APPLICATION_BACKEND_ROUTE_MODULES = Object.freeze([
+    Object.freeze({
+        key: 'process-phase-titles',
+        mountPath: '/api/workspaces/:workspaceId/process-phase-titles',
+        router: processPhaseTitlesRouter,
+    }),
+    Object.freeze({
+        key: 'process-sheets',
+        mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/process-sheets',
+        router: processSheetRouter,
+    }),
+    Object.freeze({
+        key: 'process-library-workspace',
+        mountPath: '/api/workspaces/:workspaceId/process-library',
+        router: processLibraryWorkspaceRouter,
+    }),
+    Object.freeze({
+        key: 'process-library-dossier',
+        mountPath: '/api/workspaces/:workspaceId/dossiers/:dossierId/process-library',
+        router: processLibraryDossierRouter,
+    }),
     Object.freeze({
         key: 'dossiers',
         mountPath: '/api/workspaces/:workspaceId/dossiers',
