@@ -8,6 +8,7 @@ import { PROCESS_SHEET_PERMISSION } from '@/features/process-sheets/constants/pr
 
 const mocks = vi.hoisted(() => ({
   detail: vi.fn(), save: vi.fn(), validate: vi.fn(), can: vi.fn(),
+  review: vi.fn(), reconcile: vi.fn(),
   phaseTitles: vi.fn(), createTitle: vi.fn(),
 }));
 
@@ -18,6 +19,8 @@ vi.mock('react-router', async (original) => ({
 
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useGetProcessSheetQuery: mocks.detail,
+  useGetProcessSheetReconciliationQuery: (...args) => mocks.review(...args),
+  useReconcileProcessSheetMutation: () => [mocks.reconcile, { isLoading: false }],
   useSaveProcessSheetDraftMutation: () => [mocks.save, { isLoading: false }],
   useValidateProcessSheetMutation: () => [mocks.validate, { isLoading: false }],
   useListProcessPhaseTitlesQuery: (...args) => mocks.phaseTitles(...args),
@@ -72,6 +75,7 @@ async function addFreePhase(user) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.phaseTitles.mockReturnValue({ data: { phases: [] }, isLoading: false });
+  mocks.review.mockReturnValue({ data: null, isLoading: false, isFetching: false });
   mocks.createTitle.mockImplementation(({ title }) => ({
     unwrap: vi.fn().mockResolvedValue({ id: 'new-phase', title }),
   }));
