@@ -358,10 +358,10 @@ function ProcessSheetDraftEditor({
               content="Les ingrédients proviennent d’une ancienne validation. Une correspondance explicite peut être nécessaire si la Fiche technique est mise à jour." />
           )}
           <span className={'text-xs font-medium '
-            + (saveError ? 'text-destructive' : dirty ? 'text-warning' : 'text-success')}
+            + (saveError ? 'text-muted-foreground' : dirty ? 'text-warning' : 'text-success')}
             role="status">
-            {conflict ? 'Conflit d’enregistrement'
-              : saveError ? 'Erreur d’enregistrement'
+            {conflict ? 'Enregistrement à vérifier'
+              : saveError ? 'Non enregistré'
                 : dirty ? 'Modifications non enregistrées' : 'À jour'}
           </span>
         </div>
