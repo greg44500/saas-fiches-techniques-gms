@@ -49,6 +49,16 @@ function ProcessSheetWorkspacePage() {
   const canReadPhaseLibrary = Boolean(can?.(PROCESS_SHEET_PERMISSION.READ));
   const canValidate = Boolean(can?.(PROCESS_SHEET_PERMISSION.VALIDATE))
     && process?.status === 'ACTIVE' && dossierOperational === true;
+  const needsCompositionReview = Boolean(compositionOutdated || parentDraftOpen);
+  const canOpenCompositionReview = needsCompositionReview
+    && process?.status === 'ACTIVE' && dossierOperational === true;
+  const compositionHelp = process?.status !== 'ACTIVE' || dossierOperational !== true
+    ? 'La Fiche process et le dossier doivent être actifs pour actualiser la composition.'
+    : parentDraftOpen
+      ? 'Une modification de la Fiche technique est en cours. Ouvrez ce dialogue pour savoir comment la terminer.'
+      : compositionOutdated
+        ? 'Une nouvelle validation de la Fiche technique est disponible. Comparez les compositions avant de poursuivre.'
+        : 'La Fiche process utilise déjà la composition officielle courante. Aucune actualisation n’est nécessaire.';
 
   if (!process || !draft) {
     return (
@@ -73,17 +83,21 @@ function ProcessSheetWorkspacePage() {
         <h1 className="min-w-0 truncate text-xl font-semibold sm:text-2xl" title={process.title}>
           {process.title}
         </h1>
-        {(compositionOutdated || parentDraftOpen) && (
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <Button
-            className="ml-auto shrink-0"
+            disabled={!canOpenCompositionReview}
             onClick={() => setReviewOpen(true)}
             size="sm"
             type="button"
             variant="outline"
           >
-            {parentDraftOpen ? 'Fiche technique en modification' : 'Composition à actualiser'}
+            Actualiser la composition
           </Button>
-        )}
+          <InfoTooltip
+            label="Disponibilité de l’actualisation de la composition"
+            content={compositionHelp}
+          />
+        </div>
         <span className="shrink-0 text-xs text-muted-foreground" aria-label="État de la Fiche process">
           {process.editorialState === 'VALIDATED' ? 'Validée' : 'Brouillon'}
         </span>
@@ -111,6 +125,11 @@ function ProcessSheetWorkspacePage() {
       />
       <ProcessSheetReconciliationDialog
         canApply={canEdit && canValidate && !localDirty}
+        applyUnavailableReason={localDirty
+          ? 'Enregistrez vos modifications avant d’actualiser la composition.'
+          : !canEdit || !canValidate
+            ? 'Votre rôle ne permet pas de modifier et valider cette Fiche process.'
+            : 'Le dossier et la Fiche process doivent être actifs pour actualiser.'}
         dossierId={dossierId}
         onClose={() => setReviewOpen(false)}
         onUpdated={detail.refetch}
