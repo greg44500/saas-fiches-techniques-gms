@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Save } from 'lucide-react';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import {
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { useSaveProcessSheetDraftMutation, useValidateProcessSheetMutation } from '@/features/process-sheets/api/process-sheets-api';
 import { ProcessIngredientRail } from '@/features/process-sheets/components/process-ingredient-rail';
+import { ProcessSheetControlPanel } from '@/features/process-sheets/components/process-sheet-control-panel';
 import { ProcessSheetPhaseEditor } from '@/features/process-sheets/components/process-sheet-phase-editor';
 import { ProcessSheetPhaseTree } from '@/features/process-sheets/components/process-sheet-phase-tree';
 import { ProcessSheetPreview } from '@/features/process-sheets/components/process-sheet-preview';
@@ -58,6 +58,7 @@ function ProcessSheetDraftEditor({
   canReadPhaseLibrary = false,
   dossierId, processSheetId, workspaceId,
   onReload, onDirtyChange, onRequestReconciliation,
+  canOpenCompositionReview = false, compositionHelp = '',
 }) {
   const [form, setForm] = useState(() => normalize(initialDraft));
   const [revision, setRevision] = useState(initialDraft?.revision ?? 0);
@@ -393,45 +394,34 @@ function ProcessSheetDraftEditor({
 
   return (
     <div className="space-y-3" aria-label="Atelier de fabrication">
-      <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-background py-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <h2 className="text-base font-semibold">Déroulement de fabrication</h2>
-          <InfoTooltip label="À propos du brouillon process"
-            content="Les phases, étapes et ingrédients associés sont propres à cette Fiche process. La sauvegarde est manuelle et ne modifie pas la Fiche technique." />
-          {sourceIngredients?.hasLegacyLineIdentity && (
-            <InfoTooltip label="À propos de la composition historique"
-              content="Les ingrédients proviennent d’une ancienne validation. Une correspondance explicite peut être nécessaire si la Fiche technique est mise à jour." />
-          )}
-          <span className={'text-xs font-medium '
-            + (saveError ? 'text-muted-foreground' : dirty ? 'text-warning' : 'text-success')}
-            role="status">
-            {conflict ? 'Enregistrement à vérifier'
-              : saveError ? 'Non enregistré'
-                : dirty ? 'Modifications non enregistrées' : 'Enregistré'}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => setShowPreview((value) => !value)}
-            size="sm" type="button" variant="outline">
-            {showPreview ? 'Revenir à l’édition' : 'Aperçu du process'}
-          </Button>
-          <div className="flex items-center gap-1">
-            <Button disabled={validationDisabled}
-              onClick={() => setConfirmValidation(true)} size="sm" type="button" variant="outline">
-              {validating.isLoading ? 'Validation…' : 'Valider la Fiche process'}
-            </Button>
-            <InfoTooltip label="Disponibilité de la validation" content={validationHelp} />
-          </div>
-          <div className="flex items-center gap-1">
-            <Button disabled={saveDisabled}
-              onClick={save} size="sm" type="button">
-              <Save aria-hidden="true" className="size-4" />
-              {saving.isLoading ? 'Enregistrement…' : 'Enregistrer le brouillon'}
-            </Button>
-            <InfoTooltip label="Disponibilité de l’enregistrement" content={saveHelp} />
-          </div>
-        </div>
-      </header>
+      <ProcessSheetControlPanel
+        editorialState={editorialState}
+        saveStatus={conflict ? 'Enregistrement à vérifier'
+          : saveError ? 'Non enregistré'
+            : dirty ? 'Modifications non enregistrées' : 'Enregistré'}
+        saveStatusTone={saveError || conflict ? 'text-muted-foreground'
+          : dirty ? 'text-warning' : 'text-success'}
+        previewActive={showPreview}
+        compositionDisabled={!canOpenCompositionReview}
+        compositionHelp={compositionHelp}
+        saveDisabled={saveDisabled}
+        saveHelp={saveHelp}
+        validationDisabled={validationDisabled}
+        validationHelp={validationHelp}
+        onPreview={() => setShowPreview((value) => !value)}
+        onReconcile={onRequestReconciliation}
+        onSave={save}
+        onValidate={() => setConfirmValidation(true)}
+      />
+      <div className="flex items-center gap-2">
+        <h2 className="text-base font-semibold">Déroulement de fabrication</h2>
+        <InfoTooltip label="À propos du brouillon process"
+          content="Les phases, étapes et ingrédients associés sont propres à cette Fiche process. La sauvegarde est manuelle et ne modifie pas la Fiche technique." />
+        {sourceIngredients?.hasLegacyLineIdentity && (
+          <InfoTooltip label="À propos de la composition historique"
+            content="Les ingrédients proviennent d’une ancienne validation. Une correspondance explicite peut être nécessaire si la Fiche technique est mise à jour." />
+        )}
+      </div>
       <DialogRoot open={confirmValidation}
         onOpenChange={(open) => setConfirmValidation(open)}>
         <DialogPortal>
