@@ -85,13 +85,13 @@ function ProcessSheetDraftEditor({
   const [confirmValidation, setConfirmValidation] = useState(false);
   const usedIngredients = new Set(form.phases.flatMap((phase) => [
     ...(phase.ingredientLineKeys ?? []),
-    ...phase.steps.flatMap((step) => step.ingredientLineKeys ?? []),
+    ...(phase.steps ?? []).flatMap((step) => step.ingredientLineKeys ?? []),
   ]));
   const unassignedCount = (sourceIngredients?.lines ?? []).filter(
     (line) => !usedIngredients.has(line.lineKey),
   ).length;
   const documented = form.phases.some((phase) =>
-    phase.steps.some((step) => step.title?.trim() && step.instructions?.trim()));
+    (phase.steps ?? []).some((step) => step.title?.trim() && step.instructions?.trim()));
   const editable = canEdit && !saving.isLoading;
 
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
@@ -416,7 +416,7 @@ function ProcessSheetDraftEditor({
             </DialogHeader>
             <div className="mt-4 space-y-2 text-sm">
               <p>{form.phases.length} phase(s) · {form.phases.reduce(
-                (sum, phase) => sum + phase.steps.length, 0,
+                (sum, phase) => sum + (phase.steps?.length ?? 0), 0,
               )} étape(s)</p>
               {!documented && (
                 <p role="status">Au moins une étape avec des instructions est nécessaire.</p>
