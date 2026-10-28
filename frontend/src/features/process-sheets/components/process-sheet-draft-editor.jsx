@@ -372,7 +372,7 @@ function ProcessSheetDraftEditor({
             role="status">
             {conflict ? 'Enregistrement à vérifier'
               : saveError ? 'Non enregistré'
-                : dirty ? 'Modifications non enregistrées' : 'À jour'}
+                : dirty ? 'Modifications non enregistrées' : 'Enregistré'}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
