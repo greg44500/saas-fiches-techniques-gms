@@ -432,11 +432,6 @@ function ProcessSheetDraftEditor({
           </div>
         </div>
       </header>
-      {!canEdit && (
-        <p className="text-sm text-muted-foreground">
-          Consultation uniquement : droits d’édition ou Dossier actif requis.
-        </p>
-      )}
       <DialogRoot open={confirmValidation}
         onOpenChange={(open) => setConfirmValidation(open)}>
         <DialogPortal>
