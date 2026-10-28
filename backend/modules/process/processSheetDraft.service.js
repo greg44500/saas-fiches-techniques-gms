@@ -128,6 +128,9 @@ const updateProcessSheetDraft = async ({
 
     return {
         id: draft._id.toString(), revision: draft.revision,
+        // The aggregate revision also advances on validation, independently
+        // of the mutable content revision. Return both concurrency tokens.
+        processRevision: process.revision + 1,
         phases: draft.phases, unassignedReasons: draft.unassignedReasons,
     };
 });
