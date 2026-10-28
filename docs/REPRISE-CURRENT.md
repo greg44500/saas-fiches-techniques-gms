@@ -1,3 +1,15 @@
+# M-006 — Règle d’identité des ingrédients et UX simplifiée (2026-10-28)
+
+**Branche :** `feature/m006-fiches-process`. **Nouvelle décision propriétaire :** seule l'identité d'un ingrédient (nom ou Référence Produit `productVariantId`) peut nécessiter une réconciliation M-004/M-006 ; ne jamais traiter prix, quantités, unités, fournisseurs, ordre ou données d'optimisation comme des motifs de blocage. Les doublons de références restent des occurrences distinctes. Les brouillons M-004 non officiels ne bloquent plus la validation d'un process existant basé sur la dernière composition officielle.
+
+**Code modifié :** `processSheetReconciliation.js` compare la liste multi-ensemble nom/référence ; `processSheet.service.js` n'expose `compositionOutdated` qu'après comparaison des identités officielles ; `processSheetReconciliation.service.js` retourne `CURRENT` si les ingrédients sont identiques, même après revalidation M-004, et permet une réconciliation sur version officielle même avec brouillon M-004 ouvert ; `processSheetValidation.service.js` compare les ingrédients sous transaction/lock et autorise une validation M-006 après revalorisation ou variation de quantités. **Aucune mise à jour silencieuse de la référence et des associations tant qu'elles restent compatibles sur l'ancien snapshot officiel.** Modale ciblée sur les différences et les associations incertaines ; si tous les ingrédients sont affectés, validation directe, sinon avertissement non bloquant.
+
+**UX :** panneau de contrôle compact réuni avec le titre, tooltips d'action courts. Les actions à icône restent présentes et les règles de disabled et RBAC inchangées. Les instructions et affectations reconnues ne sont pas effacées.
+
+**État des preuves :** revue statique, tests backend HTTP/unitaires et RTL adaptés/ajoutés sur GitHub ; aucun nouveau Vitest/Supertest, lint, build, E2E ou `release:check` exécuté localement. Les derniers 111/112 tests frontend signalés par l'utilisateur correspondent à un commit antérieur et ne qualifient pas ce correctif. La recette doit couvrir M-004 revalidée tarif seul, quantité seule, fournisseur/unité/ordre seuls, nouveau nom ou produit, doublons, M-004 en révision, M-006 Validée et revalidation, permissions/409, et 0 ou plusieurs ingrédients non affectés. **Lot 3 ouvert ; ni PR ni merge ni lot 4.**
+
+---
+
 # M-006 — Correction du test de focus du panneau de contrôle (2026-10-28)
 
 **Preuve utilisateur avant correction :** Vitest frontend `src/features/process-sheets` — 12 fichiers, 112 tests : 111 réussis, 1 échec. Échec circonscrit à `process-sheet-control-panel.test.jsx`, assertion `findByRole('tooltip')` : Base UI rend le conteneur de l'aide avec `role="presentation"` et un popup `data-open`; le log montre le contenu « La composition est déjà à jour. » déjà monté après focus. Il ne démontre pas de défaillance de l'info-bulle elle-même.
