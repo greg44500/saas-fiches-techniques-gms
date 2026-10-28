@@ -1,3 +1,9 @@
+## M-006 — Vérification post-correctif du test de tooltip Base UI (2026-10-28)
+
+Le log utilisateur pré-correctif donne 111/112 tests frontend réussis, 1 échec sur l'hypothèse erronée de `role=tooltip` dans `process-sheet-control-panel.test.jsx`. Assertion remplacée par focus clavier + texte popup + état ouvert, avec tests additionnels d'absence d'action sous clic/Entrée/Espace pour les trois commandes indisponibles. Audit des 12 fichiers de tests M-006 : aucune autre assertion au rôle tooltip trouvée. **Dette de preuve :** relancer toute la suite frontend M-006, lint et build sur la machine Node 24 du projet. Ne pas annoncer 112/112 sans la sortie du test relancé.
+
+---
+
 ## M-006 — Gate UI panneau de contrôle (2026-10-28)
 
 **En attente de preuves d'exécution et de QA :** après regroupement des quatre actions dans `ProcessSheetControlPanel` et adoption de `aria-disabled` pour préserver l'accès aux tooltips, exécuter tests RTL M-006, lint frontend et build ; tester explicitement le non-déclenchement des callbacks sous clavier/souris sur les commandes indisponibles, le focus visible, l'usage tactile, les thèmes et le responsive. Le contrôle statique n'est pas un test vert. Lot 3 toujours non validé ; ne pas ouvrir le lot 4.
