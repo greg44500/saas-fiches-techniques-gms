@@ -1,3 +1,9 @@
+## M-006 — Preuve post-correction des deux fixtures HTTP (2026-10-28)
+
+**À vérifier localement :** les deux échecs `CURRENT` / `REVIEW_REQUIRED` inversés dans `processSheet.http.test.js` provenaient de mutations de fixture contradictoires (nom vs quantité). Scénarios corrigés et assertions ajoutées pour snapshots, absence de mutations sous 400/409, remappage explicite, révisions et audit. Exécution utilisateur antérieure : 68/70 réussis ; nouvelle exécution **inconnue**. Relancer d'abord le fichier isolé, puis les huit fichiers M-006, lint et gates applicables avant d'envisager la fin du lot 3. Aucune extension Core ou lot 4.
+
+---
+
 ## M-006 — Preuves de la règle « nom ou référence uniquement » (2026-10-28)
 
 Nouveau contrat métier : les prix, quantités, fournisseurs, unités, ordre et données de production M-004 n'empêchent pas la validation M-006. Les changements de nom/référence d'ingrédient et les occurrences ambiguës imposent encore une revue explicite. Tests ajoutés/actualisés mais pas exécutés sur la machine de l'utilisateur. Vérifier les suites backend process/Supertest, RTL process-sheets, lint, build, E2E, `release:check`, ainsi que la non-perte d'affectations historiques, les révisions concurrentes, les permissions et le responsive de la barre sur une ligne. Lot 3 non validé.
