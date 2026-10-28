@@ -280,7 +280,11 @@ function ProcessSheetDraftEditor({
             ? 'Cette Fiche process a changé depuis son ouverture. Actualisez ses données avant de continuer.'
             : code === 'PROCESS_SHEET_ALREADY_VALIDATED'
               ? 'Cette Fiche process est déjà validée.'
-              : 'La validation n’a pas abouti. Aucune validation n’a été enregistrée.');
+              : code === 'PROCESS_SHEET_STEP_REQUIRED'
+                ? 'Ajoutez au moins une phase et une étape avec des instructions.'
+                : code === 'PROCESS_SHEET_INGREDIENT_INVALID'
+                  ? 'Une association d’ingrédient doit être vérifiée avant validation.'
+                  : 'La validation n’a pas abouti. Aucune validation n’a été enregistrée.');
     }
   };
   const reload = async () => {
@@ -469,7 +473,8 @@ function ProcessSheetDraftEditor({
                 Fermer
               </Button>
               {validationError && (validationErrorCode === 'PROCESS_SHEET_PARENT_CHANGED'
-                || validationErrorCode === 'PROCESS_SHEET_PARENT_REVISION_OPEN') && (
+                || validationErrorCode === 'PROCESS_SHEET_PARENT_REVISION_OPEN'
+                || validationErrorCode === 'PROCESS_SHEET_INGREDIENT_INVALID') && (
                 <Button type="button" onClick={() => {
                   setValidationError('');
                   setValidationErrorCode('');
