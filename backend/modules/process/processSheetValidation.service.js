@@ -55,6 +55,22 @@ const validateProcessSheet = async ({
         throw error;
     }
 
+    const parentState = await TechnicalSheet.findOne(mongoose.trusted({
+        _id: process.technicalSheet, workspace: workspaceId, dossier: dossierId,
+    })).select('status currentValidatedState').session(session);
+    if (!parentState || parentState.status !== TECHNICAL_SHEET_STATUS.ACTIVE) {
+        throw conflict('PROCESS_SHEET_PARENT_INACTIVE',
+            'La Fiche technique doit être active pour valider la fabrication.');
+    }
+    if (!parentState.currentValidatedState) {
+        throw conflict('PROCESS_SHEET_PARENT_UNVALIDATED',
+            'La Fiche technique doit être validée avant cette opération.');
+    }
+    if (parentState.currentValidatedState.toString() !== processReferenceId(process).toString()) {
+        throw conflict('PROCESS_SHEET_PARENT_CHANGED',
+            'La Fiche technique a été mise à jour. Comparez les compositions avant de valider.');
+    }
+
     // Lock the M-004 parent to serialize against M-004 validations and lifecycle changes.
     // No change to M-004 composition, economic data, status or modified timestamps.
     const parent = await TechnicalSheet.findOneAndUpdate(mongoose.trusted({
