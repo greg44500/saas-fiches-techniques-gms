@@ -1,3 +1,11 @@
+## M-006 — Incident sanitizeFilter de validation (2026-10-28)
+
+**Corrigé en code, vérification locale ouverte :** l'opérateur de filtre `$ne` sur le champ String `ProcessSheet.editorialState` causait une `CastError` lors de la validation avec `sanitizeFilter: true`. Remplacé dans le filtre atomique par l'égalité avec `DRAFT`. Le test HTTP reproduit la configuration Mongoose réelle et exige une validation réussie sans affectation exhaustive des ingrédients. Les tests, lint, build et la gate de release restent à exécuter ; la correction ne suffit pas à qualifier le lot 3 de validé. Le cycle de validation/revalidation et les permissions effectives doivent être confirmés sur la base locale.
+
+**Amélioration UX distincte, non approuvée pour implémentation :** examiner plus tard un récapitulatif avant validation (obligations bloquantes versus alertes facultatives) et un compteur « non affectés », sans transformer l'absence d'association de certains ingrédients en erreur. Ne pas mélanger avec le correctif technique.
+
+---
+
 ## M-006 — Lot 3 à valider localement (2026-10-28)
 
 **Dette de vérification ouverte :** après correctifs de séparation des révisions process/brouillon et blocage d'une validation si révision M-004 ouverte, obtenir les preuves réelles Vitest backend + frontend, ESLint, build, RBAC/tenancy, gestion 409, E2E et `release:check`. Confirmer la base MongoDB ciblée et l'application de la migration existante `m006-process-validate-permission` avant toute nouvelle mutation de rôles. Aucune preuve de cette exécution n'a encore été fournie ; ne pas annoncer le lot 3 validé. Le lot 4 demeure bloqué.
