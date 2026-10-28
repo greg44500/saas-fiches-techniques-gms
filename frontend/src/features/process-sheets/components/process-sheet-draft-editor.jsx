@@ -276,6 +276,8 @@ function ProcessSheetDraftEditor({
         ? 'La Fiche technique associée a été validée de nouveau. Comparez les compositions pour continuer.'
         : code === 'PROCESS_SHEET_PARENT_REVISION_OPEN'
           ? 'Une modification de la Fiche technique est en cours. Elle doit être terminée avant la validation.'
+          : code === 'PROCESS_SHEET_PARENT_INACTIVE' || code === 'PROCESS_SHEET_PARENT_UNVALIDATED'
+            ? 'La Fiche technique associée doit être active et validée pour continuer.'
           : code === 'PROCESS_SHEET_CHANGED'
             ? 'Cette Fiche process a changé depuis son ouverture. Actualisez ses données avant de continuer.'
             : code === 'PROCESS_SHEET_ALREADY_VALIDATED'
@@ -474,7 +476,9 @@ function ProcessSheetDraftEditor({
               </Button>
               {validationError && (validationErrorCode === 'PROCESS_SHEET_PARENT_CHANGED'
                 || validationErrorCode === 'PROCESS_SHEET_PARENT_REVISION_OPEN'
-                || validationErrorCode === 'PROCESS_SHEET_INGREDIENT_INVALID') && (
+                || validationErrorCode === 'PROCESS_SHEET_INGREDIENT_INVALID'
+                || validationErrorCode === 'PROCESS_SHEET_PARENT_INACTIVE'
+                || validationErrorCode === 'PROCESS_SHEET_PARENT_UNVALIDATED') && (
                 <Button type="button" onClick={() => {
                   setValidationError('');
                   setValidationErrorCode('');
