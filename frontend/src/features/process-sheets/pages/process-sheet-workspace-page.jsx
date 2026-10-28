@@ -62,7 +62,7 @@ function ProcessSheetWorkspacePage() {
 
   return (
     <div className="space-y-3">
-      <header className="flex min-w-0 items-center gap-3">
+      <header className="flex min-w-0 flex-wrap items-center gap-3">
         <Button asChild className="shrink-0" size="sm" variant="outline">
           <Link to={backPath}>
             <ArrowLeft aria-hidden="true" className="size-4" />
