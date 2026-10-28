@@ -77,6 +77,23 @@ function renderDialog(overrides = {}) {
   return props;
 }
 
+async function openTypeSelectWithKeyboard(user) {
+  const trigger = screen.getByRole('combobox', {
+    name: 'Type de valeur',
+  });
+
+  trigger.focus();
+  expect(trigger).toHaveFocus();
+
+  await user.keyboard('{Enter}');
+
+  await waitFor(() => {
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  return trigger;
+}
+
 describe('ProductDimensionContributionDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -194,10 +211,13 @@ describe('ProductDimensionContributionDialog', () => {
     expect(screen.queryByLabelText('Type de caractéristique'))
       .not.toBeInTheDocument();
 
-    await user.click(screen.getByLabelText('Type de valeur'));
-    await user.click(screen.getByRole('option', {
+    const typeSelect = await openTypeSelectWithKeyboard(user);
+    await user.click(await screen.findByRole('option', {
       name: 'Désignation de qualité',
     }));
+    await waitFor(() => {
+      expect(typeSelect).toHaveTextContent('Désignation de qualité');
+    });
 
     await user.type(
       screen.getByLabelText('Désignation de qualité'),
@@ -326,8 +346,11 @@ describe('ProductDimensionContributionDialog', () => {
     const user = userEvent.setup();
     renderDialog();
 
-    await user.click(screen.getByLabelText('Type de valeur'));
+    await openTypeSelectWithKeyboard(user);
 
+    expect(await screen.findByRole('option', {
+      name: 'Désignation de qualité',
+    })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Type commercial' }))
       .not.toBeInTheDocument();
   });
