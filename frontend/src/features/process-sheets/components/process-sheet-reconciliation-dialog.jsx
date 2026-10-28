@@ -38,6 +38,11 @@ function ProcessSheetReconciliationDialog({
     Object.hasOwn(choices, item.from) ? choices[item.from] : item.proposedTo)
     .filter((item) => item && item !== '__REMOVE__') ?? [];
   const duplicateTargets = new Set(selectedTargets).size !== selectedTargets.length;
+  const explicitChanges = plan?.assignments?.some((item) =>
+    Object.hasOwn(choices, item.from) && (
+      choices[item.from] === '__REMOVE__' || choices[item.from] !== item.proposedTo
+    )) ?? false;
+  const removedCount = Object.values(choices).filter((choice) => choice === '__REMOVE__').length;
   const technicalSheetPath = '/workspaces/' + workspaceId + '/dossiers/' + dossierId
     + '/technical-sheets/' + technicalSheetId;
 
@@ -128,6 +133,18 @@ function ProcessSheetReconciliationDialog({
                   ? 'La recette a changé. Vérifiez les associations ci-dessous avant de valider de nouveau la fabrication.'
                   : 'La recette de fabrication est identique. Seule la référence officielle doit être actualisée.'}
               </p>
+              {(plan.compositionChanged || explicitChanges) && (
+                <p className="text-sm text-muted-foreground">
+                  Après actualisation, la Fiche process restera en Brouillon
+                  jusqu’à une nouvelle validation explicite.
+                </p>
+              )}
+              {removedCount > 0 && (
+                <p className="text-sm text-muted-foreground" role="status">
+                  {removedCount} association(s) seront retirées des phases ou étapes.
+                  Les instructions écrites seront conservées.
+                </p>
+              )}
               <p className="text-sm text-muted-foreground">
                 {plan.oldIngredientCount} ingrédients dans l’ancienne composition,
                 {' '}{plan.newIngredients.length} dans la nouvelle.
