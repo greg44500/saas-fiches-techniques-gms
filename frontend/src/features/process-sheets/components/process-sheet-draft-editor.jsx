@@ -469,7 +469,6 @@ function ProcessSheetDraftEditor({
             <DialogHeader>
               <div className="flex items-center gap-2">
                 <DialogTitle>Valider avec des ingrédients non affectés ?</DialogTitle>
-
               </div>
               <DialogDescription className="sr-only">
                 Vérifiez les phases et étapes de la Fiche process avant confirmation.
