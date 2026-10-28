@@ -7,7 +7,7 @@
 | --- | --- | --- |
 | 1 | Prévisualisation épurée, noms d'ingrédients sans numéros de ligne | Code et tests committés ; validation locale non communiquée |
 | 2 | Contrat courant Brouillon ↔ Validée, revalidation après changement enregistré, pas d'historique M-006 | Documentation rectifiée ; aucun code modifié |
-| 3 | Validation officielle, revalidation, révisions indépendantes, droits, audit, tests | Code et tests ajoutés/corrigés au 2026-10-28 ; gates et QA locales non exécutées, lot non validé |
+| 3 | Validation officielle, revalidation, révisions indépendantes, droits, audit, tests | Correctif `sanitizeFilter`/`editorialState` et test HTTP ajoutés au 2026-10-28 ; gates et QA locales non exécutées, lot non validé |
 | 4 | Suppression définitive autonome avec confirmation, droits, transaction et réouverture de l'unicité 1:1 | À implémenter séparément |
 | 5 | Gates M-006/globales, QA responsive, PR/merge par le propriétaire | En attente |
 
