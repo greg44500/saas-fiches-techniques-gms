@@ -98,6 +98,10 @@ const getProcessSheet = async ({
         && (!current || manufacturingSignature(source) !== manufacturingSignature(current))
     );
 
+    const parentDraftOpen = parent ? Boolean(await TechnicalSheetDraft.exists(mongoose.trusted({
+        technicalSheet: parent._id, workspace: workspaceId, dossier: dossierId,
+    }))) : false;
+
     const draft = await ProcessSheetDraft.findOne(mongoose.trusted({
         processSheet: process._id, workspace: workspaceId, dossier: dossierId,
     })).lean();
@@ -111,9 +115,8 @@ const getProcessSheet = async ({
         } : null,
         sourceIngredients: ingredients,
         compositionOutdated,
-        // Kept for API compatibility only; a working M-004 draft is not a
-        // validation blocker when an official composition already exists.
-        parentDraftOpen: false,
+        // Informational only: a pending M-004 draft does not block M-006.
+        parentDraftOpen,
     };
 };
 
