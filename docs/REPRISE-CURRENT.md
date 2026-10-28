@@ -1,3 +1,19 @@
+# M-006 — Réconciliation des compositions M-004 et UX de validation (2026-10-28)
+
+**Branche :** `feature/m006-fiches-process`. **Statut : code et tests committés, aucune gate ni QA locale exécutée. Lot 3 non validé ; lot 4 toujours bloqué.**
+
+Le cas utilisateur `Tartine auvergnate` a révélé une absence de parcours pour adopter la validation officielle M-004 plus récente, y compris après une revalorisation sans changement de fabrication. Les codes de refus serveur étaient confondus dans un seul HTTP 409, tandis que les alertes techniques apparaissaient en ligne dans l'éditeur.
+
+**Implémenté :** champ `ProcessSheet.compositionValidation` optionnel pour la référence courante (repli sur `sourceValidation` d'origine, qui reste immuable) ; comparateur des snapshots officiels sur les données de fabrication, propositions d'identité d'occurrence strictement sûres, mapping manuel pour les autres, retrait explicite possible, transaction MongoDB avec double revision + verrou M-004, droits EDIT+VALIDATE, audit métier sans historique de versions M-006 ; routes GET `/:id/composition-review` et POST `/:id/reconcile`. Le POST de validation utilise désormais la référence courante et expose des codes métier dédiés (ancienne composition, révision ouverte, parent indisponible, révision process modifiée, étape manquante, association invalide). Le Core n'est pas modifié.
+
+**UI :** suppression du bandeau d'avertissement de composition et des erreurs techniques affichées sous les boutons ; action compacte « Composition à actualiser »/« Fiche technique en modification » en en-tête, dialogue Base UI de comparaison et affectation contrôlée avec issue « Retirer l'association », confirmation de validation avec signalement non bloquant des ingrédients non affectés, erreurs en dialogue avec action, distinction « Enregistré » (sauvegarde locale) et « Brouillon »/« Validée » (état métier). Le référencement est explicite et sans pertes silencieuses d'instructions.
+
+**Tests ajoutés/mis à jour, non exécutés :** comparateur (économie seule, changement de quantité, doublons, suppression explicite, cibles invalides), HTTP Supertest (validation M-004 renouvelée, maintien Validée sans changement de fabrication, retour Brouillon sur composition modifiée, 400/403/409, audit, unique process), RTL dialogue et formulaire, contrat RTK Query. Exécution locale nécessaire : suite backend process et migrations, frontend process-sheets, lint backend/frontend, build, E2E métier, `release:check` sur la base dédiée. Vérifier les permissions M-006, l'absence de double association, le rollback en transaction, le rendu mobile/clavier clair/sombre, et les synchronisations RTK Query à la revalidation M-004.
+
+**Référence technique :** `docs/m006/M-006-RECONCILIATION.md`. Le rétablissement des références M-004 n'est pas une revalidation forcée de M-004, un clonage de Fiche process ou un historique M-006. Champ facultatif : aucune migration destructive ; contrôler compatibilité et sauvegarde de DB avant un déploiement. La prise en compte de la composition effectivement différente conserve l'obligation de nouvelle validation explicite.
+
+---
+
 # M-006 — Correctif ciblé du clic Valider (2026-10-28)
 
 **Constat utilisateur :** lors de `POST /:processSheetId/validate`, une `CastError` Mongoose sur `editorialState` signalait `{ $ne: 'VALIDATED' }`. La configuration de production applique `mongoose.set('sanitizeFilter', true)` dans `backend/config/db.js`. Le `mongoose.trusted()` entourant le filtre complet ne suffit pas à signaler comme fiable la valeur opérateur du champ imbriqué.
