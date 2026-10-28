@@ -58,7 +58,9 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
     expect(preview).toHaveFocus();
     await user.tab();
     expect(compare).toHaveFocus();
-    expect(await screen.findByText('La composition est déjà à jour.')).toBeVisible();
+    const explanation = await screen.findByText('La composition est déjà à jour.');
+    expect(explanation).toBeInTheDocument();
+    expect(explanation.closest('[data-open]')).not.toBeNull();
     await user.keyboard('{Enter}');
     await user.keyboard(' ');
     await user.click(compare);
@@ -89,7 +91,9 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
       expect(action).toHaveAttribute('aria-disabled', 'true');
       action.focus();
       expect(action).toHaveFocus();
-      expect(await screen.findByText(help)).toBeVisible();
+      const explanation = await screen.findByText(help);
+      expect(explanation).toBeInTheDocument();
+      expect(explanation.closest('[data-open]')).not.toBeNull();
 
       await user.keyboard('{Enter}');
       await user.keyboard(' ');
