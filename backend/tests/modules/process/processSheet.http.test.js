@@ -454,6 +454,93 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
         await request(app).put(uri).set(bearer(member.token)).send(body).expect(403);
     });
 
+    it('valide puis revalide le contenu courant avec deux révisions indépendantes', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id;
+        const detail = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        const lineKey = detail.sourceIngredients.lines[0].lineKey;
+        const phases = [{
+            id: 'phase-valide-1', title: 'Préparation', instructions: '',
+            ingredientLineKeys: [], steps: [{
+                id: 'etape-valide-1', title: 'Assembler', instructions: 'Mélanger',
+                ingredientLineKeys: [lineKey],
+            }],
+        }];
+        const saved = (await request(app).put(uri + '/draft')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 0, phases, unassignedReasons: [] })
+            .expect(200)).body.data.draft;
+        expect(saved).toMatchObject({ revision: 1, processRevision: 1 });
+        await request(app).post(uri + '/validate').set(bearer(owner.token))
+            .send({ expectedRevision: 0 }).expect(409);
+
+        const first = (await request(app).post(uri + '/validate')
+            .set(bearer(owner.token)).send({ expectedRevision: 1 })
+            .expect(200)).body.data.process;
+        expect(first).toMatchObject({ id: process.id, editorialState: 'VALIDATED', revision: 2 });
+        const afterFirst = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        expect(afterFirst.draft.revision).toBe(1);
+        expect(afterFirst.process.revision).toBe(2);
+
+        // Identical content must not invalidate the official process state.
+        const identical = (await request(app).put(uri + '/draft')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 1, phases, unassignedReasons: [] })
+            .expect(200)).body.data.draft;
+        expect(identical).toMatchObject({ revision: 2, processRevision: 3 });
+        expect((await ProcessSheet.findById(process.id)).editorialState).toBe('VALIDATED');
+
+        const revised = structuredClone(phases);
+        revised[0].steps[0].instructions = 'Mélanger puis dresser';
+        const modified = (await request(app).put(uri + '/draft')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 2, phases: revised, unassignedReasons: [] })
+            .expect(200)).body.data.draft;
+        expect(modified).toMatchObject({ revision: 3, processRevision: 4 });
+        const current = await ProcessSheet.findById(process.id);
+        expect(current.editorialState).toBe('DRAFT');
+        expect(current.validatedAt).toBeNull();
+        expect(current.currentValidatedState).toBeNull();
+        await request(app).post(uri + '/validate').set(bearer(owner.token))
+            .send({ expectedRevision: 3 }).expect(409);
+
+        const second = (await request(app).post(uri + '/validate')
+            .set(bearer(owner.token)).send({ expectedRevision: 4 })
+            .expect(200)).body.data.process;
+        expect(second).toMatchObject({ id: process.id, editorialState: 'VALIDATED', revision: 5 });
+        expect(await ProcessSheet.countDocuments({ technicalSheet: valid.created.sheet.id })).toBe(1);
+        expect(await ProcessSheetDraft.countDocuments({ processSheet: process.id })).toBe(1);
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: process.id, action: 'PROCESS_SHEET_VALIDATED',
+        })).toBe(2);
+    });
+
+    it('refuse la validation vide et la validation HTTP sans permission dédiée', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id + '/validate';
+        await request(app).post(uri).set(bearer(owner.token))
+            .send({ expectedRevision: 0 }).expect(400);
+
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: owner.workspace._id, actorId: owner.owner._id,
+            permissions: [PROCESS_SHEET_PERMISSION.READ, PROCESS_SHEET_PERMISSION.EDIT],
+        });
+        await grantDossierAccess({
+            workspaceId: owner.workspace._id, dossierId: dossier._id,
+            membershipId: member.membership._id, actorId: owner.owner._id,
+        });
+        await request(app).post(uri).set(bearer(member.token))
+            .send({ expectedRevision: 0 }).expect(403);
+        expect((await ProcessSheet.findById(process.id)).editorialState).toBe('DRAFT');
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: process.id, action: 'PROCESS_SHEET_VALIDATED',
+        })).toBe(0);
+    });
+
     it('refuse les écritures si le parent M-004 est archivé et n’altère pas le brouillon', async () => {
         const valid = await createValidated();
         const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
