@@ -669,7 +669,7 @@ const supersedeM004Validation = async (originalId, technicalSheetId, { quantity,
 };
 
 describe('M-006 — réconciliation officielle après revalidation M-004', () => {
-    it('conserve une Fiche process validée si la recette est identique, sans nouvelle version M-006', async () => {
+    it('conserve une Fiche process validée si seule la quantité M-004 évolue, sans version M-006', async () => {
         const valid = await createValidated();
         const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
         const uri = base + '/' + process.id;
@@ -704,6 +704,15 @@ describe('M-006 — réconciliation officielle après revalidation M-004', () =>
         const review = (await request(app).get(uri + '/composition-review')
             .set(bearer(owner.token)).expect(200)).body.data;
         expect(review.status).toBe('CURRENT');
+        // An economic/quantity-only revalidation is not an actionable mapping.
+        // A direct reconcile attempt must roll back without changing M-006.
+        const unnecessaryReconciliation = await request(app).post(uri + '/reconcile')
+            .set(bearer(owner.token))
+            .send({
+                expectedRevision: 2, expectedDraftRevision: 1,
+                currentValidationId: nextValidation._id.toString(), decisions: [],
+            }).expect(409);
+        expect(unnecessaryReconciliation.body.code).toBe('PROCESS_SHEET_PARENT_CHANGED');
         const refreshed = (await request(app).get(uri)
             .set(bearer(owner.token)).expect(200)).body.data;
         expect(refreshed.compositionOutdated).toBe(false);
@@ -713,6 +722,7 @@ describe('M-006 — réconciliation officielle après revalidation M-004', () =>
         expect(stored.sourceValidation.toString()).toBe(valid.validated.validation.id);
         expect(stored.compositionValidation).toBeNull();
         expect(stored.editorialState).toBe('VALIDATED');
+        expect(stored.revision).toBe(2);
         expect(await ProcessSheet.countDocuments({ technicalSheet: valid.created.sheet.id })).toBe(1);
         expect(await ProcessSheetDraft.countDocuments({ processSheet: process.id })).toBe(1);
         expect(await BusinessActivityEvent.countDocuments({
@@ -808,7 +818,13 @@ describe('M-006 — réconciliation officielle après revalidation M-004', () =>
         const rejected = await request(app).post(uri + '/reconcile')
             .set(bearer(owner.token)).send(payload).expect(400);
         expect(rejected.body.code).toBe('PROCESS_SHEET_MAPPING_REQUIRED');
-        expect((await ProcessSheet.findById(process.id)).compositionValidation).toBeNull();
+        const unchanged = await ProcessSheet.findById(process.id);
+        expect(unchanged.compositionValidation).toBeNull();
+        expect(unchanged.revision).toBe(1);
+        expect((await ProcessSheetDraft.findOne({ processSheet: process.id })).revision).toBe(1);
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: process.id, action: 'PROCESS_SHEET_COMPOSITION_RECONCILED',
+        })).toBe(0);
 
         await request(app).post(uri + '/reconcile').set(bearer(owner.token))
             .send({ ...payload, decisions: [{
@@ -822,6 +838,11 @@ describe('M-006 — réconciliation officielle après revalidation M-004', () =>
             ingredientLineKeys: [review.newIngredients[0].lineKey],
         });
         expect(refreshed.process.editorialState).toBe('DRAFT');
+        expect(refreshed.process.compositionValidationId).toBe(review.currentValidationId);
+        expect(refreshed.process.revision).toBe(2);
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: process.id, action: 'PROCESS_SHEET_COMPOSITION_RECONCILED',
+        })).toBe(1);
         await request(app).post(uri + '/validate').set(bearer(owner.token))
             .send({ expectedRevision: 2 }).expect(200);
         expect(await BusinessActivityEvent.countDocuments({
