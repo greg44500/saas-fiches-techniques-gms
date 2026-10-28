@@ -84,6 +84,9 @@ function ProcessSheetWorkspacePage() {
             {parentDraftOpen ? 'Fiche technique en modification' : 'Composition à actualiser'}
           </Button>
         )}
+        <span className="shrink-0 text-xs text-muted-foreground" aria-label="État de la Fiche process">
+          {process.editorialState === 'VALIDATED' ? 'Validée' : 'Brouillon'}
+        </span>
         <InfoTooltip
           label="À propos du brouillon de fabrication"
           content="La Fiche process est liée à la validation M-004 sélectionnée lors de sa création. Le travail sur les phases et étapes sera enregistré dans un brouillon spécifique au process."
