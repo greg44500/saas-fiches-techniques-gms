@@ -66,6 +66,7 @@ beforeEach(() => {
   mocks.save.mockImplementation((body) => ({
     unwrap: vi.fn().mockResolvedValue({
       id: 'draft-1', revision: body.expectedRevision + 1,
+      processRevision: body.expectedRevision + 1,
       phases: body.phases, unassignedReasons: body.unassignedReasons,
     }),
   }));
@@ -668,6 +669,46 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     });
     expect(mocks.save).not.toHaveBeenCalled();
     expect(mocks.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('autorise la revalidation quand la révision agrégat diffère de celle du brouillon', async () => {
+    const user = userEvent.setup();
+    const initialDraft = { ...props.initialDraft, revision: 1 };
+    view({ canValidate: true, editorialState: 'DRAFT', processRevision: 2, initialDraft });
+    const button = screen.getByRole('button', { name: 'Valider la Fiche process' });
+    expect(button).toBeEnabled();
+    mocks.validate.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({
+      id: 'process-1', revision: 3, editorialState: 'VALIDATED',
+    }) });
+    mocks.reload.mockResolvedValue({ data: { draft: initialDraft } });
+    await user.click(button);
+    expect(mocks.validate).toHaveBeenCalledWith(expect.objectContaining({
+      expectedRevision: 2,
+    }));
+  });
+
+  it('utilise après sauvegarde la nouvelle révision agrégat et non celle du brouillon', async () => {
+    const user = userEvent.setup();
+    view({ canValidate: true, editorialState: 'DRAFT', processRevision: 2,
+      initialDraft: { ...props.initialDraft, revision: 1 } });
+    const step = await addStep(user);
+    await user.type(within(step).getByRole('textbox', { name: 'Instructions' }), 'Assembler');
+    mocks.save.mockImplementation((body) => ({
+      unwrap: vi.fn().mockResolvedValue({
+        id: 'draft-1', revision: 2, processRevision: 3,
+        phases: body.phases, unassignedReasons: body.unassignedReasons,
+      }),
+    }));
+    await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
+    const button = screen.getByRole('button', { name: 'Valider la Fiche process' });
+    expect(button).toBeEnabled();
+    mocks.validate.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({
+      id: 'process-1', revision: 4, editorialState: 'VALIDATED',
+    }) });
+    mocks.reload.mockResolvedValue({ data: { draft: { ...props.initialDraft, revision: 2 } } });
+    await user.click(button);
+    expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ expectedRevision: 1 }));
+    expect(mocks.validate).toHaveBeenCalledWith(expect.objectContaining({ expectedRevision: 3 }));
   });
 
   it('bloque la validation en présence de changements locaux ou de M-004 décalée', () => {
