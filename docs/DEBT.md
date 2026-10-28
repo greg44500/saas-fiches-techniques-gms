@@ -1,3 +1,11 @@
+## M-006 — Export PDF / impression, fonctionnalité à cadrer (2026-10-28)
+
+**Besoin utilisateur :** exporter une Fiche process dans un vrai document PDF imprimable depuis le panneau d'actions. L'icône est réservée (présente, désactivée, tooltip « Export PDF à venir »), sans simulation de téléchargement ou d'impression. Le moteur PDF M-004 ne fournit pas aujourd'hui de contrat d'export M-006 ; avant de l'activer, cadrer le périmètre du document (brouillon versus validée, données M-004 affichées ou non, confidentialité, règles de RBAC et quotas/capabilities, contenu de phases/étapes et contrôles sanitaires, pagination/format, historique et tenue de l'export) puis implémenter et tester dans un lot métier séparé. Ne pas ouvrir prématurément le lot 4 de suppression.
+
+**Gate UX restante :** tests RTL de statuts, cinq icônes et confirmation sans phrase redondante ajoutés/modifiés, mais non exécutés ; vérifier rendu desktop/mobile, thème clair/sombre, lecteur d'écran, focus et touches clavier avant PR.
+
+---
+
 ## M-006 — Preuve post-correction des deux fixtures HTTP (2026-10-28)
 
 **À vérifier localement :** les deux échecs `CURRENT` / `REVIEW_REQUIRED` inversés dans `processSheet.http.test.js` provenaient de mutations de fixture contradictoires (nom vs quantité). Scénarios corrigés et assertions ajoutées pour snapshots, absence de mutations sous 400/409, remappage explicite, révisions et audit. Exécution utilisateur antérieure : 68/70 réussis ; nouvelle exécution **inconnue**. Relancer d'abord le fichier isolé, puis les huit fichiers M-006, lint et gates applicables avant d'envisager la fin du lot 3. Aucune extension Core ou lot 4.
