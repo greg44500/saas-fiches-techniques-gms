@@ -1,3 +1,11 @@
+# M-006 — Harmonisation des badges d’état dans la liste (2026-10-28)
+
+**Branche :** `feature/m006-fiches-process`. **Périmètre strict :** colonne « État » de la liste des Fiches process du Dossier. Affichage aligné sur l’éditeur et sur le `StatusBadge` partagé : `DRAFT` → badge « Brouillon » avec ton `warning`, `VALIDATED` → badge « Validée » avec ton `success`. Un état inconnu donne un badge neutre « État indisponible », et non un faux « Brouillon ». Aucun changement de valeur métier, permission, API, stockage, Core ou comportement de validation.
+
+**Tests RTL modifiés :** vérifier la présence et les classes de couleur des deux badges, plus le repli neutre sur un état inconnu. Tests/lint/build non exécutés depuis GitHub ; contrôler localement le test ciblé, la suite process-sheets, le lint et le build. Pas de PR, merge ou ouverture du lot 4.
+
+---
+
 # M-006 — Badge éditorial, statut d'enregistrement et icône PDF (2026-10-28)
 
 **Branche de travail :** `feature/m006-fiches-process`. Ajustement UX demandé sur captures : badge `Brouillon` (warning) / `Validée` (success) immédiatement à droite du titre, via `StatusBadge` partagé comme M-004 ; le statut de sauvegarde manuelle (`Enregistré`, `Non enregistré`, etc.) est désormais **hors** du panneau, directement sur sa gauche. Le panneau est réservé aux icônes d'actions. La phrase « Vous pouvez néanmoins valider la Fiche process. » a été supprimée de la confirmation des ingrédients non affectés, sans modifier sa nature non bloquante.
