@@ -1,3 +1,15 @@
+## Décision métier prioritaire — identité d’ingrédient seule (2026-10-28)
+
+Décision explicite du propriétaire, postérieure au cadrage du 27/10 : **seul un changement du nom ou de la Référence Produit d’un ingrédient M-004 déclenche un contrôle de composition M-006**. Le nombre d’occurrences d’ingrédients compte dans l’identité de la liste, y compris les doublons. Les prix, quantités nettes/brutes, unités, fournisseurs, références d’Articles fournisseur, ordre, notes, optimisations et bases de production ne déclenchent ni désynchronisation, ni modale, ni revalidation M-006 à eux seuls. Référence métier = identité de la Référence Produit (`productVariantId`), non référence d’Article fournisseur.
+
+Le système compare la **liste multi-ensemble** des couples `productVariantId` + `productVariantName` des snapshots officiels M-004, et non leurs identifiants de validation. Si les identités sont identiques, la Fiche process existante reste éditable et validable sur sa composition de référence, sans migration de lignes ni réécriture de l’historique. Un brouillon M-004 encore ouvert ne modifie pas la composition officiellement validée et ne bloque pas une nouvelle validation M-006. Les écritures concurrentes doivent rester protégées.
+
+Si une identité d’ingrédient change, la modale doit montrer uniquement les ingrédients ajoutés/retirés ou renommés et les associations réellement ambiguës ; toutes les autres associations, phases et instructions sont conservées. La nouvelle référence de validation officielle est adoptée seulement après confirmation transactionnelle des correspondances. Les ingrédients non affectés font l’objet d’un **avertissement non bloquant uniquement à la validation** : si tous sont affectés, pas de modale de confirmation supplémentaire.
+
+Cette décision **remplace** les règles antérieures fondées sur la seule différence d’identifiant M-004, la quantité ou l'existence d’un brouillon M-004 pour le **parcours de validation d’une Fiche process existante**. La règle séparée de création initiale depuis M-004 validée et sans brouillon reste inchangée. Cf. `docs/m006/M-006-RECONCILIATION.md`.
+
+---
+
 # M-006 — Fiches process — Proposition de contrat fonctionnel
 
 **Statut : CONTRAT FONCTIONNEL M-006 VALIDÉ — IMPLÉMENTATION AUTORISÉE LE 2026-10-26, LIVRAISON PARTIELLE EN COURS**  
