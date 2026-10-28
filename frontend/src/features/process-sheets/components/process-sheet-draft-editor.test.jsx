@@ -653,16 +653,41 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     expect(mocks.save).not.toHaveBeenCalled();
   });
 
-  it('valide explicitement via la révision process sans enregistrer automatiquement', async () => {
+  const readyDraft = {
+    id: 'draft-1', revision: 0, unassignedReasons: [],
+    phases: [{
+      id: 'phase-validate-1', title: 'Préparation', instructions: '',
+      ingredientLineKeys: [], steps: [{
+        id: 'step-validate-1', title: 'Assembler', instructions: 'Mélanger les ingrédients',
+        ingredientLineKeys: [],
+      }],
+    }],
+  };
+
+  it('empêche de confirmer une procédure sans étape documentée', async () => {
     const user = userEvent.setup();
     view({ canValidate: true, processRevision: 0 });
+    await user.click(screen.getByRole('button', { name: 'Valider la Fiche process' }));
+    expect(screen.getByRole('dialog', { name: 'Confirmer la validation' }))
+      .toHaveTextContent('Au moins une étape avec des instructions est nécessaire');
+    expect(screen.getByRole('button', { name: 'Confirmer la validation' })).toBeDisabled();
+    expect(mocks.validate).not.toHaveBeenCalled();
+  });
+
+  it('valide explicitement via la révision process sans enregistrer automatiquement', async () => {
+    const user = userEvent.setup();
+    view({ canValidate: true, processRevision: 0, initialDraft: readyDraft });
     const button = screen.getByRole('button', { name: 'Valider la Fiche process' });
     expect(button).toBeEnabled();
     mocks.validate.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({
       id: 'process-1', editorialState: 'VALIDATED',
     }) });
-    mocks.reload.mockResolvedValue({ data: { draft: props.initialDraft } });
+    mocks.reload.mockResolvedValue({ data: { draft: readyDraft } });
     await user.click(button);
+    expect(screen.getByRole('dialog', { name: 'Confirmer la validation' }))
+      .toHaveTextContent('2 ingrédient(s) non affecté(s)');
+    expect(mocks.validate).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Confirmer la validation' }));
     expect(mocks.validate).toHaveBeenCalledWith({
       workspaceId: 'workspace-1', dossierId: 'dossier-1',
       processSheetId: 'process-1', expectedRevision: 0,
@@ -673,7 +698,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
 
   it('autorise la revalidation quand la révision agrégat diffère de celle du brouillon', async () => {
     const user = userEvent.setup();
-    const initialDraft = { ...props.initialDraft, revision: 1 };
+    const initialDraft = { ...readyDraft, revision: 1 };
     view({ canValidate: true, editorialState: 'DRAFT', processRevision: 2, initialDraft });
     const button = screen.getByRole('button', { name: 'Valider la Fiche process' });
     expect(button).toBeEnabled();
@@ -682,6 +707,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     }) });
     mocks.reload.mockResolvedValue({ data: { draft: initialDraft } });
     await user.click(button);
+    await user.click(screen.getByRole('button', { name: 'Confirmer la validation' }));
     expect(mocks.validate).toHaveBeenCalledWith(expect.objectContaining({
       expectedRevision: 2,
     }));
@@ -707,6 +733,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     }) });
     mocks.reload.mockResolvedValue({ data: { draft: { ...props.initialDraft, revision: 2 } } });
     await user.click(button);
+    await user.click(screen.getByRole('button', { name: 'Confirmer la validation' }));
     expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ expectedRevision: 1 }));
     expect(mocks.validate).toHaveBeenCalledWith(expect.objectContaining({ expectedRevision: 3 }));
   });
