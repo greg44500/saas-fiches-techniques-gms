@@ -1,3 +1,9 @@
+## M-006 — Lot 3 à valider localement (2026-10-28)
+
+**Dette de vérification ouverte :** après correctifs de séparation des révisions process/brouillon et blocage d'une validation si révision M-004 ouverte, obtenir les preuves réelles Vitest backend + frontend, ESLint, build, RBAC/tenancy, gestion 409, E2E et `release:check`. Confirmer la base MongoDB ciblée et l'application de la migration existante `m006-process-validate-permission` avant toute nouvelle mutation de rôles. Aucune preuve de cette exécution n'a encore été fournie ; ne pas annoncer le lot 3 validé. Le lot 4 demeure bloqué.
+
+---
+
 # SAAS-FICHES-TECHNIQUES-GMS — Dettes actives et héritées
 ## GMS-M006-VALIDATION-CURRENT — Cycle courant sans historique (2026-10-27)
 
