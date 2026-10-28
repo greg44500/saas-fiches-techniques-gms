@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 const captured = vi.hoisted(() => ({
   tags: [], endpoints: {},
   listTitlesHook: vi.fn(), createTitleHook: vi.fn(), validateHook: vi.fn(),
+  reviewHook: vi.fn(), reconcileHook: vi.fn(),
 }));
 
 vi.mock('@/services/api/base-api', () => ({
@@ -20,6 +21,8 @@ vi.mock('@/services/api/base-api', () => ({
             useListProcessPhaseTitlesQuery: captured.listTitlesHook,
             useCreateProcessPhaseTitleMutation: captured.createTitleHook,
             useValidateProcessSheetMutation: captured.validateHook,
+            useGetProcessSheetReconciliationQuery: captured.reviewHook,
+            useReconcileProcessSheetMutation: captured.reconcileHook,
           };
         }),
       };
@@ -33,6 +36,8 @@ import {
   useListProcessPhaseTitlesQuery,
   useCreateProcessPhaseTitleMutation,
   useValidateProcessSheetMutation,
+  useGetProcessSheetReconciliationQuery,
+  useReconcileProcessSheetMutation,
 } from '@/features/process-sheets/api/process-sheets-api';
 
 const scope = {
@@ -44,6 +49,8 @@ describe('M-006 — contrats frontend RTK Query', () => {
     expect(useListProcessPhaseTitlesQuery).toBe(captured.listTitlesHook);
     expect(useCreateProcessPhaseTitleMutation).toBe(captured.createTitleHook);
     expect(useValidateProcessSheetMutation).toBe(captured.validateHook);
+    expect(useGetProcessSheetReconciliationQuery).toBe(captured.reviewHook);
+    expect(useReconcileProcessSheetMutation).toBe(captured.reconcileHook);
   });
 
   it('déclare les seules routes réelles du backend M-006', () => {
@@ -53,7 +60,7 @@ describe('M-006 — contrats frontend RTK Query', () => {
       'listProcessPhaseTitles',
       'listDossierPhaseTemplates', 'listEligibleProcessTechnicalSheets',
       'listProcessSheets', 'listWorkspacePhaseTemplates', 'saveProcessSheetDraft',
-      'validateProcessSheet',
+      'validateProcessSheet', 'getProcessSheetReconciliation', 'reconcileProcessSheet',
     ].sort());
     expect(captured.tags).toEqual(expect.arrayContaining([
       'ProcessSheetComposition', 'ProcessSheetList', 'ProcessSheet',
@@ -117,6 +124,29 @@ describe('M-006 — contrats frontend RTK Query', () => {
     })).toEqual({ id: 'phase-2', title: 'Découpe' });
     expect(create.invalidatesTags(undefined, undefined, { workspaceId: 'w' }))
       .toEqual([{ type: 'ProcessPhaseTitles', id: 'w' }]);
+  });
+
+  it('expose une analyse en lecture et un rapprochement explicite avec double concurrence', () => {
+    const review = captured.endpoints.getProcessSheetReconciliation;
+    const reconcile = captured.endpoints.reconcileProcessSheet;
+    const params = { ...scope, processSheetId: 'p' };
+    expect(review.query(params)).toEqual({
+      url: '/workspaces/w/dossiers/d/process-sheets/p/composition-review',
+    });
+    expect(reconcile.query({
+      ...params, expectedRevision: 8, expectedDraftRevision: 4,
+      currentValidationId: 'new-valid', decisions: [{ from: 'old', to: null }],
+    })).toEqual({
+      url: '/workspaces/w/dossiers/d/process-sheets/p/reconcile',
+      method: 'POST', body: {
+        expectedRevision: 8, expectedDraftRevision: 4,
+        currentValidationId: 'new-valid', decisions: [{ from: 'old', to: null }],
+      },
+    });
+    expect(reconcile.invalidatesTags(null, null, params)).toEqual([
+      { type: 'ProcessSheet', id: 'w:d:p' },
+      { type: 'ProcessSheetList', id: 'w:d' },
+    ]);
   });
 
   it('valide une Fiche process avec la révision de l’agrégat et invalide les caches', () => {
