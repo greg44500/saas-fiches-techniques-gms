@@ -25,7 +25,8 @@ const props = {
 };
 const plan = {
   status: 'REVIEW_REQUIRED',
-  compositionChanged: false,
+  compositionChanged: true,
+  ingredientChanges: [{ type: 'ADDED', name: 'Tomate nouvelle', reference: 'variant-a', count: 1 }],
   oldIngredientCount: 2,
   newIngredients: [
     { lineKey: 'line:new-1', name: 'Tomate', position: 0 },
@@ -62,9 +63,8 @@ describe('M-006 — dialogue de réconciliation M-004', () => {
     const user = userEvent.setup();
     view();
     const dialog = screen.getByRole('dialog', { name: 'Actualiser la Fiche process' });
-    expect(dialog).toHaveTextContent('Composition identique');
-    expect(screen.getByRole('button', { name: 'Explication de la comparaison' }))
-      .toBeInTheDocument();
+    expect(dialog).toHaveTextContent('Les ingrédients ci-dessous ont changé');
+    expect(dialog).toHaveTextContent('Tomate nouvelle');
     expect(screen.getByRole('button', { name: 'À propos de l’actualisation de composition' }))
       .toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Confirmer l’actualisation' }));
@@ -86,26 +86,15 @@ describe('M-006 — dialogue de réconciliation M-004', () => {
       isLoading: false, isFetching: false, isError: false, refetch: vi.fn(),
     });
     view();
-    expect(screen.getByRole('dialog')).toHaveTextContent('Composition modifiée');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Les ingrédients ci-dessous ont changé');
     expect(screen.getByRole('button', { name: 'Confirmer l’actualisation' })).toBeDisabled();
     expect(mocks.reconcile).not.toHaveBeenCalled();
   });
 
-  it('propose le bon parcours si une révision M-004 est encore ouverte', () => {
-    mocks.review.mockReturnValue({
-      data: { status: 'PARENT_REVISION_OPEN' },
-      isLoading: false, isFetching: false, isError: false, refetch: vi.fn(),
-    });
+  it('présente seulement les associations incertaines', () => {
     view();
-    expect(screen.getByRole('dialog')).toHaveTextContent('modification de la Fiche technique');
-    expect(screen.getByRole('link', { name: 'Ouvrir la Fiche technique' }))
-      .toHaveAttribute('href',
-        '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets/sheet-1');
-    expect(screen.getByRole('button', { name: 'Confirmer l’actualisation' }))
-      .toBeDisabled();
-    expect(screen.getByRole('button', {
-      name: 'Disponibilité de la confirmation d’actualisation',
-    })).toBeInTheDocument();
+    expect(screen.queryByText('Tomate · occurrence 1')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmer l’actualisation' })).toBeEnabled();
   });
 
   it('garde la confirmation visible mais désactivée quand la composition est déjà courante', () => {
