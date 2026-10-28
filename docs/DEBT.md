@@ -1,3 +1,9 @@
+## M-006 — Gate UI panneau de contrôle (2026-10-28)
+
+**En attente de preuves d'exécution et de QA :** après regroupement des quatre actions dans `ProcessSheetControlPanel` et adoption de `aria-disabled` pour préserver l'accès aux tooltips, exécuter tests RTL M-006, lint frontend et build ; tester explicitement le non-déclenchement des callbacks sous clavier/souris sur les commandes indisponibles, le focus visible, l'usage tactile, les thèmes et le responsive. Le contrôle statique n'est pas un test vert. Lot 3 toujours non validé ; ne pas ouvrir le lot 4.
+
+---
+
 ## M-006 — QA des commandes persistantes et info-bulles (2026-10-28)
 
 **À vérifier localement :** `Actualiser la composition`, `Valider`, `Enregistrer` et `Confirmer l’actualisation` restent visibles dans les états habilité/non habilité, composition actuelle/décalée, parent en révision, brouillon local modifié, plan en chargement ou en erreur, cas d'associations incertaines. Vérifier que les contrôles `disabled` correspondent aux gardes backend, que les info-bulles restent utilisables clavier/tactile et que les modales ne perdent pas leurs noms/descriptions accessibles. Tests codés mais non exécutés. Périmètre UI M-006 uniquement, lot 3 non validé.
