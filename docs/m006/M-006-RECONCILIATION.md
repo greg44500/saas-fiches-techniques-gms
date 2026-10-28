@@ -1,3 +1,11 @@
+## Raffinement UI des statuts et export PDF (2026-10-28)
+
+Le badge éditorial M-006 se situe immédiatement après le titre de la Fiche process (Brouillon : `StatusBadge warning`, Validée : `StatusBadge success`, comme M-004). Le statut de sauvegarde manuelle est à l'extérieur, **immédiatement à gauche** de la barre d'icônes. La barre ne contient plus d'état éditorial ni de texte « Enregistré ». Elle présente cinq icônes : Aperçu, Actualiser composition, Enregistrer, **Exporter PDF (visuellement présent mais désactivé)**, Valider. Le PDF véritable n'est pas encore implémenté ni cadré en M-006 ; seule l'emplacement permanent de l'action est ajouté. Il ne doit pas exister de téléchargement factice ni d'action `window.print` déguisée en export PDF.
+
+La confirmation « Valider avec des ingrédients non affectés ? » conserve uniquement le décompte des ingrédients, les contrôles structurels requis et les actions Annuler / Valider quand même ; suppression de la phrase redondante sur l'autorisation de valider. Tests RTL adaptés, sans preuve de run local.
+
+---
+
 ## Règle d’identité prioritaire et UX simplifiée — 2026-10-28
 
 **Décision propriétaire appliquée au lot 3 :** M-006 ne traite comme changement de composition que l'ajout, le retrait ou la modification du **nom ou de la référence produit d'un ingrédient**. Les doublons d'un même ingrédient sont comptés séparément. La Référence Produit correspond au `productVariantId`; une référence fournisseur n'est pas une identité d'ingrédient. Prix, quantités, unités, ordre des lignes, fournisseurs et valeurs économiques sont ignorés pour la synchronisation M-006.
