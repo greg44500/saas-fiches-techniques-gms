@@ -61,6 +61,12 @@ function ProcessSheetDraftEditor({
 }) {
   const [form, setForm] = useState(() => normalize(initialDraft));
   const [revision, setRevision] = useState(initialDraft?.revision ?? 0);
+  // A validation changes the process revision but not the draft revision.
+  // Keep the two server concurrency tokens separate.
+  const [serverRevisions, setServerRevisions] = useState(() => ({
+    process: processRevision,
+    draft: initialDraft?.revision ?? 0,
+  }));
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState('');
   const [saveError, setSaveError] = useState(false);
@@ -87,6 +93,15 @@ function ProcessSheetDraftEditor({
       setExpandedPhaseIds(initialDraft?.phases?.[0]?.id ? [initialDraft.phases[0].id] : []);
     }
   }, [initialDraft, dirty, revision]);
+
+  // A refetch may advance the aggregate after validation (without changing
+  // the draft), or bring changes from another tab. Never overwrite dirty work.
+  useEffect(() => {
+    if (!dirty && initialDraft && initialDraft.revision >= revision
+      && processRevision > serverRevisions.process) {
+      setServerRevisions({ process: processRevision, draft: initialDraft.revision });
+    }
+  }, [dirty, initialDraft, processRevision, revision, serverRevisions.process]);
 
   useEffect(() => {
     if (!dirty) return undefined;
@@ -215,6 +230,7 @@ function ProcessSheetDraftEditor({
       }).unwrap();
       setForm(normalize(result));
       setRevision(result.revision);
+      setServerRevisions({ process: result.processRevision, draft: result.revision });
       setDirty(false);
       setConflict(false);
       setSaveError(false);
@@ -231,12 +247,13 @@ function ProcessSheetDraftEditor({
   };
   const validate = async () => {
     if (!canValidate || dirty || conflict || saving.isLoading || validating.isLoading
-      || processRevision !== revision || editorialState === 'VALIDATED' || compositionOutdated) return;
+      || serverRevisions.draft !== revision || processRevision > serverRevisions.process
+      || editorialState === 'VALIDATED' || compositionOutdated) return;
     setValidationError('');
     try {
       await validateSheet({
         workspaceId, dossierId, processSheetId,
-        expectedRevision: processRevision,
+        expectedRevision: serverRevisions.process,
       }).unwrap();
       await onReload();
     } catch (error) {
@@ -253,6 +270,9 @@ function ProcessSheetDraftEditor({
       }
       setForm(normalize(fresh.data.draft));
       setRevision(fresh.data.draft.revision);
+      setServerRevisions({
+        process: fresh.data.process.revision, draft: fresh.data.draft.revision,
+      });
       setDirty(false);
       setConflict(false);
       setSaveError(false);
@@ -335,7 +355,8 @@ function ProcessSheetDraftEditor({
           </Button>
           {canValidate && (
             <Button disabled={dirty || saving.isLoading || validating.isLoading || conflict
-              || processRevision !== revision || editorialState === 'VALIDATED' || compositionOutdated}
+              || serverRevisions.draft !== revision || processRevision > serverRevisions.process
+              || editorialState === 'VALIDATED' || compositionOutdated}
               onClick={validate} size="sm" type="button" variant="outline">
               {validating.isLoading ? 'Validation…' : 'Valider la Fiche process'}
             </Button>
