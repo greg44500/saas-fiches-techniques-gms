@@ -103,8 +103,12 @@ const processSheetsApi = baseApi.enhanceEndpoints({
           + '/process-sheets/' + processSheetId,
       }),
       transformResponse: (response) => response.data,
-      providesTags: (_result, _error, { workspaceId, dossierId, processSheetId }) => [
+      providesTags: (result, _error, { workspaceId, dossierId, processSheetId }) => [
         { type: 'ProcessSheet', id: workspaceId + ':' + dossierId + ':' + processSheetId },
+        ...(result?.process?.technicalSheetId ? [{
+          type: 'TechnicalSheet',
+          id: compositionScopeId(workspaceId, dossierId, result.process.technicalSheetId),
+        }] : []),
       ],
     }),
     saveProcessSheetDraft: builder.mutation({
