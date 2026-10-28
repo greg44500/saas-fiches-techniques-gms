@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-    applyReconciliationMappings, buildReconciliationPlan,
+    applyReconciliationMappings, buildReconciliationPlan, manufacturingSignature,
 } from '../../../modules/process/processSheetReconciliation.js';
 import { TECHNICAL_SHEET_LINE_KIND } from '../../../modules/technicalSheet/technicalSheet.registry.js';
 
@@ -45,9 +45,9 @@ describe('M-006 — rapprochement de validations officielles M-004', () => {
         expect(mapped.phases[0].steps[0].ingredientLineKeys).toEqual(['line:new-id']);
     });
 
-    it('exige une décision quand une quantité change et ne détruit pas les instructions', () => {
+    it('exige une décision quand le nom d’un ingrédient change et préserve les instructions', () => {
         const previous = validation('old', [line('old-id', 'variant-a', 'Aubergine')]);
-        const current = validation('new', [line('new-id', 'variant-a', 'Aubergine', '2')]);
+        const current = validation('new', [line('new-id', 'variant-a', 'Aubergine tranchée', '2')]);
         const original = draft(['line:old-id']);
         const plan = buildReconciliationPlan({ previous, current, draft: original });
         expect(plan.compositionChanged).toBe(true);
@@ -59,6 +59,44 @@ describe('M-006 — rapprochement de validations officielles M-004', () => {
         expect(applied.phases[0].steps[0].instructions).toBe('Assembler les ingrédients');
         expect(applied.phases[0].steps[0].ingredientLineKeys).toEqual(['line:new-id']);
         expect(original.phases[0].steps[0].ingredientLineKeys).toEqual(['line:old-id']);
+    });
+
+    it('ignore quantités, prix, fournisseur, unités, ordre, notes et données de production', () => {
+        const original = validation('old', [
+            line('line-a', 'variant-a', 'Aubergine', '1', 0),
+            line('line-b', 'variant-b', 'Pain', '3', 1),
+        ]);
+        const renewed = validation('new', [
+            {
+                ...line('line-c', 'variant-b', 'Pain', '99', 80),
+                inputUnit: 'UNIT', normalizedPriceHt: '999', supplierReference: 'REF-CHANGED',
+                supplierArticleId: 'other-article', note: 'nouvelle note',
+                optimization: { locked: true },
+            },
+            { ...line('line-d', 'variant-a', 'Aubergine', '5', 90), inputUnit: 'G' },
+        ]);
+        renewed.sheetSnapshot.productionQuantity = '200';
+        renewed.sheetSnapshot.productionUnit = 'KG';
+        expect(manufacturingSignature(renewed)).toBe(manufacturingSignature(original));
+        expect(buildReconciliationPlan({
+            previous: original, current: renewed, draft: draft(['line:line-a']),
+        }).compositionChanged).toBe(false);
+    });
+
+    it('détecte un changement de référence, de nom ou du nombre d’occurrences', () => {
+        const before = validation('old', [line('a', 'variant-a', 'Aubergine')]);
+        expect(manufacturingSignature(before)).not.toBe(manufacturingSignature(
+            validation('new', [line('a', 'variant-b', 'Aubergine')]),
+        ));
+        expect(manufacturingSignature(before)).not.toBe(manufacturingSignature(
+            validation('new', [line('a', 'variant-a', 'Courgette')]),
+        ));
+        expect(manufacturingSignature(before)).not.toBe(manufacturingSignature(
+            validation('new', [
+                line('a', 'variant-a', 'Aubergine'),
+                line('b', 'variant-a', 'Aubergine'),
+            ]),
+        ));
     });
 
     it('ne déduit pas l’identité de deux occurrences d’une même référence produit', () => {
@@ -96,7 +134,7 @@ describe('M-006 — rapprochement de validations officielles M-004', () => {
 
     it('rejette les cibles ou les anciennes clés non autorisées', () => {
         const old = validation('old', [line('old-id', 'variant-a', 'Aubergine')]);
-        const current = validation('new', [line('new-id', 'variant-a', 'Aubergine', '2')]);
+        const current = validation('new', [line('new-id', 'variant-b', 'Aubergine')]);
         const original = draft(['line:old-id']);
         const plan = buildReconciliationPlan({ previous: old, current, draft: original });
         expect(() => applyReconciliationMappings({
