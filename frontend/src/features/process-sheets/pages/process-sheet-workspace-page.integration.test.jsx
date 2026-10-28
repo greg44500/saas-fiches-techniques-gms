@@ -99,10 +99,18 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     const header = title.closest('header');
     expect(header).not.toBeNull();
     expect(within(header).getByRole('link', { name: 'Fiches process' })).toBeInTheDocument();
+    const badge = within(header).getByText('Brouillon');
+    expect(badge).toHaveClass('text-warning');
+    expect(badge.parentElement).toContainElement(title);
     const controls = within(header).getByRole('group', { name: 'Actions de la Fiche process' });
-    expect(within(controls).getAllByRole('button')).toHaveLength(4);
+    const saveStatus = within(header).getByText('Enregistré');
+    expect(saveStatus.closest('[role="status"]').nextElementSibling).toBe(controls);
+    expect(within(controls).getAllByRole('button')).toHaveLength(5);
     expect(within(controls).getByRole('button', { name: 'Actualiser la composition' }))
       .toHaveAttribute('aria-disabled', 'true');
+    expect(within(controls).getByRole('button', {
+      name: 'Exporter la Fiche process en PDF',
+    })).toHaveAttribute('aria-disabled', 'true');
     await addFreePhase(user);
     expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
     await user.click(within(screen.getByRole('navigation', { name: 'Navigation des phases et étapes' })).getByRole('button', { name: 'Ajouter une étape à la phase 1' }));
@@ -135,6 +143,31 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     expect(screen.getByText('Enregistré')).toBeInTheDocument();
   });
 
+  it('affiche Validée dans un badge vert à côté du titre, hors du panneau', () => {
+    mocks.detail.mockReturnValue({
+      data: {
+        ...initialData(),
+        process: {
+          ...initialData().process,
+          revision: 2,
+          editorialState: 'VALIDATED',
+        },
+      },
+      isError: false, isLoading: false, refetch: vi.fn(),
+    });
+    view();
+    const header = screen.getByRole('heading', { name: 'Assemblage tartine' }).closest('header');
+    const badge = within(header).getByText('Validée');
+    expect(badge).toHaveClass('text-success');
+    expect(badge.parentElement).toContainElement(
+      within(header).getByRole('heading', { name: 'Assemblage tartine' }),
+    );
+    const controls = within(header).getByRole('group', { name: 'Actions de la Fiche process' });
+    expect(within(controls).queryByText('Validée')).not.toBeInTheDocument();
+    expect(within(controls).getAllByRole('button')).toHaveLength(5);
+    expect(within(header).getByText('Enregistré')).toBeInTheDocument();
+  });
+
   it('ouvre la réconciliation depuis la barre, sans déclencher de modification', async () => {
     const user = userEvent.setup();
     mocks.detail.mockReturnValue({
@@ -143,7 +176,7 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     });
     view();
     const controls = screen.getByRole('group', { name: 'Actions de la Fiche process' });
-    expect(within(controls).getAllByRole('button')).toHaveLength(4);
+    expect(within(controls).getAllByRole('button')).toHaveLength(5);
     await user.click(within(controls).getByRole('button', { name: 'Actualiser la composition' }));
     expect(screen.getByRole('dialog', { name: 'Actualiser la Fiche process' }))
       .toBeInTheDocument();
