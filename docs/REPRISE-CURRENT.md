@@ -1,3 +1,24 @@
+# Reprise M-006 — Stabilisation statique du lot 3 (2026-10-28)
+
+**Statut : correctifs et tests committés sur `feature/m006-fiches-process`, non validés par exécution locale.** Le HEAD de départ vérifié était `ec21588561242adb994339613186f5354b6413de`. Ne pas ouvrir le lot 4, de PR ou de merge tant que le lot 3 n'est pas accepté après vérification locale.
+
+## Corrections du lot 3
+
+- **Révisions distinctes :** le PUT brouillon retourne désormais `draft.revision` et `draft.processRevision` (révision de l'agrégat après l'écriture transactionnelle). L'éditeur conserve ces deux jetons séparément. La validation POST envoie la révision d'agrégat la plus récente confirmée, non le compteur de contenu du brouillon. Une revalidation après première validation et nouvelle sauvegarde n'est plus interdite du seul fait que les compteurs divergent ; les gardes dirty/conflit et le contrôle serveur 409 restent en place.
+- **Cohérence M-004 :** le service de validation refuse désormais une nouvelle validation M-006 pendant qu'un brouillon de révision M-004 est ouvert, après le verrouillage transactionnel du parent. Un process existant reste consultable ; aucune composition M-004 n'est modifiée.
+- **Permissions :** `process-sheet:validate` existe dans le registre métier, le middleware de validation et la migration existante `migration:m006-process-validate-permission`. Aucune migration supplémentaire créée. Son exécution sur la base de développement et les permissions effectives de l'utilisateur restent à confirmer localement.
+- **Tests ajoutés :** Supertest — validation/revalidation, sauvegarde identique, jetons distincts, révision périmée (409), droit absent (403), contenu vide (400), révision M-004 ouverte (409), absence d'historique M-006 ; RTL — revalidation avec jetons disjoints et jeton agrégat après PUT ; migration — permission VALIDATE retrouvée par Owner.
+
+## Preuves et vérifications manquantes
+
+La lecture GitHub et l'analyse du code **ne sont pas des tests exécutés**. Aucun nouveau log Vitest, ESLint, build, E2E ou `release:check` n'a été obtenu dans cet environnement. État MongoDB local inconnu. Dernier log utilisateur pré-correctifs : 95 tests frontend M-006, 91 réussis et 4 échoués ; deux erreurs ESLint corrigées depuis, sans preuve d'une relance complète.
+
+Ordre opérationnel : (1) relever branche/HEAD et état Git local ; (2) vérifier la base MongoDB effective sans exposer l'URI ; (3) lire les permissions du rôle effectif et les opérations de migration déjà effectuées ; (4) si nécessaire, exécuter uniquement la migration de permission existante après contrôle de ses dépendances ; (5) reconnexion/actualisation du contexte de droits ; (6) tests backend process et migration, tests RTL process, lint backend/frontend et build ; (7) E2E du cycle de revalidation et `release:check` sur la base dédiée ; (8) QA de présence du bouton, rôles, 409, thème et responsive. En cas d'échec, corriger uniquement les anomalies reproduites, sur la même branche.
+
+**Point de vigilance :** les contenus métier M-006 restent uniques et mutables ; les versions officielles immuables M-004 et les révisions de bibliothèques restent inchangées. Le champ hérité `currentValidatedState` de ProcessSheet n'est pas renseigné.
+
+---
+
 # Reprise M-006 — Fiches process (2026-10-26)
 
 ## Correctif ESLint frontend M-006 — 2026-10-27
