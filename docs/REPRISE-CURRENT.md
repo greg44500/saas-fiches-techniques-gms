@@ -1,3 +1,13 @@
+# M-006 — Badge éditorial, statut d'enregistrement et icône PDF (2026-10-28)
+
+**Branche de travail :** `feature/m006-fiches-process`. Ajustement UX demandé sur captures : badge `Brouillon` (warning) / `Validée` (success) immédiatement à droite du titre, via `StatusBadge` partagé comme M-004 ; le statut de sauvegarde manuelle (`Enregistré`, `Non enregistré`, etc.) est désormais **hors** du panneau, directement sur sa gauche. Le panneau est réservé aux icônes d'actions. La phrase « Vous pouvez néanmoins valider la Fiche process. » a été supprimée de la confirmation des ingrédients non affectés, sans modifier sa nature non bloquante.
+
+L'icône `FileDown` « Exporter la Fiche process en PDF » est intégrée **visiblement mais avec `aria-disabled=true` et sans callback** : aucun PDF réel n'existe actuellement pour M-006. L'export PDF et la mise en page imprimable, explicitement traités comme lot fonctionnel séparé dans `docs/m006/M-006-TECHNICAL-DESIGN.md`, nécessitent leur cadrage métier (données exportées, état Brouillon/Validée, droits, coût/quotas, rendu/versions) avant création de routes et de générateurs PDF. Ne pas le confondre avec l'export M-004 ni déclencher une impression navigateur sous une étiquette PDF trompeuse.
+
+**Tests :** assertions RTL mises à jour pour le badge près du titre et sa couleur, le statut juste avant le panneau, cinq icônes dont PDF non actionnable, et l'absence de phrase superflue. Revue statique des 12 fichiers M-006. Aucune nouvelle exécution locale des tests, lint, build ou E2E attestée ; ne pas affirmer la validation du lot 3. Aucun backend, Core, base ou contrat métier modifié ; pas de PR/merge ni lot 4.
+
+---
+
 # M-006 — Correction des deux échecs HTTP après revalidation M-004 (2026-10-28)
 
 **Contexte vérifié :** exécution locale utilisateur de `backend/tests/modules/process` : 8 fichiers, 70 tests, 68 réussis et 2 échecs dans `processSheet.http.test.js`. Le test « composition identique » créait accidentellement un **renommage** d'ingrédient puis attendait `CURRENT` ; le test « nom modifié » créait accidentellement une **variation de quantité** puis attendait `REVIEW_REQUIRED`. Le comparateur et les réponses backend suivaient la règle métier ; il s'agissait de **fixtures inversées**, pas d'un défaut du service.
