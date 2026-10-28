@@ -1,3 +1,13 @@
+# M-006 — Correction des deux échecs HTTP après revalidation M-004 (2026-10-28)
+
+**Contexte vérifié :** exécution locale utilisateur de `backend/tests/modules/process` : 8 fichiers, 70 tests, 68 réussis et 2 échecs dans `processSheet.http.test.js`. Le test « composition identique » créait accidentellement un **renommage** d'ingrédient puis attendait `CURRENT` ; le test « nom modifié » créait accidentellement une **variation de quantité** puis attendait `REVIEW_REQUIRED`. Le comparateur et les réponses backend suivaient la règle métier ; il s'agissait de **fixtures inversées**, pas d'un défaut du service.
+
+**Correctif sur la branche `feature/m006-fiches-process` :** seules les deux fixtures HTTP sont remises à leur place (quantité `2 → 3` versus nom `Ingrédient renommé`). Avant les appels GET, les tests vérifient désormais directement dans les deux snapshots officiels qu'une seule dimension métier a changé. Contrôle supplémentaire de la liste des différences et de la correspondance non résolue pour le renommage. Les assertions après les anciens points d'arrêt sont conservées et étendues : refus HTTP 409 d'une réconciliation inutile, rollback sans écriture, refus 409 d'une validation avec nom modifié, refus 400 d'un mapping absent avec révisions et audit inchangés, adoption explicite en 200, maintien des instructions et revalidation. Revue des cinq usages du helper `supersedeM004Validation` dans ce fichier : quantité seulement pour les deux scénarios neutres, nom pour les trois scénarios de réconciliation / concurrence.
+
+**Preuve manquante :** tests modifiés mais **non réexécutés** dans cet environnement (Node local 22, projet exige Node 24.7–24.x, dépôt complet et MongoDB indisponibles). Les 68 réussites et 2 échecs sont ceux du **commit antérieur** ; ne pas annoncer 70/70. Relancer `npx vitest run backend/tests/modules/process/processSheet.http.test.js` puis `npx vitest run backend/tests/modules/process`, avant lint, frontend et gates. Aucun Core/backend métier/migration modifié, pas de PR/merge et lot 4 non lancé.
+
+---
+
 # M-006 — Règle d’identité des ingrédients et UX simplifiée (2026-10-28)
 
 **Branche :** `feature/m006-fiches-process`. **Nouvelle décision propriétaire :** seule l'identité d'un ingrédient (nom ou Référence Produit `productVariantId`) peut nécessiter une réconciliation M-004/M-006 ; ne jamais traiter prix, quantités, unités, fournisseurs, ordre ou données d'optimisation comme des motifs de blocage. Les doublons de références restent des occurrences distinctes. Les brouillons M-004 non officiels ne bloquent plus la validation d'un process existant basé sur la dernière composition officielle.
