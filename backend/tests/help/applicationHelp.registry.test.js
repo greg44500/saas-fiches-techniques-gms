@@ -14,6 +14,7 @@ describe('application Help registry', () => {
             'products',
             'suppliers',
             'technical-sheets',
+            'process-sheets',
         ]);
 
         expect(ACTIVE_HELP_REGISTRY.entriesById)
@@ -24,6 +25,8 @@ describe('application Help registry', () => {
             .toHaveProperty('workspace.suppliers.pricing');
         expect(ACTIVE_HELP_REGISTRY.entriesById)
             .toHaveProperty('workspace.technical_sheets.validate');
+        expect(ACTIVE_HELP_REGISTRY.entriesById)
+            .toHaveProperty('workspace.process_sheets.validate');
         expect(ACTIVE_HELP_REGISTRY.entriesById)
             .toHaveProperty('platform.products.reference');
         expect(ACTIVE_HELP_REGISTRY.entriesById)

@@ -14,6 +14,9 @@ import {
     TECHNICAL_SHEET_HELP_MODULE,
 } from '../modules/technicalSheet/technicalSheetHelp.registry.js';
 import {
+    PROCESS_SHEET_HELP_MODULE,
+} from '../modules/process/processSheetHelp.registry.js';
+import {
     composeHelpModuleExtensions,
     createHelpRegistry,
 } from '../modules/help/help.registry.js';
@@ -38,6 +41,7 @@ const APPLICATION_HELP_MODULES = Object.freeze([
     PRODUCT_CATALOG_HELP_MODULE,
     SUPPLIER_CATALOG_HELP_MODULE,
     TECHNICAL_SHEET_HELP_MODULE,
+    PROCESS_SHEET_HELP_MODULE,
 ]);
 
 const helpExtensions = composeHelpModuleExtensions(

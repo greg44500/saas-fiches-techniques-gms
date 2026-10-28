@@ -1,3 +1,11 @@
+# M-006 — Reprise du centre d'aide sur le Core aligné (2026-10-28)
+
+**État Git vérifié :** PR métier #53 en cours, Core Gate #238 **réussie** sur le commit M-006 initial `796d4caad8298cc783f12cbb7637fe3d1f60d947`. Le Core aligné par PR #54 est fusionné dans `main` au commit `383bb4ae152aa4d676dcb1308542da4b268d363d`, Core Gate post-merge #241 **réussie**. Le Core reste en `v1.2.1`, provenance exacte `42beaff67200ca4e956378e2273b4eae440f47bc`.
+
+**Intégration :** merge Git de `main` dans `feature/m006-help-center`, sans changement de contrats métier ni de version. Une nouvelle gate CI sur le **commit combiné** doit être vérifiée avant livraison. La recette manuelle (rôles, visibilité, clavier, responsive) n'est pas attestée : ne pas la confondre avec la CI.
+
+---
+
 # Alignement Core 1.2.1 post-tag — centre d’aide (2026-10-28)
 
 **Branche :** `core-update/v1.2.1`. Fusion Git du commit Core `42beaff67200ca4e956378e2273b4eae440f47bc` (Core Gate #112 verte) : navigation des catégories par chevrons et apparition échelonnée des cartes d’aide. Aucun module métier, droit, API, migration, schéma DB ou dépendance supplémentaire modifié. La PR métier M-006 #53 reste indépendante.
@@ -5,6 +13,22 @@
 **Provenance :** conserver `version = 1.2.1` et `tag = v1.2.1`. Le `commit` de `core-origin.json` doit être actualisé après validation de l’intégration et des gates du SaaS dérivé, puis relancer la gate avant fusion. Aucune release ni nouveau tag.
 
 **Vérifications attendues :** gate produit complète, recettes manuelles des onglets overflow, focus clavier, thème sombre et animations réduites.
+
+---
+
+# État courant — Centre d’aide M-006 (2026-10-28)
+
+**Autorité Git vérifiée :** PR #51 fusionnée (merge `254c613e7e14d99ec4b578c25bcffb87fc7a6180`), PR #52 fusionnée (merge `c166571255185cee9db30d4c01c0c7f9b5be9cf8`), Core Gate de PR #236 réussie et Core Gate post-merge #237 réussie, exécution `40689289670` achevée le 2026-10-28 à 12:50 UTC. Core déclaré `v1.2.1` / `35758f7a3067911244f94b81e7cc3ddd22882eaa`. Ces preuves concernent `main`, **pas le nouveau lot d'aide**.
+
+**Branche de travail :** `feature/m006-help-center`, créée sur le merge de PR #52. Sur cette branche : registre `backend/modules/process/processSheetHelp.registry.js` ajouté avec neuf fiches de procédures, composition dans `backend/config/applicationHelp.registry.js`, tests backend du corpus et de la visibilité, adaptation du test de composition existant et test de recherche frontend.
+
+**Parcours audités :** liste et aperçu, éligibilité à la création, organisation des phases/étapes, titres partagés, affectations par occurrence de ligne, sauvegarde, validation et revalidation, réconciliation uniquement si changement d'identité d'ingrédient, statut et actions indisponibles. Les templates de bibliothèques non exposés dans ce parcours UI ne sont pas présentés comme une action disponible. L'export PDF et la suppression autonome M-006 restent désactivés. Aucune migration, modèle, règle métier, route métier ou fondation Core modifié.
+
+**Preuves en attente :** tests ciblés et globaux, lint, build, `npm run release:check`, QA et PR finale. Ne pas annoncer ces gates vertes sur la seule base de la CI antérieure.
+
+**Nettoyage Git local/distant en attente :** anciennes branches `fix/m001-ux-terminologie-fr` et `fix/m001-final-ux-review` encore présentes à la dernière consultation GitHub. Le correctif de cette dernière (`4e40c1a`) a été repris à l'identique par `cherry-pick -x` (`6d078e6`) dans PR #52. Ne supprimer qu'après contrôle local et synchronisation, sans toucher `upstream-core`.
+
+**Après validation du lot Help :** PR et merge soumis au propriétaire ; futur audit de préparation au déploiement sur un chantier distinct. Travaux différés M-006 : suppression autonome, export PDF/impression ; M-004 : envoi par e-mail et impression à cadrer.
 
 ---
 

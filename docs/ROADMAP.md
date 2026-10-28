@@ -1,3 +1,22 @@
+## Finalisation de l'aide M-006 sur la base Core alignée (2026-10-28)
+
+La PR métier #53 contient neuf procédures utilisateur M-006. Sa Core Gate #238 a réussi sur le commit initial. La PR d'alignement Core #54 est fusionnée dans `main` (`383bb4ae`) et la Core Gate #241 post-merge a réussi. La branche Help intègre désormais ce `main` sans changement de versions ; la gate du **commit combiné** et la QA manuelle restent à contrôler avant fusion. Le PDF M-006 et la suppression autonome restent différés.
+
+---
+
+## État courant — M-006 intégré et aide utilisateur en préparation (2026-10-28)
+
+La PR [#51](https://github.com/greg44500/saas-fiches-techniques-gms/pull/51) a fusionné M-006 dans `main` (merge `254c613e7e14d99ec4b578c25bcffb87fc7a6180`). La PR [#52](https://github.com/greg44500/saas-fiches-techniques-gms/pull/52) a ensuite été fusionnée (merge `c166571255185cee9db30d4c01c0c7f9b5be9cf8`). Core Gate post-merge #237 : réussite vérifiée le 2026-10-28. Core intégré : v1.2.1 (`core-origin.json`).
+
+La branche `feature/m006-help-center`, issue de ce `main`, porte un lot documentaire autonome : neuf procédures Fiches process, composition dans `APPLICATION_HELP_MODULES`, tests de permission/visibilité et recherche, suivi documentaire. **Statut : changements committés, vérifications du lot Help et QA utilisateur à exécuter ; aucune nouvelle PR fusionnée.**
+
+Les fonctions M-006 livrées couvrent la création depuis une Fiche technique officiellement validée, l'édition des phases/étapes, les associations d'ingrédients, la sauvegarde manuelle, la validation explicite et la réconciliation d'identité d'ingrédients. Les changements économiques ou de quantité seuls ne nécessitent pas cette réconciliation.
+
+**Toujours différés en lots séparés :** suppression autonome de la Fiche process, export PDF/impression M-006, illustrations et aides IA. L'icône PDF et l'action Supprimer restent non fonctionnelles. Le présent chantier n'ajoute aucune fonctionnalité métier, migration, API ou modification Core.
+
+Les sections historiques ci-dessous relatent leur état à leur date de rédaction ; elles ne prévalent pas sur les deux merges et la CI vérifiés ci-dessus.
+
+---
 # SAAS-FICHES-TECHNIQUES-GMS — Roadmap produit
 ## M-006 — progression lot par lot après décision de validation simplifiée (2026-10-27)
 
