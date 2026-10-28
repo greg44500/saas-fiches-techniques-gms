@@ -1,3 +1,9 @@
+## Changement d’ingrédient pertinent pour M-006 — 2026-10-28
+
+Seuls les changements de nom ou de Référence Produit d'une occurrence d'ingrédient au sein de la composition officielle M-004 ont un impact sur la synchronisation de la Fiche process. Référence = `productVariantId`, non référence d'Article fournisseur. Prix, quantités, unités, ordre et données économiques ne sont pas des changements pertinents pour M-006 ; les doublons d'ingrédients restent conservés. Voir le cadrage M-006, décision du 2026-10-28.
+
+---
+
 ## Réconciliation de composition — M-006 (2026-10-28)
 
 Action explicite permettant à une Fiche process existante de prendre pour référence la validation M-004 officielle courante, après comparaison et vérification des associations d'ingrédients. Une modification de fabrication nécessite une revalidation M-006 ; une simple revalorisation ne crée pas automatiquement une nouvelle version de Fiche process. Voir `docs/m006/M-006-RECONCILIATION.md`.
