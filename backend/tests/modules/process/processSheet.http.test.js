@@ -18,6 +18,7 @@ import { createActiveProductReference } from '../../helpers/productCatalogTest.f
 import { setIndicativePrice } from '../../../modules/supplierCatalog/supplierPricing.service.js';
 import { TechnicalSheet } from '../../../modules/technicalSheet/technicalSheet.model.js';
 import { TechnicalSheetDraft } from '../../../modules/technicalSheet/technicalSheetDraft.model.js';
+import { TechnicalSheetValidation } from '../../../modules/technicalSheet/technicalSheetValidation.model.js';
 import { createTechnicalSheet } from '../../../modules/technicalSheet/technicalSheet.service.js';
 import { saveTechnicalSheetDraft, createDraftFromValidatedState } from '../../../modules/technicalSheet/technicalSheetDraft.service.js';
 import { validateTechnicalSheet } from '../../../modules/technicalSheet/technicalSheetValidation.service.js';
@@ -641,4 +642,158 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
         expect((await ProcessSheetDraft.findOne({ processSheet: process.id })).revision).toBe(0);
     });
 
+});
+
+
+// A second official validation is created as an immutable M-004 snapshot.
+// Only this test fixture changes M-004.currentValidatedState directly.
+const supersedeM004Validation = async (originalId, technicalSheetId, { quantity } = {}) => {
+    const source = await TechnicalSheetValidation.findById(originalId).lean();
+    const clone = { ...source, _id: undefined, __v: undefined, createdAt: undefined };
+    clone.validatedAt = new Date('2026-10-28T15:00:00.000Z');
+    clone.linesSnapshot = source.linesSnapshot.map((line) => ({
+        ...line,
+        sourceLineId: new mongoose.Types.ObjectId(),
+        ...(quantity ? { netQuantity: mongoose.Types.Decimal128.fromString(quantity) } : {}),
+    }));
+    const current = await TechnicalSheetValidation.create(clone);
+    await TechnicalSheet.updateOne({ _id: technicalSheetId }, {
+        $set: { currentValidatedState: current._id },
+    });
+    return current;
+};
+
+describe('M-006 — réconciliation officielle après revalidation M-004', () => {
+    it('conserve une Fiche process validée si la recette est identique, sans nouvelle version M-006', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id;
+        const before = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        const phases = [{
+            id: 'phase-reconcile-1', title: 'Préparer', instructions: '',
+            ingredientLineKeys: [], steps: [{
+                id: 'step-reconcile-1', title: 'Assembler', instructions: 'Assembler la recette',
+                ingredientLineKeys: [before.sourceIngredients.lines[0].lineKey],
+            }],
+        }];
+        await request(app).put(uri + '/draft').set(bearer(owner.token))
+            .send({ expectedRevision: 0, phases, unassignedReasons: [] }).expect(200);
+        await request(app).post(uri + '/validate').set(bearer(owner.token))
+            .send({ expectedRevision: 1 }).expect(200);
+
+        const next = await supersedeM004Validation(
+            valid.validated.validation.id, valid.created.sheet.id,
+        );
+        const review = (await request(app).get(uri + '/composition-review')
+            .set(bearer(owner.token)).expect(200)).body.data;
+        expect(review).toMatchObject({
+            status: 'REVIEW_REQUIRED', compositionChanged: false,
+            processRevision: 2, draftRevision: 1, unresolvedCount: 0,
+        });
+        expect(review.assignments[0].proposedTo).toBeTruthy();
+
+        const applied = (await request(app).post(uri + '/reconcile')
+            .set(bearer(owner.token))
+            .send({
+                expectedRevision: review.processRevision,
+                expectedDraftRevision: review.draftRevision,
+                currentValidationId: review.currentValidationId, decisions: [],
+            }).expect(200)).body.data;
+        expect(applied).toMatchObject({ processRevision: 3, draftRevision: 2, editorialState: 'VALIDATED' });
+        const refreshed = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        expect(refreshed.compositionOutdated).toBe(false);
+        expect(refreshed.draft.phases[0].steps[0].ingredientLineKeys)
+            .toEqual([review.assignments[0].proposedTo]);
+        const stored = await ProcessSheet.findById(process.id);
+        expect(stored.sourceValidation.toString()).toBe(valid.validated.validation.id);
+        expect(stored.compositionValidation.toString()).toBe(next._id.toString());
+        expect(stored.editorialState).toBe('VALIDATED');
+        expect(await ProcessSheet.countDocuments({ technicalSheet: valid.created.sheet.id })).toBe(1);
+        expect(await ProcessSheetDraft.countDocuments({ processSheet: process.id })).toBe(1);
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: process.id, action: 'PROCESS_SHEET_COMPOSITION_RECONCILED',
+        })).toBe(1);
+    });
+
+    it('demande une correspondance explicite lorsque la fabrication change, puis autorise la validation', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id;
+        const before = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        const phases = [{
+            id: 'phase-changed-1', title: 'Préparation', instructions: '',
+            ingredientLineKeys: [], steps: [{
+                id: 'step-changed-1', title: 'Assembler', instructions: 'Assembler sans perte',
+                ingredientLineKeys: [before.sourceIngredients.lines[0].lineKey],
+            }],
+        }];
+        await request(app).put(uri + '/draft').set(bearer(owner.token))
+            .send({ expectedRevision: 0, phases, unassignedReasons: [] }).expect(200);
+        await supersedeM004Validation(
+            valid.validated.validation.id, valid.created.sheet.id, { quantity: '3' },
+        );
+        const review = (await request(app).get(uri + '/composition-review')
+            .set(bearer(owner.token)).expect(200)).body.data;
+        expect(review).toMatchObject({
+            status: 'REVIEW_REQUIRED', compositionChanged: true,
+            unresolvedCount: 1,
+        });
+        const payload = {
+            expectedRevision: 1, expectedDraftRevision: 1,
+            currentValidationId: review.currentValidationId, decisions: [],
+        };
+        const rejected = await request(app).post(uri + '/reconcile')
+            .set(bearer(owner.token)).send(payload).expect(400);
+        expect(rejected.body.code).toBe('PROCESS_SHEET_MAPPING_REQUIRED');
+        expect((await ProcessSheet.findById(process.id)).compositionValidation).toBeNull();
+
+        await request(app).post(uri + '/reconcile').set(bearer(owner.token))
+            .send({ ...payload, decisions: [{
+                from: review.assignments[0].from,
+                to: review.newIngredients[0].lineKey,
+            }] }).expect(200);
+        const refreshed = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        expect(refreshed.draft.phases[0].steps[0]).toMatchObject({
+            instructions: 'Assembler sans perte',
+            ingredientLineKeys: [review.newIngredients[0].lineKey],
+        });
+        expect(refreshed.process.editorialState).toBe('DRAFT');
+        await request(app).post(uri + '/validate').set(bearer(owner.token))
+            .send({ expectedRevision: 2 }).expect(200);
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: process.id, action: 'PROCESS_SHEET_VALIDATED',
+        })).toBe(1);
+    });
+
+    it('protège le rapprochement contre les révisions périmées et les rôles sans autorisation', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id;
+        await supersedeM004Validation(valid.validated.validation.id, valid.created.sheet.id);
+        const review = (await request(app).get(uri + '/composition-review')
+            .set(bearer(owner.token)).expect(200)).body.data;
+        const payload = {
+            expectedRevision: 99, expectedDraftRevision: 0,
+            currentValidationId: review.currentValidationId, decisions: [],
+        };
+        const stale = await request(app).post(uri + '/reconcile')
+            .set(bearer(owner.token)).send(payload).expect(409);
+        expect(stale.body.code).toBe('PROCESS_SHEET_CHANGED');
+
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: owner.workspace._id, actorId: owner.owner._id,
+            permissions: [PROCESS_SHEET_PERMISSION.READ, PROCESS_SHEET_PERMISSION.EDIT],
+        });
+        await grantDossierAccess({
+            workspaceId: owner.workspace._id, dossierId: dossier._id,
+            membershipId: member.membership._id, actorId: owner.owner._id,
+        });
+        await request(app).post(uri + '/reconcile')
+            .set(bearer(member.token)).send({ ...payload, expectedRevision: 0 }).expect(403);
+        expect((await ProcessSheet.findById(process.id)).compositionValidation).toBeNull();
+    });
 });
