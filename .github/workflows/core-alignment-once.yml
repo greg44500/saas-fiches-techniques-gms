@@ -1,0 +1,87 @@
+name: Temporary Core alignment
+
+on:
+  push:
+    branches:
+      - core-update/v1.2.1
+
+permissions:
+  contents: write
+
+jobs:
+  merge-upstream-core:
+    if: github.repository == 'greg44500/saas-fiches-techniques-gms' && github.ref == 'refs/heads/core-update/v1.2.1'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout the isolated product alignment branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Merge exact approved Core commit while preserving Git ancestry
+        shell: bash
+        env:
+          CORE_SHA: 42beaff67200ca4e956378e2273b4eae440f47bc
+          PRODUCT_BASE: c166571255185cee9db30d4c01c0c7f9b5be9cf8
+          CORE_BASE: 35758f7a3067911244f94b81e7cc3ddd22882eaa
+        run: |
+          set -euo pipefail
+
+          # Run once on the branch initially created from the exact product main.
+          test "$(git rev-parse HEAD^)" = "$PRODUCT_BASE"
+          test "$(git branch --show-current)" = "core-update/v1.2.1"
+          git merge-base --is-ancestor "$CORE_BASE" HEAD
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git remote add upstream-core https://github.com/greg44500/saas-core-api.git
+          git fetch --no-tags upstream-core main
+          test "$(git rev-parse FETCH_HEAD)" = "$CORE_SHA"
+          git merge-base --is-ancestor "$CORE_BASE" "$CORE_SHA"
+
+          # The only preapproved automatic conflict resolution is the
+          # operational REPRISE document: always retain the product version.
+          if ! git merge --no-commit --no-ff "$CORE_SHA"; then
+            mapfile -t unresolved < <(git diff --name-only --diff-filter=U)
+            printf 'Unresolved paths: %s\n' "${unresolved[*]}"
+            if (( ${#unresolved[@]} != 1 )) || [[ "${unresolved[0]}" != "docs/REPRISE-CURRENT.md" ]]; then
+              echo "::error::Unexpected Core/product conflicts; human review required."
+              exit 1
+            fi
+            git checkout --ours -- docs/REPRISE-CURRENT.md
+            git add docs/REPRISE-CURRENT.md
+          fi
+
+          test "$(git rev-parse MERGE_HEAD)" = "$CORE_SHA"
+          test -z "$(git diff --name-only --diff-filter=U)"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('docs/REPRISE-CURRENT.md')
+          current = path.read_text()
+          note = """# Alignement Core 1.2.1 post-tag — centre d’aide (2026-10-28)
+
+          **Branche :** `core-update/v1.2.1`. Fusion Git du commit Core `42beaff67200ca4e956378e2273b4eae440f47bc` (Core Gate #112 verte) : navigation des catégories par chevrons et apparition échelonnée des cartes d’aide. Aucun module métier, droit, API, migration, schéma DB ou dépendance supplémentaire modifié. La PR métier M-006 #53 reste indépendante.
+
+          **Provenance :** conserver `version = 1.2.1` et `tag = v1.2.1`. Le `commit` de `core-origin.json` doit être actualisé après validation de l’intégration et des gates du SaaS dérivé, puis relancer la gate avant fusion. Aucune release ni nouveau tag.
+
+          **Vérifications attendues :** gate produit complète, recettes manuelles des onglets overflow, focus clavier, thème sombre et animations réduites.
+
+          ---
+
+          """
+          path.write_text(note + current)
+          PY
+
+          # One-shot migration tool: remove itself from the final product tree.
+          git rm .github/workflows/core-alignment-once.yml
+          git add docs/REPRISE-CURRENT.md
+          git commit -m "chore(core): merge aligned Core 1.2.1 help-center UX"
+          test "$(git rev-list --parents -n 1 HEAD | awk '{print $3}')" = "$CORE_SHA"
+          test "$(git show HEAD:core-release.json | grep -c '"version": "1.2.1"')" -eq 1
+          test "$(git show HEAD:core-origin.json | grep -c '"tag": "v1.2.1"')" -eq 1
+
+          git push origin HEAD:refs/heads/core-update/v1.2.1
