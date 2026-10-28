@@ -650,7 +650,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await user.click(screen.getByRole('button', { name: 'Aperçu du process' }));
     expect(screen.getByRole('region', { name: 'Aperçu du process' }))
       .toHaveTextContent('Assembler la tartine');
-    await user.click(screen.getByRole('button', { name: 'Aperçu du process' }));
+    await user.click(screen.getByRole('button', { name: 'Revenir à l’édition' }));
     expect(screen.getByRole('textbox', { name: 'Instructions' })).toHaveValue('Assembler la tartine');
     expect(mocks.save).not.toHaveBeenCalled();
   });
