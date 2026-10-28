@@ -48,4 +48,33 @@ describe('HelpSearch', () => {
 
     expect(onSelect).toHaveBeenCalledWith(entries[1]);
   });
+
+  it('retrouve une procédure M-006 par une question métier et respecte les seules fiches reçues', async () => {
+    const user = userEvent.setup();
+    const onSelect = vi.fn();
+    const available = [{
+      id: 'workspace.process_sheets.ingredients',
+      title: 'Associer les ingrédients aux phases et étapes',
+      summary: 'Affecter les ingrédients de la Fiche technique.',
+      search: {
+        keywords: ['ingrédient', 'phase', 'étape'],
+        questions: ['Comment affecter les ingrédients ?'],
+      },
+      order: 140,
+    }];
+
+    render(<HelpSearch entries={available} onSelect={onSelect} />);
+
+    await user.type(screen.getByRole('combobox', {
+      name: 'Rechercher dans le centre d’aide',
+    }), 'comment affecter les ingrédients');
+
+    expect(await screen.findByText('Associer les ingrédients aux phases et étapes'))
+      .toBeInTheDocument();
+    expect(screen.queryByText('Valider ou revalider une Fiche process'))
+      .not.toBeInTheDocument();
+
+    await user.keyboard('{ArrowDown}{Enter}');
+    expect(onSelect).toHaveBeenCalledWith(available[0]);
+  });
 });
