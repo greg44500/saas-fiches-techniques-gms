@@ -8,13 +8,13 @@ import { createBusinessActivityEvent } from '../businessActivity/businessActivit
 import { Dossier } from '../dossier/dossier.model.js';
 import { DOSSIER_STATUS } from '../dossier/dossier.registry.js';
 import { TechnicalSheet } from '../technicalSheet/technicalSheet.model.js';
-import { TechnicalSheetDraft } from '../technicalSheet/technicalSheetDraft.model.js';
 import { TechnicalSheetValidation } from '../technicalSheet/technicalSheetValidation.model.js';
 import { TECHNICAL_SHEET_STATUS } from '../technicalSheet/technicalSheet.registry.js';
 import { ProcessSheet, PROCESS_SHEET_EDITORIAL_STATE } from './processSheet.model.js';
 import { ProcessSheetDraft } from './processSheetDraft.model.js';
 import {
-    applyReconciliationMappings, buildReconciliationPlan, processReferenceId,
+    applyReconciliationMappings, buildReconciliationPlan, manufacturingSignature,
+    processReferenceId,
 } from './processSheetReconciliation.js';
 
 const failure = (code, message, statusCode = 409) => {
@@ -31,10 +31,6 @@ const fetchPlan = async ({ workspaceId, dossierId, process, draft, parent, sessi
         || !parent.currentValidatedState) {
         return { status: 'PARENT_UNAVAILABLE' };
     }
-    const parentDraft = await TechnicalSheetDraft.exists(mongoose.trusted({
-        workspace: workspaceId, dossier: dossierId, technicalSheet: parent._id,
-    })).session(session ?? null);
-    if (parentDraft) return { status: 'PARENT_REVISION_OPEN' };
     const referenceId = processReferenceId(process).toString();
     const currentId = parent.currentValidatedState.toString();
     if (referenceId === currentId) return { status: 'CURRENT' };
@@ -47,6 +43,12 @@ const fetchPlan = async ({ workspaceId, dossierId, process, draft, parent, sessi
         workspace: workspaceId, dossier: dossierId,
     })).session(session ?? null);
     if (!previous || !current) return { status: 'REFERENCE_UNAVAILABLE' };
+    // The only M-006 impact is an ingredient name/reference change.
+    // Price, quantity, units, supplier, ordering and a pending M-004 draft
+    // never require a reconciliation of the manufacturing instructions.
+    if (manufacturingSignature(previous) === manufacturingSignature(current)) {
+        return { status: 'CURRENT' };
+    }
     let plan;
     try {
         plan = buildReconciliationPlan({ previous, current, draft });
@@ -117,10 +119,6 @@ const reconcileProcessSheet = async ({
         'Le contenu a changé. Actualisez la Fiche process avant de continuer.');
 
     const plan = await fetchPlan({ workspaceId, dossierId, process, draft, parent, session });
-    if (plan.status === 'PARENT_REVISION_OPEN') {
-        throw failure('PROCESS_SHEET_PARENT_REVISION_OPEN',
-            'Une modification de la Fiche technique est encore en cours.');
-    }
     if (plan.status !== 'REVIEW_REQUIRED'
         || plan.currentValidationId !== currentValidationId) {
         throw failure('PROCESS_SHEET_PARENT_CHANGED',
