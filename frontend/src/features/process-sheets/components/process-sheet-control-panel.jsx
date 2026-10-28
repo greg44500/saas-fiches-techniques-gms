@@ -29,7 +29,7 @@ function ProcessSheetControlPanel({
 }) {
   return (
     <div
-      className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card/95 p-2 shadow-sm"
+      className="ml-auto flex shrink-0 items-center gap-2 rounded-lg border border-border bg-card/80 p-1 shadow-sm"
     >
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 pl-1 text-sm">
         <span aria-label="État de la Fiche process" className="font-medium">
@@ -45,14 +45,14 @@ function ProcessSheetControlPanel({
 
       <div
         aria-label="Actions de la Fiche process"
-        className="ml-auto flex shrink-0 items-center gap-1 rounded-md border border-border/70 bg-background/50 p-1"
+        className="flex shrink-0 items-center gap-1"
         role="group"
       >
         <ProcessControlAction
           Icon={Eye}
           label={previewActive ? 'Revenir à l’édition' : 'Aperçu du process'}
           onClick={onPreview}
-          tooltip={previewActive ? 'Revenir à l’édition' : 'Afficher l’aperçu du process'}
+          tooltip={previewActive ? 'Revenir' : 'Aperçu'}
           variant={previewActive ? 'secondary' : 'ghost'}
         />
         <ProcessControlAction
