@@ -79,7 +79,8 @@ const buildReconciliationPlan = ({ previous, current, draft }) => {
         if (!oldLine) throw new Error('An existing process assignment is absent from its official source.');
         let proposed = byNewKey.get(from);
         if (proposed && (proposed.productVariantId !== oldLine.productVariantId
-            || proposed.productVariantName !== oldLine.productVariantName)) proposed = null;
+            || (proposed.productVariantName?.trim() ?? null)
+                !== (oldLine.productVariantName?.trim() ?? null))) proposed = null;
         // Only identical manufacturing compositions and unique ingredient
         // occurrences permit automatic matching without a stable line ID.
         if (!proposed && !compositionChanged
@@ -87,7 +88,8 @@ const buildReconciliationPlan = ({ previous, current, draft }) => {
             && newCount(oldLine.productVariantId) === 1) {
             proposed = after.lines.find(
                 (line) => line.productVariantId === oldLine.productVariantId
-                    && line.productVariantName === oldLine.productVariantName,
+                    && (line.productVariantName?.trim() ?? null)
+                        === (oldLine.productVariantName?.trim() ?? null),
             );
         }
         if (proposed && usedTargets.has(proposed.lineKey)) proposed = null;
