@@ -77,15 +77,19 @@ function renderDialog(overrides = {}) {
   return props;
 }
 
-async function openTypeSelectWithKeyboard(user) {
+async function openTypeSelect(user) {
+  // The Dialog.Popup uses initialFocus={cancelRef}. Let Base UI complete
+  // its initial focus management before interacting with the nested Select.
+  await waitFor(() => {
+    expect(screen.getByRole('button', { name: 'Fermer' })).toHaveFocus();
+  });
+
   const trigger = screen.getByRole('combobox', {
     name: 'Type de valeur',
   });
+  expect(trigger).toHaveAttribute('aria-expanded', 'false');
 
-  trigger.focus();
-  expect(trigger).toHaveFocus();
-
-  await user.keyboard('{Enter}');
+  await user.click(trigger);
 
   await waitFor(() => {
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
@@ -211,20 +215,28 @@ describe('ProductDimensionContributionDialog', () => {
     expect(screen.queryByLabelText('Type de caractéristique'))
       .not.toBeInTheDocument();
 
-    const typeSelect = await openTypeSelectWithKeyboard(user);
+    const typeSelect = await openTypeSelect(user);
     await user.click(await screen.findByRole('option', {
       name: 'Désignation de qualité',
     }));
+
     await waitFor(() => {
+      expect(typeSelect).toHaveAttribute('aria-expanded', 'false');
       expect(typeSelect).toHaveTextContent('Désignation de qualité');
     });
 
-    await user.type(
-      screen.getByLabelText('Désignation de qualité'),
-      'Carottes des sables',
-    );
+    const valueInput = screen.getByRole('textbox', {
+      name: 'Désignation de qualité',
+    });
+    expect(valueInput).toHaveValue('');
+
+    await user.type(valueInput, 'Carottes des sables');
+    expect(valueInput).toHaveValue('Carottes des sables');
     await user.click(screen.getByRole('button', { name: 'Ajouter' }));
 
+    await waitFor(() => {
+      expect(mocks.contribute).toHaveBeenCalledTimes(1);
+    });
     expect(mocks.contribute).toHaveBeenCalledWith({
       workspaceId: 'workspace-1',
       type: 'CHARACTERISTIC',
@@ -233,15 +245,19 @@ describe('ProductDimensionContributionDialog', () => {
       value: 'Carottes des sables',
       forceCreate: false,
     });
-    expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
-    expect(screen.getByText('À valider')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(props.onResolved).toHaveBeenCalledWith(expect.objectContaining({
+        classification: 'PROVISIONAL',
+      }));
+      expect(screen.getByText('Carottes des sables')).toBeInTheDocument();
+      expect(screen.getByText('À valider')).toBeInTheDocument();
+      expect(valueInput).toHaveValue('');
+    });
     expect(screen.getByText(/Utilisable dans votre espace de travail/i))
       .toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ajouter' }))
+    expect(screen.getByRole('dialog', { name: 'Ajouter des valeurs au référentiel' }))
       .toBeInTheDocument();
-    expect(props.onResolved).toHaveBeenCalledWith(expect.objectContaining({
-      classification: 'PROVISIONAL',
-    }));
+    expect(screen.getByRole('button', { name: 'Ajouter' })).toBeDisabled();
     expect(props.onClose).not.toHaveBeenCalled();
   });
 
@@ -346,7 +362,7 @@ describe('ProductDimensionContributionDialog', () => {
     const user = userEvent.setup();
     renderDialog();
 
-    await openTypeSelectWithKeyboard(user);
+    await openTypeSelect(user);
 
     expect(await screen.findByRole('option', {
       name: 'Désignation de qualité',
