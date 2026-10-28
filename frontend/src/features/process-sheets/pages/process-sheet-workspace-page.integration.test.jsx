@@ -132,6 +132,22 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     expect(screen.getByText('Enregistré')).toBeInTheDocument();
   });
 
+  it('ouvre la réconciliation depuis la barre, sans déclencher de modification', async () => {
+    const user = userEvent.setup();
+    mocks.detail.mockReturnValue({
+      data: { ...initialData(), compositionOutdated: true },
+      isError: false, isLoading: false, refetch: vi.fn(),
+    });
+    view();
+    const controls = screen.getByRole('group', { name: 'Actions de la Fiche process' });
+    expect(within(controls).getAllByRole('button')).toHaveLength(4);
+    await user.click(within(controls).getByRole('button', { name: 'Actualiser la composition' }));
+    expect(screen.getByRole('dialog', { name: 'Actualiser la Fiche process' }))
+      .toBeInTheDocument();
+    expect(mocks.reconcile).not.toHaveBeenCalled();
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
+
   it('reprend un titre de phase Workspace puis sauvegarde une étape libre dans la Fiche process', async () => {
     const user = userEvent.setup();
     // Workspace models are shared across dossiers, unlike draft-specific steps.
