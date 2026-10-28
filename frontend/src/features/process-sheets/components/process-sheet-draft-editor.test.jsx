@@ -622,7 +622,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     expect(screen.getByRole('heading', { name: 'Phase 1 : Nouvelle phase modifiée' })).toBeInTheDocument();
   });
 
-  it('laisse les outils de navigation à un lecteur mais masque les actions de modification', async () => {
+  it('laisse naviguer le lecteur avec les actions d’écriture visibles mais désactivées', async () => {
     const user = userEvent.setup();
     view({ canEdit: false, initialDraft: {
       ...props.initialDraft,
@@ -632,7 +632,9 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
         ] }],
     } });
     expect(screen.queryByRole('button', { name: 'Ajouter une phase' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Enregistrer le brouillon' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Disponibilité de l’enregistrement' })).toBeInTheDocument();
     await user.click(within(navigation()).getByRole('button', { name: 'Replier phase 1' }));
     await user.click(within(navigation()).getByRole('button', { name: 'Déplier phase 1' }));
     expect(within(navigation()).getByRole('button', { name: 'Sélectionner étape 1 : Rincer' }))
@@ -736,6 +738,13 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await user.click(screen.getByRole('button', { name: 'Confirmer la validation' }));
     expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ expectedRevision: 1 }));
     expect(mocks.validate).toHaveBeenCalledWith(expect.objectContaining({ expectedRevision: 3 }));
+  });
+
+  it('explique pourquoi une Fiche process déjà validée ne peut pas être validée à nouveau', () => {
+    view({ canValidate: true, editorialState: 'VALIDATED' });
+    expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Disponibilité de la validation' }))
+      .toBeInTheDocument();
   });
 
   it('bloque la validation en présence de changements locaux ou de M-004 décalée', () => {
