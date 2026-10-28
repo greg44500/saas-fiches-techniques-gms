@@ -85,7 +85,7 @@ const validateProcessSheet = async ({
     const updated = await ProcessSheet.findOneAndUpdate(mongoose.trusted({
         _id: process._id, workspace: workspaceId, dossier: dossierId,
         status: TECHNICAL_SHEET_STATUS.ACTIVE, revision: expectedRevision,
-        editorialState: { $ne: PROCESS_SHEET_EDITORIAL_STATE.VALIDATED },
+        editorialState: PROCESS_SHEET_EDITORIAL_STATE.DRAFT,
     }), {
         $set: {
             editorialState: PROCESS_SHEET_EDITORIAL_STATE.VALIDATED,
