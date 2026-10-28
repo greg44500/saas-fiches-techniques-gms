@@ -1,3 +1,9 @@
+## Lot 3 — Réconciliation M-004/M-006 et parcours de validation (2026-10-28)
+
+Le contrat technique et UX effectif est détaillé dans `docs/m006/M-006-RECONCILIATION.md`. Il complète les corrections de révisions et les garde-fous déjà présents : `sourceValidation` reste la provenance initiale immuable, le champ optionnel `compositionValidation` devient la référence courante après une réconciliation confirmée, et l'absence de ce champ reste compatible avec les anciennes Fiches process. Les contrôles de validation, l'éditeur, l'audit, la comparaison officielle et la double révision de concurrence sont alignés. N'introduire ni modification Core ni historique de versions métier M-006. Code et tests committés, aucune gate réellement exécutée.
+
+---
+
 ## Lot 3 — Précision technique après audit du 2026-10-28
 
 Deux révisions techniques sont distinctes : `ProcessSheet.revision` protège les transitions de l'agrégat (y compris validation) et `ProcessSheetDraft.revision` protège les écritures de contenu. Le POST de validation exige `expectedRevision` de `ProcessSheet`. Le PUT du brouillon exige `expectedRevision` de `ProcessSheetDraft` et répond désormais avec `revision` (brouillon) **et** `processRevision` (agrégat). Le frontend ne doit jamais comparer ces deux compteurs numériquement pour autoriser la revalidation. Il garde le jeton d'agrégat confirmé par la dernière sauvegarde ou le GET, et le serveur rejette les jetons périmés (409).
