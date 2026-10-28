@@ -688,6 +688,8 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await user.click(button);
     expect(screen.getByRole('dialog', { name: 'Valider avec des ingrédients non affectés ?' }))
       .toHaveTextContent('2 ingrédient(s) ne sont associés');
+    expect(screen.getByRole('dialog', { name: 'Valider avec des ingrédients non affectés ?' }))
+      .not.toHaveTextContent('Vous pouvez néanmoins valider la Fiche process.');
     expect(mocks.validate).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Valider quand même' }));
     expect(mocks.validate).toHaveBeenCalledWith({
