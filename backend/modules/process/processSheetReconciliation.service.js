@@ -140,7 +140,7 @@ const reconcileProcessSheet = async ({
     // An explicit reassignment or removal is a genuine M-006 edit, even if
     // the M-004 manufacturing snapshot itself has not changed.
     const changedAssignments = decisions.some(({ from, to }) =>
-        plan.assignments.find((item) => item.from === from)?.proposedTo !== to);
+        to === null || plan.assignments.find((item) => item.from === from)?.proposedTo !== to);
     const mustRevalidate = plan.compositionChanged || changedAssignments;
 
     const draftUpdated = await ProcessSheetDraft.updateOne(mongoose.trusted({
