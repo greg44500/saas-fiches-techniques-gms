@@ -14,6 +14,7 @@ import { ProcessSheet, PROCESS_SHEET_EDITORIAL_STATE } from './processSheet.mode
 import { hasProcessContentChanged } from './processSheetContent.js';
 import { ProcessSheetDraft } from './processSheetDraft.model.js';
 import { toIngredientProjection } from './processSheetIngredientProjection.js';
+import { processReferenceId } from './processSheetReconciliation.js';
 
 const conflict = () => new AppError(
     'Le brouillon a été modifié ou la Fiche technique ne permet plus cette action.',
@@ -68,7 +69,7 @@ const updateProcessSheetDraft = async ({
     // Composition at process creation is immutable. Editing remains possible
     // during later M-004 revisions, but never silently rebinds ingredient IDs.
     const source = await TechnicalSheetValidation.findOne(mongoose.trusted({
-        _id: process.sourceValidation,
+        _id: processReferenceId(process),
         technicalSheet: process.technicalSheet,
         workspace: workspaceId,
         dossier: dossierId,
