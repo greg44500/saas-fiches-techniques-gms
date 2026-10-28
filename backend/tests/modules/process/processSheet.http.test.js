@@ -687,9 +687,20 @@ describe('M-006 — réconciliation officielle après revalidation M-004', () =>
         await request(app).post(uri + '/validate').set(bearer(owner.token))
             .send({ expectedRevision: 1 }).expect(200);
 
-        await supersedeM004Validation(
-            valid.validated.validation.id, valid.created.sheet.id, { name: 'Aubergine renommée' },
+        const originalValidation = await TechnicalSheetValidation.findById(
+            valid.validated.validation.id,
+        ).lean();
+        const nextValidation = await supersedeM004Validation(
+            valid.validated.validation.id, valid.created.sheet.id, { quantity: '3' },
         );
+        // Guard the fixture itself before testing the HTTP behavior:
+        // only quantities changed; name and product reference did not.
+        expect(nextValidation.linesSnapshot[0].productVariantName)
+            .toBe(originalValidation.linesSnapshot[0].productVariantName);
+        expect(nextValidation.linesSnapshot[0].productVariantId.toString())
+            .toBe(originalValidation.linesSnapshot[0].productVariantId.toString());
+        expect(nextValidation.linesSnapshot[0].netQuantity.toString())
+            .not.toBe(originalValidation.linesSnapshot[0].netQuantity.toString());
         const review = (await request(app).get(uri + '/composition-review')
             .set(bearer(owner.token)).expect(200)).body.data;
         expect(review.status).toBe('CURRENT');
@@ -761,15 +772,32 @@ describe('M-006 — réconciliation officielle après revalidation M-004', () =>
         }];
         await request(app).put(uri + '/draft').set(bearer(owner.token))
             .send({ expectedRevision: 0, phases, unassignedReasons: [] }).expect(200);
-        await supersedeM004Validation(
-            valid.validated.validation.id, valid.created.sheet.id, { quantity: '3' },
+        const originalValidation = await TechnicalSheetValidation.findById(
+            valid.validated.validation.id,
+        ).lean();
+        const nextValidation = await supersedeM004Validation(
+            valid.validated.validation.id, valid.created.sheet.id,
+            { name: 'Ingrédient renommé' },
         );
+        // Name changed, but neither the product reference nor the quantity.
+        expect(nextValidation.linesSnapshot[0].productVariantName)
+            .not.toBe(originalValidation.linesSnapshot[0].productVariantName);
+        expect(nextValidation.linesSnapshot[0].productVariantId.toString())
+            .toBe(originalValidation.linesSnapshot[0].productVariantId.toString());
+        expect(nextValidation.linesSnapshot[0].netQuantity.toString())
+            .toBe(originalValidation.linesSnapshot[0].netQuantity.toString());
         const review = (await request(app).get(uri + '/composition-review')
             .set(bearer(owner.token)).expect(200)).body.data;
         expect(review).toMatchObject({
             status: 'REVIEW_REQUIRED', compositionChanged: true,
             unresolvedCount: 1,
         });
+        expect(review.ingredientChanges).toEqual(expect.arrayContaining([
+            expect.objectContaining({ type: 'ADDED', name: 'Ingrédient renommé', count: 1 }),
+            expect.objectContaining({ type: 'REMOVED', count: 1 }),
+        ]));
+        expect(review.assignments).toHaveLength(1);
+        expect(review.assignments[0].proposedTo).toBeNull();
         const blockedValidation = await request(app).post(uri + '/validate')
             .set(bearer(owner.token)).send({ expectedRevision: 1 }).expect(409);
         expect(blockedValidation.body.code).toBe('PROCESS_SHEET_PARENT_CHANGED');
