@@ -115,17 +115,17 @@ const applyReconciliationMappings = ({ draft, plan, decisions = [] }) => {
         .filter((key) => key !== null && key !== undefined);
     return {
         phases: (draft.phases ?? []).map((phase) => ({
-            ...phase.toObject?.() ?? phase,
+            ...(phase.toObject?.() ?? phase),
             ingredientLineKeys: mapKeys(phase.ingredientLineKeys ?? []),
             steps: (phase.steps ?? []).map((step) => ({
-                ...step.toObject?.() ?? step,
+                ...(step.toObject?.() ?? step),
                 ingredientLineKeys: mapKeys(step.ingredientLineKeys ?? []),
             })),
         })),
         unassignedReasons: (draft.unassignedReasons ?? [])
             .filter((item) => replacements.get(item.lineKey) !== null)
             .map((item) => ({
-                ...item.toObject?.() ?? item,
+                ...(item.toObject?.() ?? item),
                 lineKey: replacements.get(item.lineKey),
             })),
     };
