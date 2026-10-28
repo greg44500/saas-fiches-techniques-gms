@@ -1,3 +1,13 @@
+# Alignement Core 1.2.1 post-tag — centre d’aide (2026-10-28)
+
+**Branche :** `core-update/v1.2.1`. Fusion Git du commit Core `42beaff67200ca4e956378e2273b4eae440f47bc` (Core Gate #112 verte) : navigation des catégories par chevrons et apparition échelonnée des cartes d’aide. Aucun module métier, droit, API, migration, schéma DB ou dépendance supplémentaire modifié. La PR métier M-006 #53 reste indépendante.
+
+**Provenance :** conserver `version = 1.2.1` et `tag = v1.2.1`. Le `commit` de `core-origin.json` doit être actualisé après validation de l’intégration et des gates du SaaS dérivé, puis relancer la gate avant fusion. Aucune release ni nouveau tag.
+
+**Vérifications attendues :** gate produit complète, recettes manuelles des onglets overflow, focus clavier, thème sombre et animations réduites.
+
+---
+
 # M-006 — Harmonisation des badges d’état dans la liste (2026-10-28)
 
 **Branche :** `feature/m006-fiches-process`. **Périmètre strict :** colonne « État » de la liste des Fiches process du Dossier. Affichage aligné sur l’éditeur et sur le `StatusBadge` partagé : `DRAFT` → badge « Brouillon » avec ton `warning`, `VALIDATED` → badge « Validée » avec ton `success`. Un état inconnu donne un badge neutre « État indisponible », et non un faux « Brouillon ». Aucun changement de valeur métier, permission, API, stockage, Core ou comportement de validation.

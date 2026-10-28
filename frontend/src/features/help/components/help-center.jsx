@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
+import { ScrollableTabsList } from '@/components/shared/scrollable-tabs-list';
 import {
   Card,
   CardDescription,
@@ -13,7 +14,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Tabs,
   TabsContent,
-  TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { HelpSearch } from '@/features/help/components/help-search';
@@ -99,10 +99,9 @@ function HelpCatalog({ basePath, catalog }) {
         data-help-search-spotlight={isSearchOpen ? 'active' : 'inactive'}
       >
         <Tabs onValueChange={setActiveCategoryId} value={activeCategoryId}>
-          <TabsList
+          <ScrollableTabsList
+            activeValue={activeCategoryId}
             aria-label="Catégories du centre d’aide"
-            className="overflow-x-auto"
-            variant="section"
           >
             {categories.map((category) => (
               <TabsTrigger
@@ -113,7 +112,7 @@ function HelpCatalog({ basePath, catalog }) {
                 {category.label}
               </TabsTrigger>
             ))}
-          </TabsList>
+          </ScrollableTabsList>
 
           {categories.map((category) => (
             <TabsContent
@@ -132,10 +131,11 @@ function HelpCatalog({ basePath, catalog }) {
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {activeEntries.map((entry) => (
+                    {activeEntries.map((entry, index) => (
                       <Link
-                        className="group block h-40 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className="help-card-stagger-in group block h-40 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         key={entry.id}
+                        style={{ '--help-card-stagger-index': Math.min(index, 8) }}
                         to={`${basePath}/${entry.id}`}
                       >
                         <Card className="h-full transition-[border-color,background-color,box-shadow] group-hover:border-primary/50 group-hover:bg-accent/25 group-hover:shadow-sm">
