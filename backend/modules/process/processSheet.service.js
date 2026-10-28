@@ -15,6 +15,7 @@ import { TECHNICAL_SHEET_STATUS } from '../technicalSheet/technicalSheet.registr
 import { ProcessSheet, PROCESS_SHEET_EDITORIAL_STATE } from './processSheet.model.js';
 import { ProcessSheetDraft } from './processSheetDraft.model.js';
 import { toIngredientProjection } from './processSheetIngredientProjection.js';
+import { processReferenceId } from './processSheetReconciliation.js';
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -30,6 +31,7 @@ const serializeProcess = (process) => ({
     validatedAt: process.validatedAt ?? null,
     revision: process.revision,
     sourceValidationId: process.sourceValidation.toString(),
+    compositionValidationId: processReferenceId(process).toString(),
     createdAt: process.createdAt,
     updatedAt: process.updatedAt,
 });
@@ -69,7 +71,7 @@ const getProcessSheet = async ({
     if (!process) throw new AppError('Fiche process introuvable.', 404);
 
     const source = await TechnicalSheetValidation.findOne(mongoose.trusted({
-        _id: process.sourceValidation,
+        _id: processReferenceId(process),
         workspace: workspaceId,
         dossier: dossierId,
         technicalSheet: process.technicalSheet._id ?? process.technicalSheet,
@@ -79,7 +81,10 @@ const getProcessSheet = async ({
     const parent = await TechnicalSheet.findOne(mongoose.trusted({
         _id: process.technicalSheet._id ?? process.technicalSheet,
         workspace: workspaceId, dossier: dossierId,
-    })).select('currentValidatedState').lean();
+    })).select('currentValidatedState status').lean();
+    const parentDraftOpen = parent ? Boolean(await TechnicalSheetDraft.exists(mongoose.trusted({
+        technicalSheet: parent._id, workspace: workspaceId, dossier: dossierId,
+    }))) : false;
 
     const draft = await ProcessSheetDraft.findOne(mongoose.trusted({
         processSheet: process._id, workspace: workspaceId, dossier: dossierId,
@@ -95,8 +100,9 @@ const getProcessSheet = async ({
         sourceIngredients: ingredients,
         compositionOutdated: Boolean(
             parent?.currentValidatedState
-            && parent.currentValidatedState.toString() !== process.sourceValidation.toString()
+            && parent.currentValidatedState.toString() !== processReferenceId(process).toString()
         ),
+        parentDraftOpen,
     };
 };
 
