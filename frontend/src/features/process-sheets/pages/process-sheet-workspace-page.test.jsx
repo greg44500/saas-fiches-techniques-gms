@@ -77,6 +77,22 @@ beforeEach(() => {
 });
 
 describe('M-006 — ouverture du brouillon process', () => {
+  it('garde l’actualisation visible lorsqu’elle est inutile', () => {
+    view();
+    expect(screen.getByRole('button', { name: 'Actualiser la composition' })).toBeDisabled();
+    expect(screen.getByRole('button', {
+      name: 'Disponibilité de l’actualisation de la composition',
+    })).toBeInTheDocument();
+  });
+
+  it('permet d’ouvrir la résolution lorsque M-004 est en modification', () => {
+    mocks.detail.mockReturnValue(detailResult({
+      ...initialData(), parentDraftOpen: true,
+    }));
+    view();
+    expect(screen.getByRole('button', { name: 'Actualiser la composition' })).toBeEnabled();
+  });
+
   it('ouvre un vrai brouillon ACTIVE et autorise l’édition avec permission et Dossier actif', () => {
     view();
     const heading = screen.getByRole('heading', { name: 'Fabrication tartine' });
@@ -140,7 +156,7 @@ describe('M-006 — ouverture du brouillon process', () => {
       compositionOutdated: true,
     }));
     view();
-    expect(screen.getByRole('button', { name: 'Composition à actualiser' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Actualiser la composition' })).toBeDisabled();
     expectReadOnly();
     expect(screen.getByText(/Ingrédients : 1/)).toBeInTheDocument();
   });
@@ -150,7 +166,7 @@ describe('M-006 — ouverture du brouillon process', () => {
       ...initialData(), compositionOutdated: true,
     }));
     view();
-    expect(screen.getByRole('button', { name: 'Composition à actualiser' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Actualiser la composition' })).toBeEnabled();
     expect(screen.getByText(/Édition : oui/)).toBeInTheDocument();
   });
 
