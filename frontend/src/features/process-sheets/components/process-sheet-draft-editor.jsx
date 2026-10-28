@@ -57,7 +57,7 @@ function ProcessSheetDraftEditor({
   editorialState = 'DRAFT', compositionOutdated = false, processRevision = 0,
   canReadPhaseLibrary = false,
   dossierId, processSheetId, workspaceId,
-  onReload,
+  onReload, onDirtyChange, onRequestReconciliation,
 }) {
   const [form, setForm] = useState(() => normalize(initialDraft));
   const [revision, setRevision] = useState(initialDraft?.revision ?? 0);
@@ -81,7 +81,10 @@ function ProcessSheetDraftEditor({
   const [saveDraft, saving] = useSaveProcessSheetDraftMutation();
   const [validateSheet, validating] = useValidateProcessSheetMutation();
   const [validationError, setValidationError] = useState('');
+  const [validationErrorCode, setValidationErrorCode] = useState('');
   const editable = canEdit && !saving.isLoading;
+
+  useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
   // A background RTK Query refetch must never erase local unsaved work.
   useEffect(() => {
@@ -242,7 +245,7 @@ function ProcessSheetDraftEditor({
       setSaveError(true);
       setMessage(isConflict
         ? 'Une autre modification ou un changement de statut empêche la sauvegarde. Le brouillon local reste affiché.'
-        : error?.data?.message ?? 'Échec de sauvegarde. Votre travail reste affiché.');
+        : 'Votre travail reste affiché. Réessayez l’enregistrement ou contactez un responsable si le problème persiste.');
     }
   };
   const validate = async () => {
@@ -257,7 +260,17 @@ function ProcessSheetDraftEditor({
       }).unwrap();
       await onReload();
     } catch (error) {
-      setValidationError(error?.data?.message ?? 'Impossible de valider la Fiche process.');
+      const code = error?.data?.code ?? '';
+      setValidationErrorCode(code);
+      setValidationError(code === 'PROCESS_SHEET_PARENT_CHANGED'
+        ? 'La Fiche technique associée a été validée de nouveau. Comparez les compositions pour continuer.'
+        : code === 'PROCESS_SHEET_PARENT_REVISION_OPEN'
+          ? 'Une modification de la Fiche technique est en cours. Elle doit être terminée avant la validation.'
+          : code === 'PROCESS_SHEET_CHANGED'
+            ? 'Cette Fiche process a changé depuis son ouverture. Actualisez ses données avant de continuer.'
+            : code === 'PROCESS_SHEET_ALREADY_VALIDATED'
+              ? 'Cette Fiche process est déjà validée.'
+              : 'La validation n’a pas abouti. Aucune validation n’a été enregistrée.');
     }
   };
   const reload = async () => {
@@ -340,6 +353,10 @@ function ProcessSheetDraftEditor({
           <h2 className="text-base font-semibold">Déroulement de fabrication</h2>
           <InfoTooltip label="À propos du brouillon process"
             content="Les phases, étapes et ingrédients associés sont propres à cette Fiche process. La sauvegarde est manuelle et ne modifie pas la Fiche technique." />
+          {sourceIngredients?.hasLegacyLineIdentity && (
+            <InfoTooltip label="À propos de la composition historique"
+              content="Les ingrédients proviennent d’une ancienne validation. Une correspondance explicite peut être nécessaire si la Fiche technique est mise à jour." />
+          )}
           <span className={'text-xs font-medium '
             + (saveError ? 'text-destructive' : dirty ? 'text-warning' : 'text-success')}
             role="status">
@@ -375,23 +392,64 @@ function ProcessSheetDraftEditor({
           Consultation uniquement : droits d’édition ou Dossier actif requis.
         </p>
       )}
-      {message && saveError && (
-        <p className="text-sm text-destructive" role="alert">{message}</p>
-      )}
-      {validationError && <p className="text-sm text-destructive" role="alert">
-        {validationError}
-      </p>}
+      <DialogRoot
+        open={Boolean(validationError || (saveError && !conflict))}
+        onOpenChange={(open) => {
+          if (!open) {
+            setValidationError('');
+            setValidationErrorCode('');
+            if (!conflict) setSaveError(false);
+          }
+        }}
+      >
+        <DialogPortal>
+          <DialogOverlay className="backdrop-blur-none" />
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {validationError ? 'Validation impossible' : 'Enregistrement impossible'}
+              </DialogTitle>
+              <DialogDescription>
+                {validationError || message}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => {
+                setValidationError('');
+                setValidationErrorCode('');
+                if (!conflict) setSaveError(false);
+              }}>
+                Fermer
+              </Button>
+              {validationError && (validationErrorCode === 'PROCESS_SHEET_PARENT_CHANGED'
+                || validationErrorCode === 'PROCESS_SHEET_PARENT_REVISION_OPEN') && (
+                <Button type="button" onClick={() => {
+                  setValidationError('');
+                  setValidationErrorCode('');
+                  onRequestReconciliation?.();
+                }}>
+                  Examiner la Fiche technique
+                </Button>
+              )}
+              {validationErrorCode === 'PROCESS_SHEET_CHANGED' && (
+                <Button type="button" onClick={() => {
+                  setValidationError('');
+                  setValidationErrorCode('');
+                  reload();
+                }}>
+                  Actualiser la Fiche process
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </DialogPortal>
+      </DialogRoot>
       {conflict && (
         <Button onClick={() => setDanger({ kind: 'reload' })} type="button" variant="outline">
           Recharger le brouillon
         </Button>
       )}
-      {sourceIngredients?.hasLegacyLineIdentity && (
-        <p role="note" className="border-l-2 border-border pl-3 text-sm text-muted-foreground">
-          Cette composition historique utilise des identifiants limités à sa validation M-004 d’origine.
-          Les affectations ne sont pas transférables automatiquement à une autre version.
-        </p>
-      )}
+
       {showPreview ? (
         <div className="process-sheet-pane-enter py-3">
           <ProcessSheetPreview phases={form.phases} ingredients={ingredients} />
