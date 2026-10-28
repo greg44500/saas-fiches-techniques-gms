@@ -1,3 +1,9 @@
+## Réconciliation de composition — M-006 (2026-10-28)
+
+Action explicite permettant à une Fiche process existante de prendre pour référence la validation M-004 officielle courante, après comparaison et vérification des associations d'ingrédients. Une modification de fabrication nécessite une revalidation M-006 ; une simple revalorisation ne crée pas automatiquement une nouvelle version de Fiche process. Voir `docs/m006/M-006-RECONCILIATION.md`.
+
+---
+
 # SAAS-FICHES-TECHNIQUES-GMS — Glossaire métier
 ## Gamme de Fiches techniques — M-004
 
