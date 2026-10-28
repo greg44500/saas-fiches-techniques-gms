@@ -1,3 +1,21 @@
+# M-006 — Reprise du centre d'aide sur le Core aligné (2026-10-28)
+
+**État Git vérifié :** PR métier #53 en cours, Core Gate #238 **réussie** sur le commit M-006 initial `796d4caad8298cc783f12cbb7637fe3d1f60d947`. Le Core aligné par PR #54 est fusionné dans `main` au commit `383bb4ae152aa4d676dcb1308542da4b268d363d`, Core Gate post-merge #241 **réussie**. Le Core reste en `v1.2.1`, provenance exacte `42beaff67200ca4e956378e2273b4eae440f47bc`.
+
+**Intégration :** merge Git de `main` dans `feature/m006-help-center`, sans changement de contrats métier ni de version. Une nouvelle gate CI sur le **commit combiné** doit être vérifiée avant livraison. La recette manuelle (rôles, visibilité, clavier, responsive) n'est pas attestée : ne pas la confondre avec la CI.
+
+---
+
+# Alignement Core 1.2.1 post-tag — centre d’aide (2026-10-28)
+
+**Branche :** `core-update/v1.2.1`. Fusion Git du commit Core `42beaff67200ca4e956378e2273b4eae440f47bc` (Core Gate #112 verte) : navigation des catégories par chevrons et apparition échelonnée des cartes d’aide. Aucun module métier, droit, API, migration, schéma DB ou dépendance supplémentaire modifié. La PR métier M-006 #53 reste indépendante.
+
+**Provenance :** conserver `version = 1.2.1` et `tag = v1.2.1`. Le `commit` de `core-origin.json` doit être actualisé après validation de l’intégration et des gates du SaaS dérivé, puis relancer la gate avant fusion. Aucune release ni nouveau tag.
+
+**Vérifications attendues :** gate produit complète, recettes manuelles des onglets overflow, focus clavier, thème sombre et animations réduites.
+
+---
+
 # État courant — Centre d’aide M-006 (2026-10-28)
 
 **Autorité Git vérifiée :** PR #51 fusionnée (merge `254c613e7e14d99ec4b578c25bcffb87fc7a6180`), PR #52 fusionnée (merge `c166571255185cee9db30d4c01c0c7f9b5be9cf8`), Core Gate de PR #236 réussie et Core Gate post-merge #237 réussie, exécution `40689289670` achevée le 2026-10-28 à 12:50 UTC. Core déclaré `v1.2.1` / `35758f7a3067911244f94b81e7cc3ddd22882eaa`. Ces preuves concernent `main`, **pas le nouveau lot d'aide**.

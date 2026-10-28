@@ -1,3 +1,9 @@
+## Finalisation de l'aide M-006 sur la base Core alignée (2026-10-28)
+
+La PR métier #53 contient neuf procédures utilisateur M-006. Sa Core Gate #238 a réussi sur le commit initial. La PR d'alignement Core #54 est fusionnée dans `main` (`383bb4ae`) et la Core Gate #241 post-merge a réussi. La branche Help intègre désormais ce `main` sans changement de versions ; la gate du **commit combiné** et la QA manuelle restent à contrôler avant fusion. Le PDF M-006 et la suppression autonome restent différés.
+
+---
+
 ## M-006 — Dette active de validation du centre d’aide (2026-10-28)
 
 La branche `feature/m006-help-center` ajoute neuf fiches d'aide fondées sur l'interface et les permissions M-006 en production source, sans changement Core. Les tests du registre, des audiences, de l'absence de divulgation en remédiation et de la recherche utilisateur ont été **écrits mais non exécutés dans cette session**.

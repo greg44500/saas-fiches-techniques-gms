@@ -400,3 +400,32 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * Centre d’aide : apparition en cascade par catégorie, sans dépendance
+ * d’animation externe. La durée de la séquence est plafonnée par l’index
+ * fourni par le composant pour les catalogues les plus longs.
+ */
+@keyframes help-card-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .help-card-stagger-in {
+    animation: help-card-fade-in-up 280ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    animation-delay: calc(var(--help-card-stagger-index, 0) * 70ms);
+  }
+
+  /* Le profil renforcé conserve des cartes immédiatement disponibles. */
+  .a11y-enhanced .help-card-stagger-in {
+    animation: none !important;
+  }
+}

@@ -3,7 +3,7 @@
 **Date :** 2026-10-28  
 **Périmètre :** application `saas-fiches-techniques-gms`, branche `feature/m006-help-center`.  
 **Références Git :** PR #51 et PR #52 fusionnées, Core v1.2.1 dans `core-origin.json`.  
-**Statut :** inventaire et implémentation documentaire committés ; tests, gates et recette non exécutés dans cette session.
+**Statut actualisé :** Core Gate #238 réussie sur le lot d'aide initial ; le Core aligné par PR #54 est dans main (Core Gate #241 verte). Le commit combiné doit être à nouveau testé, et la QA manuelle reste nécessaire. Les mentions de non-exécution ci-dessous sont historiques.
 
 ## 1. Architecture et inventaire
 
