@@ -1,3 +1,11 @@
+# M-006 — Visibilité persistante des actions et aides en info-bulles (2026-10-28)
+
+**Sur la branche `feature/m006-fiches-process`, code et tests committés ; gates et QA non exécutées.** Correction de l'UX de réconciliation : l'action « Actualiser la composition » n'est plus conditionnellement montée/démontée ; elle reste visible, activée uniquement si une comparaison est nécessaire ou si la Fiche technique est en modification, et si process/Dossier actifs. Icône `InfoTooltip` accessible expliquant chaque indisponibilité. L'éditeur rend désormais visibles les boutons de validation et de sauvegarde même sans permission d'écriture ou quand il n'y a rien à faire, et explique `disabled` avec une aide adjacente. Le bouton de confirmation dans la modale de réconciliation reste visible pour tous les états, désactivé si une condition métier manque.
+
+Les sous-titres et explications secondaires des modales de réconciliation et de confirmation de validation sont placés dans les `InfoTooltip` métier existants ; les informations essentielles sur l'état et la décision demeurent visibles. Descriptions `sr-only` pour l'accessibilité. Tests React existants adaptés et cas de non-disparition ajoutés, sans preuve d'exécution. Ne pas conclure à une validation locale ; aucun développement lot 4, aucune PR/merge.
+
+---
+
 # M-006 — Réconciliation des compositions M-004 et UX de validation (2026-10-28)
 
 **Branche :** `feature/m006-fiches-process`. **Statut : code et tests committés, aucune gate ni QA locale exécutée. Lot 3 non validé ; lot 4 toujours bloqué.**
