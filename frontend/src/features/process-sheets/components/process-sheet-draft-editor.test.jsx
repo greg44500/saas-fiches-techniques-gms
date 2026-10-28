@@ -368,14 +368,14 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     let dialog = screen.getByRole('dialog', { name: 'Temps, température et équipements' });
     await user.type(within(dialog).getByRole('spinbutton', { name: 'Temps actif (min)' }), '25');
     await user.click(within(dialog).getByRole('button', { name: 'Annuler' }));
-    expect(screen.getByText('À jour')).toHaveClass('text-success');
+    expect(screen.getByText('Enregistré')).toHaveClass('text-success');
     await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
     dialog = screen.getByRole('dialog', { name: 'Temps, température et équipements' });
     expect(within(dialog).getByRole('spinbutton', { name: 'Temps actif (min)' })).toHaveValue(null);
     await user.click(within(dialog).getByRole('button', { name: 'Annuler' }));
     await user.click(screen.getByRole('button', { name: /Temps, température et équipements/ }));
     await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Valider' }));
-    expect(screen.getByText('À jour')).toHaveClass('text-success');
+    expect(screen.getByText('Enregistré')).toHaveClass('text-success');
     expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
     expect(mocks.save).toHaveBeenCalledTimes(1);
   });
@@ -443,7 +443,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
   it('utilise une modale pour l’échec d’enregistrement, sans message technique brut dans la page', async () => {
     const user = userEvent.setup();
     view();
-    expect(screen.getByText('À jour')).toHaveClass('text-success');
+    expect(screen.getByText('Enregistré')).toHaveClass('text-success');
     await addFreePhase(user);
     expect(screen.getByText('Modifications non enregistrées')).toHaveClass('text-warning');
     mocks.save.mockReturnValue({ unwrap: vi.fn().mockRejectedValue({
@@ -547,7 +547,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await user.clear(title);
     await user.type(title, 'Nom temporaire{Escape}');
     expect(screen.getByRole('heading', { name: 'Phase 1 : Nouvelle phase' })).toBeInTheDocument();
-    expect(screen.getByText('À jour')).toBeInTheDocument();
+    expect(screen.getByText('Enregistré')).toBeInTheDocument();
   });
 
   it('protège une phase portant uniquement des ingrédients', async () => {
