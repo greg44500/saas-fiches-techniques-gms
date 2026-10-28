@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   ProcessSheetDraftEditor,
 } from '@/features/process-sheets/components/process-sheet-draft-editor';
+import { ProcessSheetReconciliationDialog } from '@/features/process-sheets/components/process-sheet-reconciliation-dialog';
 import {
   PROCESS_SHEET_PERMISSION,
 } from '@/features/process-sheets/constants/process-sheet-permissions';
@@ -16,6 +18,8 @@ import {
 import { useWorkspaceContext } from '@/features/workspace/components/workspace-context';
 
 function ProcessSheetWorkspacePage() {
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [localDirty, setLocalDirty] = useState(false);
   const { dossierId, processSheetId } = useParams();
   const { workspace, can } = useWorkspaceContext();
   const detail = useGetProcessSheetQuery({
@@ -37,7 +41,7 @@ function ProcessSheetWorkspacePage() {
     );
   }
 
-  const { process, draft, sourceIngredients, compositionOutdated, dossierOperational } = detail.data;
+  const { process, draft, sourceIngredients, compositionOutdated, parentDraftOpen, dossierOperational } = detail.data;
   // GET shares the already-authorized Dossier operational state from the
   // backend, so edit roles do not require a second dossier:read permission.
   const canEdit = Boolean(can?.(PROCESS_SHEET_PERMISSION.EDIT))
@@ -69,31 +73,47 @@ function ProcessSheetWorkspacePage() {
         <h1 className="min-w-0 truncate text-xl font-semibold sm:text-2xl" title={process.title}>
           {process.title}
         </h1>
+        {(compositionOutdated || parentDraftOpen) && (
+          <Button
+            className="ml-auto shrink-0"
+            onClick={() => setReviewOpen(true)}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {parentDraftOpen ? 'Fiche technique en modification' : 'Composition à actualiser'}
+          </Button>
+        )}
         <InfoTooltip
           label="À propos du brouillon de fabrication"
           content="La Fiche process est liée à la validation M-004 sélectionnée lors de sa création. Le travail sur les phases et étapes sera enregistré dans un brouillon spécifique au process."
         />
       </header>
-      {compositionOutdated && (
-        <p className="rounded-lg border border-border bg-muted/50 p-3 text-sm" role="note">
-          La composition M-004 a évolué depuis la création de ce process.
-          Les ingrédients ci-dessous proviennent de la validation liée à ce brouillon ;
-          aucune correspondance n’est appliquée automatiquement.
-        </p>
-      )}
       <ProcessSheetDraftEditor
         key={process.id}
         canEdit={canEdit}
         canValidate={canValidate}
         editorialState={process.editorialState}
         processRevision={process.revision}
-        compositionOutdated={compositionOutdated}
+        compositionOutdated={compositionOutdated || parentDraftOpen}
+        onDirtyChange={setLocalDirty}
+        onRequestReconciliation={() => setReviewOpen(true)}
         canReadPhaseLibrary={canReadPhaseLibrary}
         dossierId={dossierId}
         initialDraft={draft}
         onReload={detail.refetch}
         processSheetId={process.id}
         sourceIngredients={sourceIngredients}
+        workspaceId={workspace.id}
+      />
+      <ProcessSheetReconciliationDialog
+        canApply={canEdit && canValidate && !localDirty}
+        dossierId={dossierId}
+        onClose={() => setReviewOpen(false)}
+        onUpdated={detail.refetch}
+        open={reviewOpen}
+        processSheetId={process.id}
+        technicalSheetId={process.technicalSheetId}
         workspaceId={workspace.id}
       />
     </div>
