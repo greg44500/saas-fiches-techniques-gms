@@ -769,6 +769,42 @@ describe('M-006 — réconciliation officielle après revalidation M-004', () =>
         })).toBe(1);
     });
 
+    it('retirer volontairement un ingrédient invalide une Fiche process précédemment validée', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id;
+        const before = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        const phases = [{
+            id: 'phase-removal-1', title: 'Préparer', instructions: '',
+            ingredientLineKeys: [], steps: [{
+                id: 'step-removal-1', title: 'Assembler', instructions: 'Assembler',
+                ingredientLineKeys: [before.sourceIngredients.lines[0].lineKey],
+            }],
+        }];
+        await request(app).put(uri + '/draft').set(bearer(owner.token))
+            .send({ expectedRevision: 0, phases, unassignedReasons: [] }).expect(200);
+        await request(app).post(uri + '/validate').set(bearer(owner.token))
+            .send({ expectedRevision: 1 }).expect(200);
+        await supersedeM004Validation(
+            valid.validated.validation.id, valid.created.sheet.id,
+        );
+        const review = (await request(app).get(uri + '/composition-review')
+            .set(bearer(owner.token)).expect(200)).body.data;
+        expect(review.compositionChanged).toBe(false);
+        await request(app).post(uri + '/reconcile').set(bearer(owner.token))
+            .send({
+                expectedRevision: 2, expectedDraftRevision: 1,
+                currentValidationId: review.currentValidationId,
+                decisions: [{ from: review.assignments[0].from, to: null }],
+            }).expect(200);
+        const state = (await request(app).get(uri).set(bearer(owner.token))
+            .expect(200)).body.data;
+        expect(state.process.editorialState).toBe('DRAFT');
+        expect(state.draft.phases[0].steps[0].ingredientLineKeys).toEqual([]);
+        expect(state.draft.phases[0].steps[0].instructions).toBe('Assembler');
+    });
+
     it('protège le rapprochement contre les révisions périmées et les rôles sans autorisation', async () => {
         const valid = await createValidated();
         const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
