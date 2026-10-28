@@ -180,7 +180,9 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
       isError: false, isLoading: false, refetch: vi.fn(),
     });
     view();
-    expect(screen.getByText(/Consultation uniquement/)).toBeInTheDocument();
+    expect(screen.queryByText(/Consultation uniquement/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Disponibilité de l’enregistrement' }))
+      .toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ajouter une phase' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toBeDisabled();
