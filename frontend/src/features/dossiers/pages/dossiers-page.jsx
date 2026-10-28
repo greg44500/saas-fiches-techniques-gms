@@ -300,7 +300,7 @@ function DossiersPage() {
         ) : (
           <>
             <DataTable
-              caption="Dossiers accessibles du workspace"
+              caption="Dossiers accessibles"
               columns={columns}
               data={dossiers}
               emptyContent={(
