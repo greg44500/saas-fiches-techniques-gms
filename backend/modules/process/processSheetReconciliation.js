@@ -44,6 +44,35 @@ const buildReconciliationPlan = ({ previous, current, draft }) => {
         before.lines.filter((line) => line.productVariantId === variant).length;
     const newCount = (variant) =>
         after.lines.filter((line) => line.productVariantId === variant).length;
+    const countIdentities = (lines) => {
+        const counts = new Map();
+        for (const line of lines) {
+            const identity = JSON.stringify([
+                line.productVariantId, line.productVariantName?.trim() ?? null,
+            ]);
+            const entry = counts.get(identity);
+            if (entry) entry.count += 1;
+            else counts.set(identity, {
+                identity, name: line.productVariantName,
+                reference: line.productVariantId, count: 1,
+            });
+        }
+        return counts;
+    };
+    const beforeIdentities = countIdentities(before.lines);
+    const afterIdentities = countIdentities(after.lines);
+    const ingredientChanges = [
+        ...[...beforeIdentities.values()].flatMap((entry) => {
+            const diff = entry.count - (afterIdentities.get(entry.identity)?.count ?? 0);
+            return diff > 0 ? [{ type: 'REMOVED', name: entry.name,
+                reference: entry.reference, count: diff }] : [];
+        }),
+        ...[...afterIdentities.values()].flatMap((entry) => {
+            const diff = entry.count - (beforeIdentities.get(entry.identity)?.count ?? 0);
+            return diff > 0 ? [{ type: 'ADDED', name: entry.name,
+                reference: entry.reference, count: diff }] : [];
+        }),
+    ];
     const usedTargets = new Set();
     const assignments = referencedLineKeys(draft).map((from) => {
         const oldLine = byOldKey.get(from);
@@ -72,6 +101,7 @@ const buildReconciliationPlan = ({ previous, current, draft }) => {
     });
     return {
         compositionChanged,
+        ingredientChanges,
         assignments,
         unresolvedCount: assignments.filter((assignment) => !assignment.proposedTo).length,
         oldIngredientCount: before.lines.length,
