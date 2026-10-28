@@ -62,7 +62,11 @@ describe('M-006 — dialogue de réconciliation M-004', () => {
     const user = userEvent.setup();
     view();
     const dialog = screen.getByRole('dialog', { name: 'Actualiser la Fiche process' });
-    expect(dialog).toHaveTextContent('recette de fabrication est identique');
+    expect(dialog).toHaveTextContent('Composition identique');
+    expect(screen.getByRole('button', { name: 'Explication de la comparaison' }))
+      .toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'À propos de l’actualisation de composition' }))
+      .toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Confirmer l’actualisation' }));
     expect(mocks.reconcile).toHaveBeenCalledWith(expect.objectContaining({
       workspaceId: 'workspace-1',
@@ -82,7 +86,7 @@ describe('M-006 — dialogue de réconciliation M-004', () => {
       isLoading: false, isFetching: false, isError: false, refetch: vi.fn(),
     });
     view();
-    expect(screen.getByRole('dialog')).toHaveTextContent('La recette a changé');
+    expect(screen.getByRole('dialog')).toHaveTextContent('Composition modifiée');
     expect(screen.getByRole('button', { name: 'Confirmer l’actualisation' })).toBeDisabled();
     expect(mocks.reconcile).not.toHaveBeenCalled();
   });
@@ -97,8 +101,30 @@ describe('M-006 — dialogue de réconciliation M-004', () => {
     expect(screen.getByRole('link', { name: 'Ouvrir la Fiche technique' }))
       .toHaveAttribute('href',
         '/workspaces/workspace-1/dossiers/dossier-1/technical-sheets/sheet-1');
-    expect(screen.queryByRole('button', { name: 'Confirmer l’actualisation' }))
-      .not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmer l’actualisation' }))
+      .toBeDisabled();
+    expect(screen.getByRole('button', {
+      name: 'Disponibilité de la confirmation d’actualisation',
+    })).toBeInTheDocument();
+  });
+
+  it('garde la confirmation visible mais désactivée quand la composition est déjà courante', () => {
+    mocks.review.mockReturnValue({
+      data: { status: 'CURRENT' },
+      isLoading: false, isFetching: false, isError: false, refetch: vi.fn(),
+    });
+    view();
+    expect(screen.getByText('Composition déjà à jour.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmer l’actualisation' })).toBeDisabled();
+  });
+
+  it('garde la confirmation visible pendant le chargement de l’analyse', () => {
+    mocks.review.mockReturnValue({
+      data: undefined,
+      isLoading: true, isFetching: true, isError: false, refetch: vi.fn(),
+    });
+    view();
+    expect(screen.getByRole('button', { name: 'Confirmer l’actualisation' })).toBeDisabled();
   });
 
   it('refuse la mutation sans autorisation suffisante', () => {
