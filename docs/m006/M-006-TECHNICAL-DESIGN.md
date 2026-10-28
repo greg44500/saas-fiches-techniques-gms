@@ -1,3 +1,13 @@
+## Lot 3 — Précision technique après audit du 2026-10-28
+
+Deux révisions techniques sont distinctes : `ProcessSheet.revision` protège les transitions de l'agrégat (y compris validation) et `ProcessSheetDraft.revision` protège les écritures de contenu. Le POST de validation exige `expectedRevision` de `ProcessSheet`. Le PUT du brouillon exige `expectedRevision` de `ProcessSheetDraft` et répond désormais avec `revision` (brouillon) **et** `processRevision` (agrégat). Le frontend ne doit jamais comparer ces deux compteurs numériquement pour autoriser la revalidation. Il garde le jeton d'agrégat confirmé par la dernière sauvegarde ou le GET, et le serveur rejette les jetons périmés (409).
+
+Le POST de validation refuse également une révision M-004 encore ouverte ; il acquiert préalablement le verrou transactionnel existant sur le parent, puis vérifie l'absence de `TechnicalSheetDraft` et l'identité de `currentValidatedState` avec `sourceValidation`. Il ne produit ni snapshot métier M-006 ni modification économique M-004.
+
+**Preuve :** revue statique GitHub et tests de non-régression écrits. Aucun test ni gate exécuté dans cette intervention. Ne pas considérer le lot 3 livré avant recette locale.
+
+---
+
 # M-006 — Conception technique et séquencement de l'implémentation
 
 ## Lot 2 — Rectification canonique du cycle de validation M-006 (2026-10-27)
