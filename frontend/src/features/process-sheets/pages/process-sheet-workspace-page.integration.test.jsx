@@ -96,6 +96,10 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     const user = userEvent.setup();
     view();
     expect(screen.getByRole('heading', { name: 'Assemblage tartine' })).toBeInTheDocument();
+    const controls = screen.getByRole('group', { name: 'Actions de la Fiche process' });
+    expect(within(controls).getAllByRole('button')).toHaveLength(4);
+    expect(within(controls).getByRole('button', { name: 'Actualiser la composition' }))
+      .toHaveAttribute('aria-disabled', 'true');
     await addFreePhase(user);
     expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();
     await user.click(within(screen.getByRole('navigation', { name: 'Navigation des phases et étapes' })).getByRole('button', { name: 'Ajouter une étape à la phase 1' }));
@@ -181,11 +185,13 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     });
     view();
     expect(screen.queryByText(/Consultation uniquement/)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Disponibilité de l’enregistrement' }))
+    expect(screen.getByRole('group', { name: 'Actions de la Fiche process' }))
       .toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Ajouter une phase' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Valider la Fiche process' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' }))
+      .toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('button', { name: 'Valider la Fiche process' }))
+      .toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByRole('button', { name: 'Aperçu du process' })).toBeInTheDocument();
     expect(mocks.save).not.toHaveBeenCalled();
   });
