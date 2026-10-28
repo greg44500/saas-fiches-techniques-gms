@@ -1,3 +1,6 @@
+import {
+    getProcessSheetReconciliation, reconcileProcessSheet,
+} from './processSheetReconciliation.service.js';
 import { DOSSIER_STATUS } from '../dossier/dossier.registry.js';
 import { updateProcessSheetDraft } from './processSheetDraft.service.js';
 import { validateProcessSheet } from './processSheetValidation.service.js';
@@ -52,6 +55,22 @@ const saveDraft = async (req, res) => {
     res.status(200).json({ status: 'success', data: { draft } });
 };
 
+const getReconciliation = async (req, res) => {
+    const review = await getProcessSheetReconciliation({
+        ...scope(req), processSheetId: req.validated.params.processSheetId,
+    });
+    res.status(200).json({ status: 'success', data: review });
+};
+
+const applyReconciliation = async (req, res) => {
+    const result = await reconcileProcessSheet({
+        ...scope(req),
+        processSheetId: req.validated.params.processSheetId,
+        actorId: req.user._id, ...req.validated.body,
+    });
+    res.status(200).json({ status: 'success', data: result });
+};
+
 const validate = async (req, res) => {
     const process = await validateProcessSheet({
         ...scope(req),
@@ -61,4 +80,4 @@ const validate = async (req, res) => {
     res.status(200).json({ status: 'success', data: { process } });
 };
 
-export { create, eligible, get, list, saveDraft, validate };
+export { create, eligible, get, list, saveDraft, validate, getReconciliation, applyReconciliation };
