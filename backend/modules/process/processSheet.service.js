@@ -15,7 +15,7 @@ import { TECHNICAL_SHEET_STATUS } from '../technicalSheet/technicalSheet.registr
 import { ProcessSheet, PROCESS_SHEET_EDITORIAL_STATE } from './processSheet.model.js';
 import { ProcessSheetDraft } from './processSheetDraft.model.js';
 import { toIngredientProjection } from './processSheetIngredientProjection.js';
-import { processReferenceId } from './processSheetReconciliation.js';
+import { manufacturingSignature, processReferenceId } from './processSheetReconciliation.js';
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -82,9 +82,21 @@ const getProcessSheet = async ({
         _id: process.technicalSheet._id ?? process.technicalSheet,
         workspace: workspaceId, dossier: dossierId,
     })).select('currentValidatedState status').lean();
-    const parentDraftOpen = parent ? Boolean(await TechnicalSheetDraft.exists(mongoose.trusted({
-        technicalSheet: parent._id, workspace: workspaceId, dossier: dossierId,
-    }))) : false;
+    // A pending M-004 edit is not an official composition and cannot block M-006.
+    // Only compare the ingredient identities of immutable official snapshots.
+    const currentValidationId = parent?.currentValidatedState?.toString();
+    const referenceId = processReferenceId(process).toString();
+    const current = currentValidationId && currentValidationId !== referenceId
+        ? await TechnicalSheetValidation.findOne(mongoose.trusted({
+            _id: currentValidationId,
+            technicalSheet: process.technicalSheet._id ?? process.technicalSheet,
+            workspace: workspaceId, dossier: dossierId,
+        })).lean()
+        : null;
+    const compositionOutdated = Boolean(
+        currentValidationId && currentValidationId !== referenceId
+        && (!current || manufacturingSignature(source) !== manufacturingSignature(current))
+    );
 
     const draft = await ProcessSheetDraft.findOne(mongoose.trusted({
         processSheet: process._id, workspace: workspaceId, dossier: dossierId,
@@ -98,11 +110,10 @@ const getProcessSheet = async ({
             unassignedReasons: draft.unassignedReasons ?? [],
         } : null,
         sourceIngredients: ingredients,
-        compositionOutdated: Boolean(
-            parent?.currentValidatedState
-            && parent.currentValidatedState.toString() !== processReferenceId(process).toString()
-        ),
-        parentDraftOpen,
+        compositionOutdated,
+        // Kept for API compatibility only; a working M-004 draft is not a
+        // validation blocker when an official composition already exists.
+        parentDraftOpen: false,
     };
 };
 
