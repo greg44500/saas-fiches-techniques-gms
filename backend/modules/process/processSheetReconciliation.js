@@ -2,25 +2,22 @@ import { toIngredientProjection } from './processSheetIngredientProjection.js';
 
 // M-004 official snapshots are immutable. Only manufacturing-relevant data
 // participates: a price or supplier revision alone cannot invalidate a process.
-const value = (item) => item?.toString?.() ?? null;
-const manufacturingSignature = (validation) => JSON.stringify({
-    productionQuantity: value(validation.sheetSnapshot?.productionQuantity),
-    productionUnit: validation.sheetSnapshot?.productionUnit ?? null,
-    portionsPerProductionUnit: value(validation.sheetSnapshot?.portionsPerProductionUnit),
-    lines: (validation.linesSnapshot ?? []).map((line) => ({
-        kind: line.kind,
-        variant: value(line.productVariantId),
-        quantity: value(line.netQuantity),
-        unit: line.inputUnit,
-        order: line.order,
-        note: line.note ?? null,
-        optimization: {
-            min: value(line.optimization?.minNetQuantity),
-            max: value(line.optimization?.maxNetQuantity),
-            locked: Boolean(line.optimization?.locked),
-        },
-    })),
-});
+const manufacturingSignature = (validation) => {
+    const ingredients = toIngredientProjection({
+        sourceKind: 'VALIDATION', source: validation,
+    }).lines.map(({ productVariantId, productVariantName }) => ({
+        // Supplier-article references, quantities, units, order, notes and
+        // pricing do not describe the identity of an ingredient in M-006.
+        reference: productVariantId,
+        name: productVariantName?.trim() ?? null,
+    }));
+    // Compare multisets, not positions: moving a line does not change an
+    // ingredient. Repeated occurrences remain represented individually.
+    ingredients.sort((a, b) =>
+        a.reference.localeCompare(b.reference)
+        || (a.name ?? '').localeCompare(b.name ?? ''));
+    return JSON.stringify(ingredients);
+};
 
 const processReferenceId = (process) =>
     process.compositionValidation ?? process.sourceValidation;
@@ -52,14 +49,16 @@ const buildReconciliationPlan = ({ previous, current, draft }) => {
         const oldLine = byOldKey.get(from);
         if (!oldLine) throw new Error('An existing process assignment is absent from its official source.');
         let proposed = byNewKey.get(from);
-        if (proposed?.productVariantId !== oldLine.productVariantId) proposed = null;
+        if (proposed && (proposed.productVariantId !== oldLine.productVariantId
+            || proposed.productVariantName !== oldLine.productVariantName)) proposed = null;
         // Only identical manufacturing compositions and unique ingredient
         // occurrences permit automatic matching without a stable line ID.
         if (!proposed && !compositionChanged
             && oldCount(oldLine.productVariantId) === 1
             && newCount(oldLine.productVariantId) === 1) {
             proposed = after.lines.find(
-                (line) => line.productVariantId === oldLine.productVariantId,
+                (line) => line.productVariantId === oldLine.productVariantId
+                    && line.productVariantName === oldLine.productVariantName,
             );
         }
         if (proposed && usedTargets.has(proposed.lineKey)) proposed = null;
