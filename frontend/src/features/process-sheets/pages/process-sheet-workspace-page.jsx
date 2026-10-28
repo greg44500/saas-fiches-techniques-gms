@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { Link, useParams } from 'react-router';
+import { useParams } from 'react-router';
 
 import { ErrorState } from '@/components/shared/error-state';
-import { Button } from '@/components/ui/button';
 import {
   ProcessSheetDraftEditor,
 } from '@/features/process-sheets/components/process-sheet-draft-editor';
@@ -40,7 +38,7 @@ function ProcessSheetWorkspacePage() {
     );
   }
 
-  const { process, draft, sourceIngredients, compositionOutdated, parentDraftOpen, dossierOperational } = detail.data;
+  const { process, draft, sourceIngredients, compositionOutdated, dossierOperational } = detail.data;
   // GET shares the already-authorized Dossier operational state from the
   // backend, so edit roles do not require a second dossier:read permission.
   const canEdit = Boolean(can?.(PROCESS_SHEET_PERMISSION.EDIT))
@@ -48,16 +46,14 @@ function ProcessSheetWorkspacePage() {
   const canReadPhaseLibrary = Boolean(can?.(PROCESS_SHEET_PERMISSION.READ));
   const canValidate = Boolean(can?.(PROCESS_SHEET_PERMISSION.VALIDATE))
     && process?.status === 'ACTIVE' && dossierOperational === true;
-  const needsCompositionReview = Boolean(compositionOutdated || parentDraftOpen);
+  const needsCompositionReview = Boolean(compositionOutdated);
   const canOpenCompositionReview = needsCompositionReview
     && process?.status === 'ACTIVE' && dossierOperational === true;
   const compositionHelp = process?.status !== 'ACTIVE' || dossierOperational !== true
-    ? 'La Fiche process et le dossier doivent être actifs pour actualiser la composition.'
-    : parentDraftOpen
-      ? 'Une modification de la Fiche technique est en cours. Ouvrez ce dialogue pour savoir comment la terminer.'
-      : compositionOutdated
-        ? 'Une nouvelle validation de la Fiche technique est disponible. Comparez les compositions avant de poursuivre.'
-        : 'La Fiche process utilise déjà la composition officielle courante. Aucune actualisation n’est nécessaire.';
+    ? 'Dossier ou fiche inactive'
+    : compositionOutdated
+      ? 'Actualiser les ingrédients'
+      : 'Ingrédients à jour';
 
   if (!process || !draft) {
     return (
@@ -71,25 +67,15 @@ function ProcessSheetWorkspacePage() {
 
   return (
     <div className="space-y-3">
-      <header className="flex min-w-0 flex-wrap items-center gap-3">
-        <Button asChild className="shrink-0" size="sm" variant="outline">
-          <Link to={backPath}>
-            <ArrowLeft aria-hidden="true" className="size-4" />
-            Fiches process
-          </Link>
-        </Button>
-        <span aria-hidden="true" className="shrink-0 text-muted-foreground">|</span>
-        <h1 className="min-w-0 truncate text-xl font-semibold sm:text-2xl" title={process.title}>
-          {process.title}
-        </h1>
-      </header>
       <ProcessSheetDraftEditor
         key={process.id}
+        backPath={backPath}
+        processTitle={process.title}
         canEdit={canEdit}
         canValidate={canValidate}
         editorialState={process.editorialState}
         processRevision={process.revision}
-        compositionOutdated={compositionOutdated || parentDraftOpen}
+        compositionOutdated={compositionOutdated}
         canOpenCompositionReview={canOpenCompositionReview}
         compositionHelp={compositionHelp}
         onDirtyChange={setLocalDirty}
