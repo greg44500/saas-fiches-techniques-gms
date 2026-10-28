@@ -8,6 +8,7 @@ import { createBusinessActivityEvent } from '../businessActivity/businessActivit
 import { Dossier } from '../dossier/dossier.model.js';
 import { DOSSIER_STATUS } from '../dossier/dossier.registry.js';
 import { TechnicalSheet } from '../technicalSheet/technicalSheet.model.js';
+import { TechnicalSheetDraft } from '../technicalSheet/technicalSheetDraft.model.js';
 import { TechnicalSheetValidation } from '../technicalSheet/technicalSheetValidation.model.js';
 import { TECHNICAL_SHEET_STATUS } from '../technicalSheet/technicalSheet.registry.js';
 import { assertLineAssignments } from './processSheetDraft.service.js';
@@ -58,6 +59,17 @@ const validateProcessSheet = async ({
         session, returnDocument: 'after', timestamps: false,
     });
     if (!parent) throw conflict();
+
+    // A pending M-004 revision is not an official composition. A previously
+    // created process stays readable, but cannot be newly validated until the
+    // parent revision has been resolved. The parent write above serializes this
+    // check against M-004 startDraft.
+    const openParentDraft = await TechnicalSheetDraft.exists(mongoose.trusted({
+        technicalSheet: process.technicalSheet,
+        workspace: workspaceId,
+        dossier: dossierId,
+    })).session(session);
+    if (openParentDraft) throw conflict();
 
     const source = await TechnicalSheetValidation.findOne(mongoose.trusted({
         _id: process.sourceValidation, technicalSheet: process.technicalSheet,
