@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
@@ -15,14 +14,13 @@ import {
 } from '@/features/process-sheets/api/process-sheets-api';
 
 const reasonText = {
-  PARENT_REVISION_OPEN: 'Une modification de la Fiche technique est encore en cours. Terminez-la ou abandonnez-la avant de continuer.',
   PARENT_UNAVAILABLE: 'La Fiche technique doit être active et validée pour poursuivre.',
   REFERENCE_UNAVAILABLE: 'Une composition officielle nécessaire à la comparaison est indisponible. Contactez un responsable.',
 };
 
 function ProcessSheetReconciliationDialog({
   applyUnavailableReason, canApply, dossierId, onClose, onUpdated, open, processSheetId,
-  technicalSheetId, workspaceId,
+  workspaceId,
 }) {
   const [choices, setChoices] = useState({});
   const [error, setError] = useState('');
@@ -39,13 +37,6 @@ function ProcessSheetReconciliationDialog({
     Object.hasOwn(choices, item.from) ? choices[item.from] : item.proposedTo)
     .filter((item) => item && item !== '__REMOVE__') ?? [];
   const duplicateTargets = new Set(selectedTargets).size !== selectedTargets.length;
-  const explicitChanges = plan?.assignments?.some((item) =>
-    Object.hasOwn(choices, item.from) && (
-      choices[item.from] === '__REMOVE__' || choices[item.from] !== item.proposedTo
-    )) ?? false;
-  const removedCount = Object.values(choices).filter((choice) => choice === '__REMOVE__').length;
-  const technicalSheetPath = '/workspaces/' + workspaceId + '/dossiers/' + dossierId
-    + '/technical-sheets/' + technicalSheetId;
   const confirmationDisabled = !canApply || plan?.status !== 'REVIEW_REQUIRED'
     || Boolean(outstanding.length) || invalid || duplicateTargets || state.isLoading
     || review.isLoading || review.isFetching || review.isError;
@@ -55,9 +46,7 @@ function ProcessSheetReconciliationDialog({
       ? 'La comparaison doit être terminée avant toute actualisation.'
       : plan.status === 'CURRENT'
         ? 'La composition utilisée est déjà la bonne. Il n’y a rien à actualiser.'
-        : plan.status === 'PARENT_REVISION_OPEN'
-          ? 'Terminez ou abandonnez la modification de la Fiche technique avant de continuer.'
-          : plan.status !== 'REVIEW_REQUIRED'
+        : plan.status !== 'REVIEW_REQUIRED'
             ? 'La Fiche technique doit être active et sa composition accessible.'
             : !canApply
               ? applyUnavailableReason ?? 'Enregistrez votre travail et vérifiez vos droits avant de confirmer.'
@@ -67,7 +56,7 @@ function ProcessSheetReconciliationDialog({
                   ? 'Deux ingrédients pointent vers la même occurrence. Sélectionnez des occurrences distinctes.'
                   : state.isLoading
                     ? 'L’actualisation est en cours.'
-                    : 'La confirmation actualise la référence officielle. Si la fabrication ou ses associations changent, une nouvelle validation sera nécessaire.';
+                    : 'Actualiser';
 
   useEffect(() => {
     setChoices({});
@@ -118,7 +107,7 @@ function ProcessSheetReconciliationDialog({
               <DialogTitle>Actualiser la Fiche process</DialogTitle>
               <InfoTooltip
                 label="À propos de l’actualisation de composition"
-                content="Comparer la dernière Fiche technique validée avec celle utilisée par cette Fiche process. Les phases et instructions sont conservées ; les associations incertaines demandent votre choix."
+                content="Comparer les noms et références d’ingrédients modifiés."
               />
             </div>
             <DialogDescription className="sr-only">
@@ -147,40 +136,30 @@ function ProcessSheetReconciliationDialog({
           {reasonText[plan?.status] && (
             <div className="mt-4 space-y-3">
               <p className="text-sm">{reasonText[plan.status]}</p>
-              {plan.status === 'PARENT_REVISION_OPEN' && (
-                <Button asChild variant="outline" type="button">
-                  <Link to={technicalSheetPath}>Ouvrir la Fiche technique</Link>
-                </Button>
-              )}
+
             </div>
           )}
           {plan?.status === 'REVIEW_REQUIRED' && (
             <div className="mt-5 space-y-4">
-              <div className="flex items-center gap-2">
+              <p className="text-sm">
+                Les ingrédients ci-dessous ont changé. Les instructions seront conservées.
+              </p>
+              {(plan.ingredientChanges ?? []).length > 0 && (
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  {plan.ingredientChanges.map((change, index) => (
+                    <li key={change.type + change.reference + index}>
+                      {change.type === 'ADDED' ? 'Ajouté' : 'Retiré'} :
+                      {' '}{change.name} ({change.count})
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {plan.unresolvedCount > 0 && (
                 <p className="text-sm font-medium">
-                  {plan.compositionChanged ? 'Composition modifiée' : 'Composition identique'}
+                  {plan.unresolvedCount} association(s) à vérifier
                 </p>
-                <InfoTooltip
-                  label="Explication de la comparaison"
-                  content={plan.compositionChanged
-                    ? 'La fabrication a changé. Vérifiez les associations avant de valider à nouveau la Fiche process.'
-                    : 'La fabrication reste identique. Seule la référence officielle doit être actualisée, sauf si vous modifiez volontairement les associations.'}
-                />
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <span>
-                  {plan.oldIngredientCount} → {plan.newIngredients.length} ingrédients
-                  {' · '}{plan.unresolvedCount} association(s) à vérifier
-                  {removedCount > 0 ? ' · ' + removedCount + ' retrait(s)' : ''}
-                </span>
-                <InfoTooltip
-                  label="À propos des ingrédients et de la revalidation"
-                  content={(plan.compositionChanged || explicitChanges)
-                    ? 'La composition ou les associations sont modifiées. La Fiche process reviendra en Brouillon et devra être validée de nouveau. Les instructions seront conservées.'
-                    : 'Les associations reconnues sont proposées sans changement automatique. Les ingrédients non affectés ne bloquent pas la validation.'}
-                />
-              </div>
-              {plan.assignments.map((item) => {
+              )}
+              {plan.assignments.filter((item) => !item.proposedTo).map((item) => {
                 const choice = Object.hasOwn(choices, item.from)
                   ? choices[item.from] : item.proposedTo;
                 return (
@@ -192,8 +171,8 @@ function ProcessSheetReconciliationDialog({
                       <InfoTooltip
                         label={'À propos de la correspondance de ' + item.name}
                         content={item.proposedTo && !Object.hasOwn(choices, item.from)
-                          ? 'Une correspondance a été reconnue. Vous pouvez la modifier avant confirmation.'
-                          : 'Choisissez la nouvelle occurrence de cet ingrédient ou retirez explicitement son association.'}
+                          ? 'Correspondance reconnue.'
+                          : 'Choisir ou retirer cette association.'}
                       />
                     </div>
                     <Select
