@@ -1,3 +1,13 @@
+# M-006 — Correction du test de focus du panneau de contrôle (2026-10-28)
+
+**Preuve utilisateur avant correction :** Vitest frontend `src/features/process-sheets` — 12 fichiers, 112 tests : 111 réussis, 1 échec. Échec circonscrit à `process-sheet-control-panel.test.jsx`, assertion `findByRole('tooltip')` : Base UI rend le conteneur de l'aide avec `role="presentation"` et un popup `data-open`; le log montre le contenu « La composition est déjà à jour. » déjà monté après focus. Il ne démontre pas de défaillance de l'info-bulle elle-même.
+
+**Correction committée :** recherche du texte précis par Testing Library, puis contrôle de l'état popup ouvert (`[data-open]`) au lieu de supposer `role=tooltip` ou une géométrie jsdom réelle. Le premier scénario parcourt les actions au clavier (Tab), exerce Entrée/Espace/clic sur l'action indisponible, puis vérifie que les callbacks métier n'ont pas été déclenchés. Deux variantes couvrent les aides au focus et la neutralisation clavier/clic pour Enregistrer et Valider. Le scénario des quatre actions autorisées reste présent. Audit statique des 12 fichiers de tests M-006 : aucun autre sélecteur `findByRole('tooltip')` ou `getByRole('tooltip')` trouvé.
+
+**Statut après correction :** code et tests mis à jour sur `feature/m006-fiches-process`. Les 111 tests verts rapportés concernent **le commit antérieur**. Aucune nouvelle exécution Vitest, ESLint ou build disponible depuis cet environnement (dépôt exécutable privé et Node 24 local non accessibles). Exécuter `npm --prefix frontend run test -- src/features/process-sheets`, puis `npm --prefix frontend run lint` et `npm --prefix frontend run build`. En cas de nouvel échec, examiner le log réel avant de conclure. Pas de changement métier, API, RBAC, schéma, Core, PR ou lot 4.
+
+---
+
 # M-006 — Panneau de contrôle unifié de fabrication (2026-10-28)
 
 **Branche :** `feature/m006-fiches-process`. **Statut : implémentation et tests RTL committés ; gates et QA locale non exécutées ; lot 3 non validé.** Aucun changement Core, modèle, endpoint, RBAC ou composition M-004 ; lot 4, PR et merge non engagés.
