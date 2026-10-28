@@ -1,3 +1,14 @@
+## M-006 — Dette active de validation du centre d’aide (2026-10-28)
+
+La branche `feature/m006-help-center` ajoute neuf fiches d'aide fondées sur l'interface et les permissions M-006 en production source, sans changement Core. Les tests du registre, des audiences, de l'absence de divulgation en remédiation et de la recherche utilisateur ont été **écrits mais non exécutés dans cette session**.
+
+**Preuves encore nécessaires avant livraison :** tests backend ciblés `backend/tests/help`, test RTL `frontend/src/features/help/components/help-search.test.jsx`, suite frontend, lint et build, `npm run release:check`, contrôle des résultats CI GitHub, QA de la navigation entre fiches, des liens et de la visibilité selon rôles/Dossiers/capabilities et du rendu mobile/clavier. Le texte de l'aide est limité aux parcours réellement présents dans l'interface.
+
+Les mentions historiques de gates non exécutées pour la PR #51 ne décrivent plus l'état de `main` : PR #51 fusionnée, PR #52 fusionnée, Core Gate post-merge #237 réussie le 2026-10-28. **Ceci ne prouve pas les tests du nouveau lot Help.**
+
+Ne pas confondre cette dette de preuve avec les fonctionnalités différées : suppression autonome M-006 et export PDF/impression M-006 restent des chantiers métier distincts, non commencés par ce lot.
+
+---
 ## M-006 — Export PDF / impression, fonctionnalité à cadrer (2026-10-28)
 
 **Besoin utilisateur :** exporter une Fiche process dans un vrai document PDF imprimable depuis le panneau d'actions. L'icône est réservée (présente, désactivée, tooltip « Export PDF à venir »), sans simulation de téléchargement ou d'impression. Le moteur PDF M-004 ne fournit pas aujourd'hui de contrat d'export M-006 ; avant de l'activer, cadrer le périmètre du document (brouillon versus validée, données M-004 affichées ou non, confidentialité, règles de RBAC et quotas/capabilities, contenu de phases/étapes et contrôles sanitaires, pagination/format, historique et tenue de l'export) puis implémenter et tester dans un lot métier séparé. Ne pas ouvrir prématurément le lot 4 de suppression.
