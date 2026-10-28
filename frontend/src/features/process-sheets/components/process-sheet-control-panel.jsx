@@ -50,7 +50,7 @@ function ProcessSheetControlPanel({
       >
         <ProcessControlAction
           Icon={Eye}
-          label="Aperçu du process"
+          label={previewActive ? 'Revenir à l’édition' : 'Aperçu du process'}
           onClick={onPreview}
           tooltip={previewActive ? 'Revenir à l’édition' : 'Afficher l’aperçu du process'}
           variant={previewActive ? 'secondary' : 'ghost'}
