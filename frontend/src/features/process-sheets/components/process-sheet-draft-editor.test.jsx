@@ -670,8 +670,8 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     const user = userEvent.setup();
     view({ canValidate: true, processRevision: 0 });
     await user.click(screen.getByRole('button', { name: 'Valider la Fiche process' }));
-    expect(screen.getByRole('dialog', { name: 'Valider quand même' }))
-      .toHaveTextContent('Au moins une étape avec des instructions est nécessaire');
+    expect(screen.getByRole('dialog', { name: 'Valider avec des ingrédients non affectés ?' }))
+      .toHaveTextContent('Ajoutez une étape avec des instructions');
     expect(screen.getByRole('button', { name: 'Valider quand même' })).toBeDisabled();
     expect(mocks.validate).not.toHaveBeenCalled();
   });
@@ -686,7 +686,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     }) });
     mocks.reload.mockResolvedValue({ data: { draft: readyDraft } });
     await user.click(button);
-    expect(screen.getByRole('dialog', { name: 'Valider quand même' }))
+    expect(screen.getByRole('dialog', { name: 'Valider avec des ingrédients non affectés ?' }))
       .toHaveTextContent('2 ingrédient(s) ne sont associés');
     expect(mocks.validate).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Valider quand même' }));
@@ -696,6 +696,29 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     });
     expect(mocks.save).not.toHaveBeenCalled();
     expect(mocks.reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('valide directement quand tous les ingrédients sont affectés', async () => {
+    const user = userEvent.setup();
+    const fullyAssigned = {
+      ...readyDraft,
+      phases: [{
+        ...readyDraft.phases[0],
+        ingredientLineKeys: ['line:a', 'line:b'],
+      }],
+    };
+    view({ canValidate: true, processRevision: 0, initialDraft: fullyAssigned });
+    mocks.validate.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({
+      id: 'process-1', revision: 1, editorialState: 'VALIDATED',
+    }) });
+    mocks.reload.mockResolvedValue({ data: { draft: fullyAssigned } });
+    await user.click(screen.getByRole('button', { name: 'Valider la Fiche process' }));
+    expect(screen.queryByRole('dialog', {
+      name: 'Valider avec des ingrédients non affectés ?',
+    })).not.toBeInTheDocument();
+    expect(mocks.validate).toHaveBeenCalledWith(expect.objectContaining({
+      expectedRevision: 0,
+    }));
   });
 
   it('autorise la revalidation quand la révision agrégat diffère de celle du brouillon', async () => {
