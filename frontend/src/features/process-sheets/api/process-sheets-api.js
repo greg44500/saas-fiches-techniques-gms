@@ -133,6 +133,30 @@ const processSheetsApi = baseApi.enhanceEndpoints({
         { type: 'ProcessSheetList', id: workspaceId + ':' + dossierId },
       ],
     }),
+    getProcessSheetReconciliation: builder.query({
+      query: ({ workspaceId, dossierId, processSheetId }) => ({
+        url: '/workspaces/' + workspaceId + '/dossiers/' + dossierId
+          + '/process-sheets/' + processSheetId + '/composition-review',
+      }),
+      transformResponse: (response) => response.data,
+      providesTags: (_result, _error, { workspaceId, dossierId, processSheetId }) => [
+        { type: 'ProcessSheet', id: workspaceId + ':' + dossierId + ':' + processSheetId },
+      ],
+    }),
+    reconcileProcessSheet: builder.mutation({
+      query: ({ workspaceId, dossierId, processSheetId, expectedRevision,
+        expectedDraftRevision, currentValidationId, decisions }) => ({
+        url: '/workspaces/' + workspaceId + '/dossiers/' + dossierId
+          + '/process-sheets/' + processSheetId + '/reconcile',
+        method: 'POST',
+        body: { expectedRevision, expectedDraftRevision, currentValidationId, decisions },
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: (_result, _error, { workspaceId, dossierId, processSheetId }) => [
+        { type: 'ProcessSheet', id: workspaceId + ':' + dossierId + ':' + processSheetId },
+        { type: 'ProcessSheetList', id: workspaceId + ':' + dossierId },
+      ],
+    }),
     getProcessSheetComposition: builder.query({
       query: ({ workspaceId, dossierId, technicalSheetId }) => ({
         url: '/workspaces/' + workspaceId
@@ -167,6 +191,8 @@ const {
   useListProcessSheetsQuery,
   useSaveProcessSheetDraftMutation,
   useValidateProcessSheetMutation,
+  useGetProcessSheetReconciliationQuery,
+  useReconcileProcessSheetMutation,
   useListWorkspacePhaseTemplatesQuery,
   useListDossierPhaseTemplatesQuery,
 } = processSheetsApi;
@@ -183,6 +209,8 @@ export {
   useListProcessSheetsQuery,
   useSaveProcessSheetDraftMutation,
   useValidateProcessSheetMutation,
+  useGetProcessSheetReconciliationQuery,
+  useReconcileProcessSheetMutation,
   useListWorkspacePhaseTemplatesQuery,
   useListDossierPhaseTemplatesQuery,
 };
