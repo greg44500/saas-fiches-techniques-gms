@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
+import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import {
   DialogContent, DialogDescription, DialogFooter, DialogHeader,
@@ -407,32 +408,49 @@ function ProcessSheetDraftEditor({
             </Link>
           </Button>
         )}
-        {processTitle && (
-          <h1 className="min-w-0 flex-1 truncate text-xl font-semibold"
-            title={processTitle}>{processTitle}</h1>
-        )}
-        <ProcessSheetControlPanel
-        editorialState={editorialState}
-        saveStatus={conflict ? 'Enregistrement à vérifier'
-          : saveError ? 'Non enregistré'
-            : dirty ? 'Modifications non enregistrées' : 'Enregistré'}
-        saveStatusTone={saveError || conflict ? 'text-muted-foreground'
-          : dirty ? 'text-warning' : 'text-success'}
-        previewActive={showPreview}
-        compositionDisabled={!canOpenCompositionReview}
-        compositionHelp={compositionHelp}
-        saveDisabled={saveDisabled}
-        saveHelp={saveHelp}
-        validationDisabled={validationDisabled}
-        validationHelp={validationHelp}
-        onPreview={() => setShowPreview((value) => !value)}
-        onReconcile={onRequestReconciliation}
-        onSave={save}
-        onValidate={() => {
-          if (unassignedCount > 0) setConfirmValidation(true);
-          else validate();
-        }}
-      />
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {processTitle && (
+            <h1 className="min-w-0 truncate text-xl font-semibold"
+              title={processTitle}>{processTitle}</h1>
+          )}
+          <StatusBadge
+            className="shrink-0"
+            tone={editorialState === 'VALIDATED' ? 'success'
+              : editorialState === 'DRAFT' ? 'warning' : 'neutral'}
+          >
+            {editorialState === 'VALIDATED' ? 'Validée'
+              : editorialState === 'DRAFT' ? 'Brouillon' : 'État indisponible'}
+          </StatusBadge>
+        </div>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <span className={'flex items-center gap-1.5 text-xs font-medium '
+            + (saveError || conflict ? 'text-muted-foreground'
+              : dirty ? 'text-warning' : 'text-success')}
+            role="status">
+            {!dirty && !saveError && !conflict && (
+              <CheckCircle2 aria-hidden="true" className="size-4" />
+            )}
+            {conflict ? 'Enregistrement à vérifier'
+              : saveError ? 'Non enregistré'
+                : dirty ? 'Modifications non enregistrées' : 'Enregistré'}
+          </span>
+          <ProcessSheetControlPanel
+            previewActive={showPreview}
+            compositionDisabled={!canOpenCompositionReview}
+            compositionHelp={compositionHelp}
+            saveDisabled={saveDisabled}
+            saveHelp={saveHelp}
+            validationDisabled={validationDisabled}
+            validationHelp={validationHelp}
+            onPreview={() => setShowPreview((value) => !value)}
+            onReconcile={onRequestReconciliation}
+            onSave={save}
+            onValidate={() => {
+              if (unassignedCount > 0) setConfirmValidation(true);
+              else validate();
+            }}
+          />
+        </div>
       </header>
       <div className="flex items-center gap-2">
         <h2 className="text-base font-semibold">Déroulement de fabrication</h2>
@@ -463,9 +481,6 @@ function ProcessSheetDraftEditor({
               )}
               <p role="status">
                 {unassignedCount} ingrédient(s) ne sont associés à aucune phase ou étape.
-              </p>
-              <p className="text-muted-foreground">
-                Vous pouvez néanmoins valider la Fiche process.
               </p>
             </div>
             <DialogFooter>
