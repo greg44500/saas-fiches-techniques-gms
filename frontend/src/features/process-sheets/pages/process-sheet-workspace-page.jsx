@@ -89,7 +89,7 @@ function ProcessSheetWorkspacePage() {
         </span>
         <InfoTooltip
           label="À propos du brouillon de fabrication"
-          content="La Fiche process est liée à la validation M-004 sélectionnée lors de sa création. Le travail sur les phases et étapes sera enregistré dans un brouillon spécifique au process."
+          content="La Fiche process utilise une composition validée de la Fiche technique associée. Si celle-ci change, vous pouvez comparer et actualiser les associations sans recréer votre procédure."
         />
       </header>
       <ProcessSheetDraftEditor
