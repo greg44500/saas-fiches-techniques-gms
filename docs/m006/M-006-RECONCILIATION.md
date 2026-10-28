@@ -1,3 +1,15 @@
+## Règle d’identité prioritaire et UX simplifiée — 2026-10-28
+
+**Décision propriétaire appliquée au lot 3 :** M-006 ne traite comme changement de composition que l'ajout, le retrait ou la modification du **nom ou de la référence produit d'un ingrédient**. Les doublons d'un même ingrédient sont comptés séparément. La Référence Produit correspond au `productVariantId`; une référence fournisseur n'est pas une identité d'ingrédient. Prix, quantités, unités, ordre des lignes, fournisseurs et valeurs économiques sont ignorés pour la synchronisation M-006.
+
+Le comparateur inter-snapshots officiels compare uniquement les couples nom/référence (multi-ensemble). Quand ils sont identiques, le statut de comparaison est `CURRENT` même si les identifiants de validation diffèrent : pas de mutation automatique, de dialogue, ni d'invalidation de la Fiche process. La validation transactionnelle M-006 refait cette comparaison sous verrou, autorise les révisions économiques ou quantitatives et n'exige plus la fermeture d'un brouillon M-004 tant qu'une validation officielle existe. Les associations existantes conservent leurs clés de snapshot d'origine tant qu'aucune nouvelle identité ne demande réconciliation ; les versions M-004 restent immuables.
+
+Si un nom ou une référence change, le rapprochement transactionnel existant reste obligatoire et explicite pour les associations incertaines ; la modale n'affiche plus les associations déjà résolues. Le contrôle de validation devient une confirmation **uniquement** si au moins un ingrédient est non affecté ; sinon la commande valide directement, sous réserve des autres préconditions métier. Panneau de contrôle compact sur la ligne du titre, info-bulles courtes.
+
+**Précision sur les sections ci-dessous :** les descriptions historiques qui mentionnent un changement de quantité, une révision M-004 ouverte comme blocage ou une réconciliation systématique après tout nouveau snapshot sont désormais remplacées par la règle ci-dessus. Tests ajoutés/adaptés mais **non exécutés dans cette intervention** ; pas de PR, merge ou lot 4.
+
+---
+
 # M-006 — Réconciliation des compositions et qualité des retours de validation
 
 **État au 2026-10-28 : code et tests ajoutés sur `feature/m006-fiches-process`, exécution locale non démontrée.** Ce lot clôt un blocage d'utilisation observé après revalidation M-004. Ni la PR ni le merge ni le lot 4 ne sont autorisés ici.
