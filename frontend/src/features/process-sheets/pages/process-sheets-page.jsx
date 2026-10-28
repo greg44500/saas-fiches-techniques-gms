@@ -7,6 +7,7 @@ import { DataTable } from '@/components/data-display/data-table';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { InfoTooltip } from '@/components/shared/info-tooltip';
+import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -63,7 +64,14 @@ function ProcessSheetsPage() {
     {
       id: 'editorialState',
       header: 'État',
-      cell: (process) => process.editorialState === 'VALIDATED' ? 'Validée' : 'Brouillon',
+      cell: (process) => {
+        const state = process.editorialState;
+        const tone = state === 'VALIDATED' ? 'success'
+          : state === 'DRAFT' ? 'warning' : 'neutral';
+        const label = state === 'VALIDATED' ? 'Validée'
+          : state === 'DRAFT' ? 'Brouillon' : 'État indisponible';
+        return <StatusBadge tone={tone}>{label}</StatusBadge>;
+      },
     },
     {
       id: 'updatedAt',
