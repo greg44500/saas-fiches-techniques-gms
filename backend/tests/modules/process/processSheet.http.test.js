@@ -541,6 +541,39 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
         })).toBe(0);
     });
 
+    it('refuse la validation tant qu’une révision M-004 est ouverte', async () => {
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id;
+        const detail = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        const phases = [{
+            id: 'phase-m004-1', title: 'Préparer', instructions: '', ingredientLineKeys: [],
+            steps: [{
+                id: 'etape-m004-1', title: 'Assembler', instructions: 'Mélanger',
+                ingredientLineKeys: [detail.sourceIngredients.lines[0].lineKey],
+            }],
+        }];
+        await request(app).put(uri + '/draft').set(bearer(owner.token))
+            .send({ expectedRevision: 0, phases, unassignedReasons: [] }).expect(200);
+        await createDraftFromValidatedState({
+            workspaceId: owner.workspace._id,
+            dossierId: dossier._id,
+            technicalSheetId: valid.created.sheet.id,
+            actorId: owner.owner._id,
+            expectedSheetRevision: valid.validated.sheetRevision,
+        });
+        expect(await TechnicalSheetDraft.exists({
+            technicalSheet: valid.created.sheet.id,
+        })).toBeTruthy();
+        await request(app).post(uri + '/validate').set(bearer(owner.token))
+            .send({ expectedRevision: 1 }).expect(409);
+        expect((await ProcessSheet.findById(process.id)).editorialState).toBe('DRAFT');
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: process.id, action: 'PROCESS_SHEET_VALIDATED',
+        })).toBe(0);
+    });
+
     it('refuse les écritures si le parent M-004 est archivé et n’altère pas le brouillon', async () => {
         const valid = await createValidated();
         const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
