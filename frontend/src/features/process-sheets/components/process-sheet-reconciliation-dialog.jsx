@@ -42,6 +42,11 @@ function ProcessSheetReconciliationDialog({
     + '/technical-sheets/' + technicalSheetId;
 
   useEffect(() => {
+    setChoices({});
+    setError('');
+  }, [plan?.currentValidationId, plan?.processRevision, plan?.draftRevision]);
+
+  useEffect(() => {
     if (!open) {
       setChoices({});
       setError('');
@@ -49,7 +54,7 @@ function ProcessSheetReconciliationDialog({
   }, [open]);
 
   const submit = async () => {
-    if (!canApply || plan?.status !== 'REVIEW_REQUIRED'
+    if (!canApply || review.isError || plan?.status !== 'REVIEW_REQUIRED'
       || outstanding.length || invalid || duplicateTargets || state.isLoading) return;
     setError('');
     try {
@@ -194,7 +199,7 @@ function ProcessSheetReconciliationDialog({
               <Button
                 type="button"
                 disabled={!canApply || Boolean(outstanding.length) || invalid
-                  || duplicateTargets || state.isLoading || review.isFetching}
+                  || duplicateTargets || state.isLoading || review.isFetching || review.isError}
                 onClick={submit}
               >
                 {state.isLoading ? 'Actualisation…' : 'Confirmer l’actualisation'}
