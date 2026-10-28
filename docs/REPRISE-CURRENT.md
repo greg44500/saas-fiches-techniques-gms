@@ -1,3 +1,17 @@
+# M-006 — Panneau de contrôle unifié de fabrication (2026-10-28)
+
+**Branche :** `feature/m006-fiches-process`. **Statut : implémentation et tests RTL committés ; gates et QA locale non exécutées ; lot 3 non validé.** Aucun changement Core, modèle, endpoint, RBAC ou composition M-004 ; lot 4, PR et merge non engagés.
+
+La barre M-006 regroupe désormais quatre actions à icône dans `ProcessSheetControlPanel`, à droite des deux états « Brouillon/Validée » et « Enregistré/Modifications non enregistrées ». Elle apparaît sous le titre de la Fiche process, en remplaçant le bouton isolé de réconciliation et l'ancienne rangée de boutons texte dans l'éditeur. L'organisation reprend les conventions de `TechnicalSheetControlPanel` en réutilisant le composant transversal `ActionIconButton` ; aucune primitive de tooltip dupliquée. Les quatre actions sont : Aperçu/Retour édition, Actualiser la composition, Enregistrer le brouillon, Valider la Fiche process.
+
+**Disponibilité :** les actions conservent leur position quelle que soit la permission, le statut ou la présence de changements. Le composant applique `aria-disabled` aux actions interdites (plutôt que l'attribut natif `disabled`), afin de conserver survol et focus clavier pour l'info-bulle ; le callback est retiré dans cet état, sans mutation. Les gardes existantes de l'éditeur et les autorisations backend sont conservées. Chaque icône a un `aria-label` explicite, et une seule info-bulle d'action décrit soit son usage soit la raison de l'indisponibilité. Le mode Aperçu annonce « Revenir à l’édition » tout en conservant sa place. L'ancienne duplication de boutons et les info-bulles `(i)` accolées aux actions sont supprimées. Les infos de section conservées sont distinctes des actions.
+
+**Tests écrits / adaptés, NON exécutés :** panneau autonome (quatre actions, état disabled accessible, absence d'exécution, focus/tooltip, callbacks), éditeur réel (validation/sauvegarde/aperçu), page isolée (transmission des permissions/état de composition) et intégration (un groupe et quatre actions, lecture seule). Exécuter `npm --prefix frontend run test -- src/features/process-sheets`, `npm --prefix frontend run lint`, `npm --prefix frontend run build`, puis QA clavier (focus et info-bulles disabled), souris, tactile, thème clair/sombre, vue mobile, sticky. Le bouton de confirmation à l'intérieur de la modale conserve son propre contrat UX.
+
+**Point de reprise :** aucune preuve de réussite Vitest, ESLint, build ou `release:check` n'est disponible ; l'environnement distant GitHub ne donne pas accès à MongoDB/serveur local. Ne pas qualifier ce lot de validé avant les gates et la recette utilisateur.
+
+---
+
 # M-006 — Visibilité persistante des actions et aides en info-bulles (2026-10-28)
 
 **Sur la branche `feature/m006-fiches-process`, code et tests committés ; gates et QA non exécutées.** Correction de l'UX de réconciliation : l'action « Actualiser la composition » n'est plus conditionnellement montée/démontée ; elle reste visible, activée uniquement si une comparaison est nécessaire ou si la Fiche technique est en modification, et si process/Dossier actifs. Icône `InfoTooltip` accessible expliquant chaque indisponibilité. L'éditeur rend désormais visibles les boutons de validation et de sauvegarde même sans permission d'écriture ou quand il n'y a rien à faire, et explique `disabled` avec une aide adjacente. Le bouton de confirmation dans la modale de réconciliation reste visible pour tous les états, désactivé si une condition métier manque.
