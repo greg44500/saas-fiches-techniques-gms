@@ -17,11 +17,15 @@ import {
 } from '../technicalSheet/technicalSheetPermission.registry.js';
 import { PROCESS_SHEET_PERMISSION } from './processSheetPermission.registry.js';
 import { processSheetCompositionRouter } from './processSheetComposition.routes.js';
-import { create, eligible, get, list, saveDraft, validate } from './processSheet.controller.js';
+import {
+    create, eligible, get, list, saveDraft, validate,
+    getReconciliation, applyReconciliation,
+} from './processSheet.controller.js';
 import {
     dossierParamsSchema, eligibleTechnicalSheetQuerySchema,
     processCreateSchema, processListQuerySchema, processParamsSchema,
     saveProcessSheetDraftSchema, validateProcessSheetSchema,
+    reconcileProcessSheetSchema,
 } from './processSheet.validation.js';
 
 const processSheetRouter = Router({ mergeParams: true });
@@ -79,6 +83,20 @@ processSheetRouter.post('/:processSheetId/validate',
     loadAuthorizedDossierContext,
     enforceTechnicalSheetDossierOperational,
     validate);
+processSheetRouter.get('/:processSheetId/composition-review',
+    authenticate,
+    validateRequest({ params: processParamsSchema }),
+    ...readChain, getReconciliation);
+processSheetRouter.post('/:processSheetId/reconcile',
+    authenticate,
+    validateRequest({ params: processParamsSchema, body: reconcileProcessSheetSchema }),
+    loadWorkspaceContext,
+    authorizePermission(PROCESS_SHEET_PERMISSION.EDIT),
+    authorizePermission(PROCESS_SHEET_PERMISSION.VALIDATE),
+    enforceWorkspaceAccessMode(),
+    loadAuthorizedDossierContext,
+    enforceTechnicalSheetDossierOperational,
+    applyReconciliation);
 processSheetRouter.get('/:processSheetId',
     authenticate,
     validateRequest({ params: processParamsSchema }),
@@ -87,5 +105,18 @@ processSheetRouter.get('/:processSheetId',
 // Backward-compatible composition endpoint under the same process route
 // mount. Register after exact /eligible and /:processSheetId handlers.
 processSheetRouter.use(processSheetCompositionRouter);
+
+// Keep Core error handling unchanged. Only declared M-006 business conflicts
+// expose a stable code for a contextual UI action, never a technical exception.
+processSheetRouter.use((error, _req, res, next) => {
+    if (error?.isOperational
+        && typeof error.code === 'string'
+        && error.code.startsWith('PROCESS_SHEET_')) {
+        return res.status(error.statusCode).json({
+            status: 'fail', code: error.code, message: error.message,
+        });
+    }
+    return next(error);
+});
 
 export { processSheetRouter };
