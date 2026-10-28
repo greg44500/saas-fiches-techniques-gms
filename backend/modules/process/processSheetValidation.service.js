@@ -8,14 +8,13 @@ import { createBusinessActivityEvent } from '../businessActivity/businessActivit
 import { Dossier } from '../dossier/dossier.model.js';
 import { DOSSIER_STATUS } from '../dossier/dossier.registry.js';
 import { TechnicalSheet } from '../technicalSheet/technicalSheet.model.js';
-import { TechnicalSheetDraft } from '../technicalSheet/technicalSheetDraft.model.js';
 import { TechnicalSheetValidation } from '../technicalSheet/technicalSheetValidation.model.js';
 import { TECHNICAL_SHEET_STATUS } from '../technicalSheet/technicalSheet.registry.js';
 import { assertLineAssignments } from './processSheetDraft.service.js';
 import { ProcessSheet, PROCESS_SHEET_EDITORIAL_STATE } from './processSheet.model.js';
 import { ProcessSheetDraft } from './processSheetDraft.model.js';
 import { toIngredientProjection } from './processSheetIngredientProjection.js';
-import { processReferenceId } from './processSheetReconciliation.js';
+import { manufacturingSignature, processReferenceId } from './processSheetReconciliation.js';
 import { serializeProcess } from './processSheet.service.js';
 
 const conflict = (code = 'PROCESS_SHEET_CHANGED', message = 'Cette Fiche process a changé. Actualisez-la avant de valider.') => {
@@ -66,9 +65,24 @@ const validateProcessSheet = async ({
         throw conflict('PROCESS_SHEET_PARENT_UNVALIDATED',
             'La Fiche technique doit être validée avant cette opération.');
     }
-    if (parentState.currentValidatedState.toString() !== processReferenceId(process).toString()) {
-        throw conflict('PROCESS_SHEET_PARENT_CHANGED',
-            'La Fiche technique a été mise à jour. Comparez les compositions avant de valider.');
+    const referenceId = processReferenceId(process);
+    const source = await TechnicalSheetValidation.findOne(mongoose.trusted({
+        _id: referenceId, technicalSheet: process.technicalSheet,
+        workspace: workspaceId, dossier: dossierId,
+    })).session(session);
+    if (!source) throw conflict('PROCESS_SHEET_REFERENCE_UNAVAILABLE',
+        'La composition liée à cette Fiche process est indisponible.');
+
+    const currentValidationId = parentState.currentValidatedState;
+    if (currentValidationId.toString() !== referenceId.toString()) {
+        const current = await TechnicalSheetValidation.findOne(mongoose.trusted({
+            _id: currentValidationId, technicalSheet: process.technicalSheet,
+            workspace: workspaceId, dossier: dossierId,
+        })).session(session);
+        if (!current || manufacturingSignature(source) !== manufacturingSignature(current)) {
+            throw conflict('PROCESS_SHEET_PARENT_CHANGED',
+                'Des ingrédients ont changé dans la Fiche technique. Vérifiez la composition.');
+        }
     }
 
     // Lock the M-004 parent to serialize against M-004 validations and lifecycle changes.
@@ -76,28 +90,15 @@ const validateProcessSheet = async ({
     const parent = await TechnicalSheet.findOneAndUpdate(mongoose.trusted({
         _id: process.technicalSheet, workspace: workspaceId, dossier: dossierId,
         status: TECHNICAL_SHEET_STATUS.ACTIVE,
-        currentValidatedState: processReferenceId(process),
+        currentValidatedState: currentValidationId,
     }), { $inc: { processEligibilityRevision: 1 } }, {
         session, returnDocument: 'after', timestamps: false,
     });
     if (!parent) throw conflict('PROCESS_SHEET_PARENT_CHANGED', 'La Fiche technique a été mise à jour. Comparez les compositions avant de valider.');
 
-    // A pending M-004 revision is not an official composition. A previously
-    // created process stays readable, but cannot be newly validated until the
-    // parent revision has been resolved. The parent write above serializes this
-    // check against M-004 startDraft.
-    const openParentDraft = await TechnicalSheetDraft.exists(mongoose.trusted({
-        technicalSheet: process.technicalSheet,
-        workspace: workspaceId,
-        dossier: dossierId,
-    })).session(session);
-    if (openParentDraft) throw conflict('PROCESS_SHEET_PARENT_REVISION_OPEN', 'Une modification de la Fiche technique est encore en cours.');
-
-    const source = await TechnicalSheetValidation.findOne(mongoose.trusted({
-        _id: processReferenceId(process), technicalSheet: process.technicalSheet,
-        workspace: workspaceId, dossier: dossierId,
-    })).session(session);
-    if (!source) throw conflict('PROCESS_SHEET_REFERENCE_UNAVAILABLE', 'La composition liée à cette Fiche process est indisponible.');
+    // A pending M-004 draft is not an official ingredient change. Continue
+    // using the validated ingredient snapshot, with transaction/concurrency
+    // safeguards still enforced by the M-004 parent write above.
     try {
         assertLineAssignments({
             phases: draft.phases, unassignedReasons: draft.unassignedReasons ?? [],
