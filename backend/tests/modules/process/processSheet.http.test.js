@@ -1,5 +1,6 @@
 import '../../setup.js';
 
+import mongoose from 'mongoose';
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -452,6 +453,56 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
             membershipId: member.membership._id, actorId: owner.owner._id,
         });
         await request(app).put(uri).set(bearer(member.token)).send(body).expect(403);
+    });
+
+    it('valide sous sanitizeFilter avec des ingrédients non affectés et refuse une seconde validation', async () => {
+        expect(mongoose.get('sanitizeFilter')).toBe(true);
+        const valid = await createValidated();
+        const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const uri = base + '/' + process.id;
+        const before = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        expect(before.sourceIngredients.lines).toHaveLength(1);
+
+        // M-006 requires a documented manufacturing step, not assignment
+        // of every M-004 ingredient or a reason for leaving it unassigned.
+        const phases = [{
+            id: 'phase-non-affectes-1', title: 'Préparer', instructions: '',
+            ingredientLineKeys: [], steps: [{
+                id: 'etape-non-affectes-1', title: 'Assembler',
+                instructions: 'Préparer puis dresser la recette',
+                ingredientLineKeys: [],
+            }],
+        }];
+        await request(app).put(uri + '/draft')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 0, phases, unassignedReasons: [] })
+            .expect(200);
+
+        // This POST previously failed with a CastError: sanitizeFilter
+        // interpreted {$ne: 'VALIDATED'} as a literal String field value.
+        const validated = (await request(app).post(uri + '/validate')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 1 }).expect(200)).body.data.process;
+        expect(validated).toMatchObject({
+            id: process.id, editorialState: 'VALIDATED', revision: 2,
+        });
+        expect(validated.validatedAt).toBeTruthy();
+
+        await request(app).post(uri + '/validate')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: 2 }).expect(409);
+        const stored = await ProcessSheet.findById(process.id);
+        expect(stored.editorialState).toBe('VALIDATED');
+        expect(stored.revision).toBe(2);
+        expect(stored.currentValidatedState).toBeNull();
+        expect(await ProcessSheetDraft.countDocuments({ processSheet: process.id })).toBe(1);
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: process.id, action: 'PROCESS_SHEET_VALIDATED',
+        })).toBe(1);
+        const parent = await TechnicalSheet.findById(valid.created.sheet.id)
+            .select('currentValidatedState');
+        expect(parent.currentValidatedState.toString()).toBe(valid.validated.validation.id);
     });
 
     it('valide puis revalide le contenu courant avec deux révisions indépendantes', async () => {
