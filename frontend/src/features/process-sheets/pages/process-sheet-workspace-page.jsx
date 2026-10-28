@@ -3,7 +3,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router';
 
 import { ErrorState } from '@/components/shared/error-state';
-import { InfoTooltip } from '@/components/shared/info-tooltip';
 import { Button } from '@/components/ui/button';
 import {
   ProcessSheetDraftEditor,
@@ -83,28 +82,6 @@ function ProcessSheetWorkspacePage() {
         <h1 className="min-w-0 truncate text-xl font-semibold sm:text-2xl" title={process.title}>
           {process.title}
         </h1>
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          <Button
-            disabled={!canOpenCompositionReview}
-            onClick={() => setReviewOpen(true)}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
-            Actualiser la composition
-          </Button>
-          <InfoTooltip
-            label="Disponibilité de l’actualisation de la composition"
-            content={compositionHelp}
-          />
-        </div>
-        <span className="shrink-0 text-xs text-muted-foreground" aria-label="État de la Fiche process">
-          {process.editorialState === 'VALIDATED' ? 'Validée' : 'Brouillon'}
-        </span>
-        <InfoTooltip
-          label="À propos du brouillon de fabrication"
-          content="La Fiche process utilise une composition validée de la Fiche technique associée. Si celle-ci change, vous pouvez comparer et actualiser les associations sans recréer votre procédure."
-        />
       </header>
       <ProcessSheetDraftEditor
         key={process.id}
@@ -113,6 +90,8 @@ function ProcessSheetWorkspacePage() {
         editorialState={process.editorialState}
         processRevision={process.revision}
         compositionOutdated={compositionOutdated || parentDraftOpen}
+        canOpenCompositionReview={canOpenCompositionReview}
+        compositionHelp={compositionHelp}
         onDirtyChange={setLocalDirty}
         onRequestReconciliation={() => setReviewOpen(true)}
         canReadPhaseLibrary={canReadPhaseLibrary}
