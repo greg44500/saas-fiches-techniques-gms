@@ -1,3 +1,9 @@
+## M-006 — Preuves de la règle « nom ou référence uniquement » (2026-10-28)
+
+Nouveau contrat métier : les prix, quantités, fournisseurs, unités, ordre et données de production M-004 n'empêchent pas la validation M-006. Les changements de nom/référence d'ingrédient et les occurrences ambiguës imposent encore une revue explicite. Tests ajoutés/actualisés mais pas exécutés sur la machine de l'utilisateur. Vérifier les suites backend process/Supertest, RTL process-sheets, lint, build, E2E, `release:check`, ainsi que la non-perte d'affectations historiques, les révisions concurrentes, les permissions et le responsive de la barre sur une ligne. Lot 3 non validé.
+
+---
+
 ## M-006 — Vérification post-correctif du test de tooltip Base UI (2026-10-28)
 
 Le log utilisateur pré-correctif donne 111/112 tests frontend réussis, 1 échec sur l'hypothèse erronée de `role=tooltip` dans `process-sheet-control-panel.test.jsx`. Assertion remplacée par focus clavier + texte popup + état ouvert, avec tests additionnels d'absence d'action sous clic/Entrée/Espace pour les trois commandes indisponibles. Audit des 12 fichiers de tests M-006 : aucune autre assertion au rôle tooltip trouvée. **Dette de preuve :** relancer toute la suite frontend M-006, lint et build sur la machine Node 24 du projet. Ne pas annoncer 112/112 sans la sortie du test relancé.
