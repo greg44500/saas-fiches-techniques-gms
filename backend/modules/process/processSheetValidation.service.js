@@ -50,7 +50,9 @@ const validateProcessSheet = async ({
     if (!draft.phases?.length || !draft.phases.some(
         (phase) => phase.steps?.some((step) => step.title?.trim() && step.instructions?.trim()),
     )) {
-        throw new AppError('Renseignez au moins une phase et une étape avec des instructions avant validation.', 400);
+        const error = new AppError('Ajoutez au moins une phase et une étape avec des instructions.', 400);
+        error.code = 'PROCESS_SHEET_STEP_REQUIRED';
+        throw error;
     }
 
     // Lock the M-004 parent to serialize against M-004 validations and lifecycle changes.
@@ -80,10 +82,19 @@ const validateProcessSheet = async ({
         workspace: workspaceId, dossier: dossierId,
     })).session(session);
     if (!source) throw conflict('PROCESS_SHEET_REFERENCE_UNAVAILABLE', 'La composition liée à cette Fiche process est indisponible.');
-    assertLineAssignments({
-        phases: draft.phases, unassignedReasons: draft.unassignedReasons ?? [],
-        projection: toIngredientProjection({ sourceKind: 'VALIDATION', source }),
-    });
+    try {
+        assertLineAssignments({
+            phases: draft.phases, unassignedReasons: draft.unassignedReasons ?? [],
+            projection: toIngredientProjection({ sourceKind: 'VALIDATION', source }),
+        });
+    } catch (error) {
+        if (!error?.isOperational) throw error;
+        const failure = new AppError(
+            'Une association d’ingrédient doit être corrigée avant validation.', 400,
+        );
+        failure.code = 'PROCESS_SHEET_INGREDIENT_INVALID';
+        throw failure;
+    }
 
     const validatedAt = new Date();
     const updated = await ProcessSheet.findOneAndUpdate(mongoose.trusted({
