@@ -137,6 +137,12 @@ const reconcileProcessSheet = async ({
         throw failure('PROCESS_SHEET_MAPPING_INVALID',
             'Une correspondance d’ingrédient n’est pas valide. Vérifiez vos choix.', 400);
     }
+    // An explicit reassignment or removal is a genuine M-006 edit, even if
+    // the M-004 manufacturing snapshot itself has not changed.
+    const changedAssignments = decisions.some(({ from, to }) =>
+        plan.assignments.find((item) => item.from === from)?.proposedTo !== to);
+    const mustRevalidate = plan.compositionChanged || changedAssignments;
+
     const draftUpdated = await ProcessSheetDraft.updateOne(mongoose.trusted({
         _id: draft._id, workspace: workspaceId, dossier: dossierId,
         revision: expectedDraftRevision,
@@ -154,7 +160,7 @@ const reconcileProcessSheet = async ({
         $set: {
             compositionValidation: parent.currentValidatedState,
             updatedBy: actorId,
-            ...(plan.compositionChanged ? {
+            ...(mustRevalidate ? {
                 editorialState: PROCESS_SHEET_EDITORIAL_STATE.DRAFT,
                 validatedAt: null, validatedBy: null,
             } : {}),
@@ -173,6 +179,7 @@ const reconcileProcessSheet = async ({
             fromValidationId: processReferenceId(process).toString(),
             toValidationId: currentValidationId,
             compositionChanged: plan.compositionChanged,
+            assignmentsChanged: changedAssignments,
             reassociatedCount: plan.assignments.length,
             removedCount: decisions.filter(({ to }) => to === null).length,
         },
