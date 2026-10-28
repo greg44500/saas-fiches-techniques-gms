@@ -440,7 +440,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     expect(mocks.save.mock.calls[0][0].phases[0].steps[0].qualityControls).toEqual([]);
   });
 
-  it('colore les textes de sauvegarde en vert, warning puis rouge selon la situation', async () => {
+  it('utilise une modale pour l’échec d’enregistrement, sans message technique brut dans la page', async () => {
     const user = userEvent.setup();
     view();
     expect(screen.getByText('À jour')).toHaveClass('text-success');
@@ -450,9 +450,10 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
       status: 500, data: { message: 'Échec serveur' },
     }) });
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    expect(await screen.findByText('Erreur d’enregistrement')).toHaveClass('text-destructive');
-    expect(screen.getByRole('alert')).toHaveClass('text-destructive');
-    expect(screen.getByRole('alert')).toHaveTextContent('Échec serveur');
+    expect(await screen.findByText('Non enregistré')).toHaveClass('text-muted-foreground');
+    expect(screen.getByRole('dialog', { name: 'Enregistrement impossible' }))
+      .toHaveTextContent('Votre travail reste affiché');
+    expect(screen.queryByText('Échec serveur')).not.toBeInTheDocument();
   });
 
   it('conserve les deux modales consultables mais non modifiables en lecture seule', async () => {
@@ -610,8 +611,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     await addFreePhase(user);
     await renamePhase(user, 1, 'Nouvelle phase modifiée');
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Le brouillon local reste affiché');
-    expect(screen.getByText('Conflit d’enregistrement')).toHaveClass('text-destructive');
+    expect(await screen.findByText('Enregistrement à vérifier')).toHaveClass('text-muted-foreground');
     expect(screen.getByRole('heading', { name: 'Phase 1 : Nouvelle phase modifiée' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Enregistrer le brouillon' })).toBeDisabled();
     await user.click(screen.getByRole('button', { name: 'Recharger le brouillon' }));
@@ -721,7 +721,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     const user = userEvent.setup();
     view({ sourceIngredients: { ...ingredients, hasLegacyLineIdentity: true } });
     await addFreePhase(user);
-    expect(screen.getByRole('note')).toHaveTextContent('identifiants limités');
+    expect(screen.getByRole('button', { name: 'À propos de la composition historique' })).toBeInTheDocument();
     expect(within(screen.getByRole('complementary', { name: 'Suivi des ingrédients' }))
       .getByRole('status')).toHaveTextContent('0 affectés · 2 à affecter');
   });
