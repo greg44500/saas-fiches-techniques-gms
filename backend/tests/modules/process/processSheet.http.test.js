@@ -508,6 +508,61 @@ describe('M-006 — liste et création guidée uniquement sur M-004 validée', (
         expect(parent.currentValidatedState.toString()).toBe(valid.validated.validation.id);
     });
 
+    it('valide un ancien brouillon dépourvu du champ editorialState en MongoDB', async () => {
+        const valid = await createValidated('Fiche technique avec process historique');
+        const created = (await createProcess(valid.created.sheet.id)
+            .expect(201)).body.data.process;
+        const uri = base + '/' + created.id;
+        const saved = (await request(app).put(uri + '/draft')
+            .set(bearer(owner.token))
+            .send({
+                expectedRevision: 0,
+                phases: [{
+                    id: 'phase-historique', title: 'Préparer', instructions: '',
+                    ingredientLineKeys: [],
+                    steps: [{
+                        id: 'etape-historique', title: 'Assembler',
+                        instructions: 'Mélanger puis dresser',
+                        ingredientLineKeys: [],
+                    }],
+                }],
+                unassignedReasons: [],
+            }).expect(200)).body.data.draft;
+
+        // Simulate the schema evolution without silently modifying the
+        // historical document during deserialization.
+        await ProcessSheet.collection.updateOne(
+            { _id: new mongoose.Types.ObjectId(created.id) },
+            { $unset: { editorialState: '' } },
+        );
+        const raw = await ProcessSheet.collection.findOne({
+            _id: new mongoose.Types.ObjectId(created.id),
+        });
+        expect(Object.hasOwn(raw, 'editorialState')).toBe(false);
+
+        // A hydrated Mongoose model supplies the DRAFT default, but the
+        // conditional MongoDB update must also accept this legacy record.
+        const detail = (await request(app).get(uri)
+            .set(bearer(owner.token)).expect(200)).body.data;
+        expect(detail.process.editorialState).toBe('DRAFT');
+        expect(detail.process.revision).toBe(saved.processRevision);
+
+        const result = (await request(app).post(uri + '/validate')
+            .set(bearer(owner.token))
+            .send({ expectedRevision: detail.process.revision })
+            .expect(200)).body.data.process;
+        expect(result.editorialState).toBe('VALIDATED');
+        expect(result.revision).toBe(saved.processRevision + 1);
+
+        const persisted = await ProcessSheet.collection.findOne({
+            _id: new mongoose.Types.ObjectId(created.id),
+        });
+        expect(persisted.editorialState).toBe('VALIDATED');
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: created.id, action: 'PROCESS_SHEET_VALIDATED',
+        })).toBe(1);
+    });
+
     it('valide puis revalide le contenu courant avec deux révisions indépendantes', async () => {
         const valid = await createValidated();
         const process = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
