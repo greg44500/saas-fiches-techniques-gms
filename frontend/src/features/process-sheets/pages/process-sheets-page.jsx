@@ -37,6 +37,18 @@ function ProcessSheetsPage() {
   const dossier = useGetDossierByIdQuery({ workspaceId: workspace.id, dossierId });
   const canCreateProcess = can(PROCESS_SHEET_PERMISSION.CREATE);
   const canReadTechnicalSheets = can(TECHNICAL_SHEET_PERMISSION.READ);
+  const deleteUnavailableReason = (process) => {
+    if (!can(PROCESS_SHEET_PERMISSION.DELETE)) {
+      return 'Votre rôle ne dispose pas du droit de supprimer une Fiche process.';
+    }
+    if (process.status !== 'ACTIVE') {
+      return 'Cette Fiche process est inactive et ne peut pas être supprimée.';
+    }
+    if (dossier.data?.status !== 'ACTIVE') {
+      return 'Le Dossier doit être actif pour permettre la suppression.';
+    }
+    return null;
+  };
   const creationBlockedReason = !canCreateProcess
     ? 'Votre rôle ne dispose pas du droit de créer des Fiches process.'
     : !canReadTechnicalSheets
@@ -83,8 +95,8 @@ function ProcessSheetsPage() {
       header: 'Actions',
       cell: (process) => (
         <ProcessSheetRowActions
-          canDelete={can(PROCESS_SHEET_PERMISSION.DELETE)
-            && process.status === 'ACTIVE' && dossier.data?.status === 'ACTIVE'}
+          canDelete={!deleteUnavailableReason(process)}
+          deleteUnavailableReason={deleteUnavailableReason(process)}
           dossierId={dossierId}
           onOpen={() => navigate(
             '/workspaces/' + workspace.id + '/dossiers/' + dossierId
