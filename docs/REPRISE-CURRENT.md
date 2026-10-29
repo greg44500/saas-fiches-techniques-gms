@@ -1,3 +1,36 @@
+# SAAS-FICHES-TECHNIQUES-GMS — Reprise courante (2026-10-29)
+
+**Statut de référence :** clôture Git de M-006 confirmée et réconciliation documentaire en cours. Cette synthèse actualisée prime sur les notes de reprise datées conservées plus bas ; elle ne les efface pas.
+
+## Dépôts, versions et preuves
+
+- Produit : `greg44500/saas-fiches-techniques-gms`, `main` au commit `d7baf3e3cae68e14eda982a6dd3c741770c2d146` ; synchronisation et arbre de travail propres confirmés par le propriétaire le 2026-10-29.
+- Core maître : `greg44500/saas-core-api`, `main` au commit `42beaff67200ca4e956378e2273b4eae440f47bc`. `core-origin.json` référence exactement ce commit, avec `version: 1.2.1` et `tag: v1.2.1` ; contrôles de provenance Git et fichiers confirmés localement.
+- Produit : `product-release.json` reste en `0.1.0`, canal `development`. Aucun nouveau tag ni nouvelle release Core n'est créé.
+- PR produit [#53](https://github.com/greg44500/saas-fiches-techniques-gms/pull/53) (centre d'aide M-006) **fusionnée** le 2026-10-28, merge `d7baf3e3`. PR [#54](https://github.com/greg44500/saas-fiches-techniques-gms/pull/54) (alignement post-tag du Core) **fusionnée**, merge `383bb4ae`. Les PR #51 et #52 étaient déjà fusionnées.
+- [Core Gate produit #243](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40710767152) : `completed/success` sur `d7baf3e3` le 2026-10-28, avec `npm run release:check` dans le workflow CI. [Core Gate maître #112](https://github.com/greg44500/saas-core-api/actions/runs/40698138037) : réussite sur `42beaff`.
+- Au contrôle du 2026-10-29, aucune PR produit ouverte avant le présent lot documentaire. Après vérification des fusions et des différences Git, les branches locales/distantes `feature/m006-help-center` et distante `core-update/v1.2.1` ont été supprimées par le propriétaire. `origin` ne conserve que `main` ; `upstream-core` et l'historique des commits/tags restent intacts. La branche documentaire active est `docs/reconcile-m006-postmerge` ; la PR documentaire reste à ouvrir après revue et vérifications.
+
+## Qualification des travaux M-006
+
+Le centre d'aide M-006 et ses neuf procédures sont **livrés sur main**, avec leurs tests intégrés et la gate CI post-fusion réussie. Les parcours métier de Fiches process (édition, sauvegarde, validation/revalidation et réconciliation) sont intégrés au produit. La réussite de la CI **n'atteste pas** une recette manuelle exhaustive ni l'exécution supplémentaire de tous les tests sur le poste Windows du propriétaire.
+
+Restent à vérifier explicitement en QA locale : contrôle des rôles et accès Dossier/Workspace, visibilité/remédiation du centre d'aide, navigation clavier, responsive et thème, parcours M-006 de validation/réconciliation et conflits de révision, ainsi que l'application effective des migrations et permissions M-006 sur les bases visées. Ne pas réouvrir automatiquement des anomalies historiques sans reproduction sur `main`.
+
+Fonctionnalités **non livrées** et distinctes du présent lot : suppression autonome de la Fiche process et export PDF/impression M-006 ; impression dédiée et envoi par e-mail M-004 sont à cadrer. Illustrations et assistance IA restent différées.
+
+## Prochain chantier, après la clôture de cette PR documentaire
+
+Cadrer puis conduire un **audit de préparation au déploiement**, distinct de tout déploiement réel : sécurité, tenancy/RBAC/capabilities/quotas, MongoDB et migrations, sauvegardes/restauration, stockage/antivirus, SMTP, jobs, logs/observabilité, performance, RGPD, recette préproduction et rollback. Classer les points en « prêt et prouvé », « à vérifier », « à corriger avant production », « à cadrer » ou « différé ». Les évolutions génériques relèvent du Core maître ; ne rien déployer ni modifier l'infrastructure sans arbitrage.
+
+---
+
+## Notes de reprise antérieures — historique conservé, statuts datés
+
+Les sections qui suivent décrivent des étapes passées. Leurs mentions « PR #53 en cours », « gate du commit combiné à exécuter », « branches à nettoyer » ou « lot M-006 non fusionné » ne décrivent plus l'état courant au 2026-10-29.
+
+---
+
 # M-006 — Reprise du centre d'aide sur le Core aligné (2026-10-28)
 
 **État Git vérifié :** PR métier #53 en cours, Core Gate #238 **réussie** sur le commit M-006 initial `796d4caad8298cc783f12cbb7637fe3d1f60d947`. Le Core aligné par PR #54 est fusionné dans `main` au commit `383bb4ae152aa4d676dcb1308542da4b268d363d`, Core Gate post-merge #241 **réussie**. Le Core reste en `v1.2.1`, provenance exacte `42beaff67200ca4e956378e2273b4eae440f47bc`.

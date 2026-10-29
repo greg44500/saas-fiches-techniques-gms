@@ -1,3 +1,37 @@
+# SAAS-FICHES-TECHNIQUES-GMS — Requalification des dettes (2026-10-29)
+
+**Règle de lecture :** les notes datées ci-dessous sont conservées pour la traçabilité des incidents et décisions, mais leurs statuts « PR non fusionnée » ou « gate à exécuter » sont historiques. Requalifier une preuve de livraison ne signifie ni supprimer la dette fonctionnelle ni déclarer les recettes manuelles réussies.
+
+## Preuves de livraison vérifiées
+
+- PR produit [#53](https://github.com/greg44500/saas-fiches-techniques-gms/pull/53) fusionnée (merge `d7baf3e3`), après PR [#54](https://github.com/greg44500/saas-fiches-techniques-gms/pull/54), le 2026-10-28.
+- [Core Gate post-merge #243](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40710767152) terminée avec succès sur `d7baf3e3cae68e14eda982a6dd3c741770c2d146`. Le workflow du dépôt exécute `npm run release:check` (vérification des métadonnées, ESLint, tests backend et frontend, build, E2E Playwright).
+- Les tests du centre d'aide M-006 sont présents dans le code fusionné ; les anciennes dettes formulées « impossible de fusionner faute de gate sur le commit combiné » sont **levées pour la preuve de CI et de fusion**. Elles ne prouvent pas une exécution distincte sur Windows ni la QA utilisateur.
+- Le nettoyage local/distant des branches métier fusionnées a été confirmé le 2026-10-29. Le Core `v1.2.1` et le produit `0.1.0-development` sont restés inchangés.
+
+## Sujets encore ouverts ou à requalifier après audit
+
+| Sujet | Statut au 2026-10-29 | Critère de traitement |
+| --- | --- | --- |
+| Recette manuelle centre d'aide M-006 | **À vérifier** | Rôles et accès Dossiers, remédiation et non-divulgation, liens/recherche, clavier, mobile, thème ; preuve de QA à consigner |
+| Recette métier M-006 | **À vérifier** | Brouillon/Validée, permissions, concurrence 409, identités/occurrences d'ingrédients, variations neutres M-004, associations conservées ; vérifier sur base locale représentative |
+| Migrations, droits et index M-006 | **À vérifier sur les bases cibles** | Contrôler manifeste, exécution et résultats réels (notamment `migration:m006-process-validate-permission` et `migration:m006-default-phase-titles`) sans rejouer à l'aveugle |
+| Anciens échecs de tests M-006 et incidents UI | **Historique — preuve CI post-fusion disponible** | Ne pas rouvrir automatiquement les incidents corrigés ; diagnostiquer seulement une régression reproduite sur `main` |
+| Suppression autonome d'une Fiche process | **Non implémentée — à cadrer** | Contrat métier distinct : droits, lien 1:1, confirmation, transaction, audit, intégrité et tests |
+| Export PDF / impression Fiche process | **Non implémenté — à cadrer** | Statut exportable, contenu, confidentialité, RBAC, capability/quota, rendu et tests ; icône UI toujours désactivée |
+| Impression dédiée / envoi e-mail M-004 | **Différé — à cadrer** | Ne pas redévelopper les exports PDF/CSV/XLSX M-004 déjà livrés |
+| Préparation opérationnelle à la production | **À auditer** | Sécurité, isolation, Atlas, secrets, stockage, antivirus, SMTP, jobs, sauvegarde/restauration, supervision, rétention/RGPD, performance et rollback |
+
+Les dettes génériques du Core maître, notamment D-005 (observabilité), D-007 (stockage en production), D-012 (E2E métier du dérivé) et D-013 (configuration/déploiement), doivent être examinées pour leur applicabilité au produit ; ne pas les déclarer résolues du seul fait de la stabilité du Core. Aucun déploiement n'est autorisé par ce constat documentaire.
+
+---
+
+## Registre historique des dettes — notes d'époque conservées
+
+Les sections suivantes documentent la chronologie des erreurs, correctifs et vérifications prévues. Une mention ancienne « tests non exécutés », « lot non validé » ou « PR en attente » doit être relue à la lumière de la gate #243 et de la distinction entre CI, poste local et QA manuelle.
+
+---
+
 ## Finalisation de l'aide M-006 sur la base Core alignée (2026-10-28)
 
 La PR métier #53 contient neuf procédures utilisateur M-006. Sa Core Gate #238 a réussi sur le commit initial. La PR d'alignement Core #54 est fusionnée dans `main` (`383bb4ae`) et la Core Gate #241 post-merge a réussi. La branche Help intègre désormais ce `main` sans changement de versions ; la gate du **commit combiné** et la QA manuelle restent à contrôler avant fusion. Le PDF M-006 et la suppression autonome restent différés.

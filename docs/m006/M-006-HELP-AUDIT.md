@@ -1,9 +1,9 @@
 # M-006 — Audit du centre d’aide utilisateur
 
-**Date :** 2026-10-28  
-**Périmètre :** application `saas-fiches-techniques-gms`, branche `feature/m006-help-center`.  
-**Références Git :** PR #51 et PR #52 fusionnées, Core v1.2.1 dans `core-origin.json`.  
-**Statut actualisé :** Core Gate #238 réussie sur le lot d'aide initial ; le Core aligné par PR #54 est dans main (Core Gate #241 verte). Le commit combiné doit être à nouveau testé, et la QA manuelle reste nécessaire. Les mentions de non-exécution ci-dessous sont historiques.
+**Audit initial :** 2026-10-28 ; **statut de livraison vérifié :** 2026-10-29.  
+**Périmètre :** application `saas-fiches-techniques-gms` ; lot réalisé sur `feature/m006-help-center`, puis intégré à `main`.  
+**Références Git :** PR produit [#51](https://github.com/greg44500/saas-fiches-techniques-gms/pull/51), [#52](https://github.com/greg44500/saas-fiches-techniques-gms/pull/52), [#54](https://github.com/greg44500/saas-fiches-techniques-gms/pull/54) et [#53](https://github.com/greg44500/saas-fiches-techniques-gms/pull/53) fusionnées ; Core `v1.2.1` / commit `42beaff67200ca4e956378e2273b4eae440f47bc`.  
+**Statut actuel :** les neuf procédures sont livrées sur `main` (commit `d7baf3e3cae68e14eda982a6dd3c741770c2d146`). [Core Gate #243](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40710767152) **réussie** sur ce commit après fusion le 2026-10-28 ; la QA manuelle complémentaire n'est pas attestée. Les anciennes mentions de « gate à exécuter » sont historiques.
 
 ## 1. Architecture et inventaire
 
@@ -68,7 +68,7 @@ Aucune procédure ne présente comme fonctionnels : export PDF M-006, suppressio
 
 **Tests ajoutés :** composition du registre, unicité et relations, permissions effectives, masquage des fiches interdites et des liens, refus 404, mode remédiation, règles éditoriales sensibles, recherche RTL et affichage/navigation RTL.
 
-**Gates à exécuter sur une copie locale du dépôt (Node conforme, MongoDB selon les suites) :**
+**Contrôles locaux complémentaires à relancer pour la recette (la CI post-fusion #243 a déjà réussi `release:check`) :**
 
 ```powershell
 npx vitest run backend/tests/help
@@ -78,8 +78,10 @@ npm --prefix frontend run build
 npm run release:check
 ```
 
-Compléter par une recette réelle sur un Workspace : lecture seule, édition, validation seule, Dossier non accessible, remédiation, navigation entre fiches, clavier et mobile. Aucune réussite de ces tests n'est présumée.
+Compléter par une recette réelle sur un Workspace : lecture seule, édition, validation seule, Dossier non accessible, remédiation, navigation entre fiches, clavier et mobile. **Le succès de la CI sur GitHub est établi ; la réexécution locale distincte de ces commandes et la recette manuelle ne sont pas attestées.**
 
-## 5. Suite
+## 5. Suite après fusion
 
-Une seule branche et une seule PR pour ce lot d'aide. Faire vérifier les gates, le diff et la QA avant merge. Ensuite seulement, traiter séparément la préparation au déploiement et les fonctionnalités M-006 différées.
+Le lot d'aide M-006 est fusionné via la PR #53 ; ses changements et sa gate CI post-fusion sont vérifiés. Les suites de tests de CI ne remplacent pas la recette manuelle complémentaire (rôles, visibilité des procédures, navigation, clavier, responsive, thème).
+
+Le nettoyage des branches fusionnées du SaaS a été confirmé le 2026-10-29. La réconciliation des statuts documentaires est traitée dans `docs/reconcile-m006-postmerge`, sans changement métier ni Core. Après clôture de ce lot documentaire, cadrer **séparément** l'audit de préparation au déploiement ; l'export PDF/impression M-006 et la suppression autonome restent des fonctionnalités métier différées.
