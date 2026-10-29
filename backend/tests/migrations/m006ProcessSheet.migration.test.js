@@ -23,6 +23,8 @@ describe('M-006 — migration ProcessSheet', () => {
                 PROCESS_SHEET_PERMISSION.CREATE,
                 PROCESS_SHEET_PERMISSION.EDIT,
                 PROCESS_SHEET_PERMISSION.VALIDATE,
+                PROCESS_SHEET_PERMISSION.EXPORT,
+                PROCESS_SHEET_PERMISSION.DELETE,
             ] } },
         });
         await backfillRegisteredSystemRolePermissions();
@@ -30,5 +32,7 @@ describe('M-006 — migration ProcessSheet', () => {
         expect(role.permissions).toContain(PROCESS_SHEET_PERMISSION.CREATE);
         expect(role.permissions).toContain(PROCESS_SHEET_PERMISSION.EDIT);
         expect(role.permissions).toContain(PROCESS_SHEET_PERMISSION.VALIDATE);
+        expect(role.permissions).toContain(PROCESS_SHEET_PERMISSION.EXPORT);
+        expect(role.permissions).toContain(PROCESS_SHEET_PERMISSION.DELETE);
     });
 });
