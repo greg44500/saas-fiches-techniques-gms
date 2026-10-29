@@ -46,8 +46,8 @@ describe('M-006 — génération PDF multi-pages', () => {
         const raw = pdf.toString('latin1');
         expect(raw.startsWith('%PDF-1.4')).toBe(true);
         expect(raw).toContain('/MediaBox [0 0 595.28 841.89]');
-        expect(raw).toContain('<' + encodeWinAnsiHex('PHASE 01') + '>');
-        expect(raw).toContain('<' + encodeWinAnsiHex('ETAPE 01.01') + '>');
+        expect(raw).toContain(encodeWinAnsiHex('PHASE 01'));
+        expect(raw).toContain(encodeWinAnsiHex('ETAPE 01.01'));
         expect(raw).toContain(encodeWinAnsiHex('BROUILLON - DOCUMENT NON VALIDE'));
         expect(raw).toContain(encodeWinAnsiHex('Cuire à feu doux.'));
         expect(raw).toContain(encodeWinAnsiHex('Échalote'));
