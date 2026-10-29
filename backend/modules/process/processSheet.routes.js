@@ -19,13 +19,13 @@ import { PROCESS_SHEET_PERMISSION } from './processSheetPermission.registry.js';
 import { processSheetCompositionRouter } from './processSheetComposition.routes.js';
 import {
     create, eligible, get, list, saveDraft, validate,
-    getReconciliation, applyReconciliation,
+    getReconciliation, applyReconciliation, remove, exportPdf,
 } from './processSheet.controller.js';
 import {
     dossierParamsSchema, eligibleTechnicalSheetQuerySchema,
     processCreateSchema, processListQuerySchema, processParamsSchema,
     saveProcessSheetDraftSchema, validateProcessSheetSchema,
-    reconcileProcessSheetSchema,
+    reconcileProcessSheetSchema, deleteProcessSheetSchema,
 } from './processSheet.validation.js';
 
 const processSheetRouter = Router({ mergeParams: true });
@@ -97,6 +97,24 @@ processSheetRouter.post('/:processSheetId/reconcile',
     loadAuthorizedDossierContext,
     enforceTechnicalSheetDossierOperational,
     applyReconciliation);
+// The PDF is readable in an archived Dossier when its access policy allows it.
+processSheetRouter.get('/:processSheetId/export/pdf',
+    authenticate,
+    validateRequest({ params: processParamsSchema }),
+    loadWorkspaceContext,
+    authorizePermission(PROCESS_SHEET_PERMISSION.EXPORT),
+    loadAuthorizedDossierContext,
+    enforceDossierStatePolicy(DOSSIER_STATE_POLICY.READ),
+    exportPdf);
+processSheetRouter.delete('/:processSheetId',
+    authenticate,
+    validateRequest({ params: processParamsSchema, body: deleteProcessSheetSchema }),
+    loadWorkspaceContext,
+    authorizePermission(PROCESS_SHEET_PERMISSION.DELETE),
+    enforceWorkspaceAccessMode(),
+    loadAuthorizedDossierContext,
+    enforceTechnicalSheetDossierOperational,
+    remove);
 processSheetRouter.get('/:processSheetId',
     authenticate,
     validateRequest({ params: processParamsSchema }),
