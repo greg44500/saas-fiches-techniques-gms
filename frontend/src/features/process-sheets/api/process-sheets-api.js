@@ -1,4 +1,5 @@
 import { baseApi } from '@/services/api/base-api';
+import { parseDownloadFileName } from '@/features/technical-sheets/api/technical-sheets-api';
 
 function compositionScopeId(workspaceId, dossierId, technicalSheetId) {
   return workspaceId + ':' + dossierId + ':' + technicalSheetId;
@@ -97,6 +98,35 @@ const processSheetsApi = baseApi.enhanceEndpoints({
         { type: 'EligibleProcessTechnicalSheets', id: workspaceId + ':' + dossierId },
       ],
     }),
+    deleteProcessSheet: builder.mutation({
+      query: ({ workspaceId, dossierId, processSheetId, expectedRevision }) => ({
+        url: '/workspaces/' + workspaceId + '/dossiers/' + dossierId
+          + '/process-sheets/' + processSheetId,
+        method: 'DELETE',
+        body: { expectedRevision },
+      }),
+      transformResponse: (response) => response.data,
+      invalidatesTags: (_result, _error, { workspaceId, dossierId, processSheetId }) => [
+        { type: 'ProcessSheetList', id: workspaceId + ':' + dossierId },
+        { type: 'ProcessSheet', id: workspaceId + ':' + dossierId + ':' + processSheetId },
+        { type: 'EligibleProcessTechnicalSheets', id: workspaceId + ':' + dossierId },
+      ],
+    }),
+    exportProcessSheetPdf: builder.mutation({
+      query: ({ workspaceId, dossierId, processSheetId }) => ({
+        url: '/workspaces/' + workspaceId + '/dossiers/' + dossierId
+          + '/process-sheets/' + processSheetId + '/export/pdf',
+        responseHandler: async (response) => {
+          if (!response.ok) return response.json();
+          return {
+            blob: await response.blob(),
+            fileName: parseDownloadFileName(
+              response.headers.get('content-disposition'), 'fiche-process.pdf',
+            ),
+          };
+        },
+      }),
+    }),
     getProcessSheet: builder.query({
       query: ({ workspaceId, dossierId, processSheetId }) => ({
         url: '/workspaces/' + workspaceId + '/dossiers/' + dossierId
@@ -189,6 +219,8 @@ const {
   useCreateProcessPhaseTitleMutation,
   useListProcessPhaseTitlesQuery,
   useCreateProcessSheetMutation,
+  useDeleteProcessSheetMutation,
+  useExportProcessSheetPdfMutation,
   useGetProcessSheetCompositionQuery,
   useGetProcessSheetQuery,
   useListEligibleProcessTechnicalSheetsQuery,
@@ -207,6 +239,8 @@ export {
   useCreateProcessPhaseTitleMutation,
   useListProcessPhaseTitlesQuery,
   useCreateProcessSheetMutation,
+  useDeleteProcessSheetMutation,
+  useExportProcessSheetPdfMutation,
   useGetProcessSheetCompositionQuery,
   useGetProcessSheetQuery,
   useListEligibleProcessTechnicalSheetsQuery,
