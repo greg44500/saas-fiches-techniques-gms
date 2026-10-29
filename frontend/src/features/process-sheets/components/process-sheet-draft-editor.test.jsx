@@ -185,6 +185,27 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     expect(screen.getAllByRole('article')).toHaveLength(1);
   });
 
+  it('élargit l’arbre et garde les titres des phases et étapes sur une ligne', async () => {
+    const user = userEvent.setup();
+    view();
+    const panel = screen.getByRole('region', { name: 'Phases et étapes' });
+    expect(panel.querySelector('.grid')).toHaveClass(
+      'xl:grid-cols-[minmax(19rem,1.1fr)_minmax(0,1.4fr)]',
+    );
+
+    await addStep(user);
+    const phaseButton = within(navigation()).getByRole('button', {
+      name: 'Sélectionner phase 1 : Nouvelle phase',
+    });
+    const stepButton = within(navigation()).getByRole('button', {
+      name: 'Sélectionner étape 1 : Nouvelle étape',
+    });
+    expect(within(phaseButton).getByText('Nouvelle phase')).toHaveClass('truncate');
+    expect(within(stepButton).getByText('Nouvelle étape')).toHaveClass('truncate');
+    expect(phaseButton).toHaveAttribute('title', 'Nouvelle phase');
+    expect(stepButton).toHaveAttribute('title', 'Nouvelle étape');
+  });
+
   it('édite une phase puis une étape, sans deuxième carte d’édition affichée', async () => {
     const user = userEvent.setup();
     view();

@@ -652,7 +652,7 @@ function ProcessSheetDraftEditor({
               <SegmentedControl ariaLabel="Vue de l’atelier"
                 items={MOBILE_VIEWS} onValueChange={setMobileView} value={mobileView} />
             </div>
-            <div className="grid min-h-0 gap-4 lg:h-full xl:grid-cols-[minmax(15rem,0.85fr)_minmax(0,1.65fr)]">
+            <div className="grid min-h-0 gap-4 lg:h-full xl:grid-cols-[minmax(19rem,1.1fr)_minmax(0,1.4fr)]">
               <div className={'min-w-0 lg:min-h-0 lg:overflow-y-auto xl:border-r xl:border-border/70 xl:pr-4 '
                 + (mobileView === 'editor' ? 'hidden lg:block' : '')}>
                 <ProcessSheetPhaseTree
