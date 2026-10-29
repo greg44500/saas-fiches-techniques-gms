@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -685,7 +685,9 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     mocks.validate.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({
       id: 'process-1', editorialState: 'VALIDATED',
     }) });
-    mocks.reload.mockResolvedValue({ data: { draft: readyDraft } });
+    mocks.reload.mockResolvedValue({ data: {
+      process: { revision: 0, editorialState: 'DRAFT' }, draft: readyDraft,
+    } });
     await user.click(button);
     expect(screen.getByRole('dialog', { name: 'Valider avec des ingrédients non affectés ?' }))
       .toHaveTextContent('2 ingrédient(s) ne sont associés');
@@ -698,7 +700,7 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
       processSheetId: 'process-1', expectedRevision: 0,
     });
     expect(mocks.save).not.toHaveBeenCalled();
-    expect(mocks.reload).toHaveBeenCalledTimes(1);
+    expect(mocks.reload).toHaveBeenCalledTimes(2);
   });
 
   it('valide directement quand tous les ingrédients sont affectés', async () => {
@@ -714,7 +716,9 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     mocks.validate.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({
       id: 'process-1', revision: 1, editorialState: 'VALIDATED',
     }) });
-    mocks.reload.mockResolvedValue({ data: { draft: fullyAssigned } });
+    mocks.reload.mockResolvedValue({ data: {
+      process: { revision: 0, editorialState: 'DRAFT' }, draft: fullyAssigned,
+    } });
     await user.click(screen.getByRole('button', { name: 'Valider la Fiche process' }));
     expect(screen.queryByRole('dialog', {
       name: 'Valider avec des ingrédients non affectés ?',
@@ -733,7 +737,9 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     mocks.validate.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({
       id: 'process-1', revision: 3, editorialState: 'VALIDATED',
     }) });
-    mocks.reload.mockResolvedValue({ data: { draft: initialDraft } });
+    mocks.reload.mockResolvedValue({ data: {
+      process: { revision: 2, editorialState: 'DRAFT' }, draft: initialDraft,
+    } });
     await user.click(button);
     await user.click(screen.getByRole('button', { name: 'Valider quand même' }));
     expect(mocks.validate).toHaveBeenCalledWith(expect.objectContaining({
@@ -759,11 +765,57 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     mocks.validate.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({
       id: 'process-1', revision: 4, editorialState: 'VALIDATED',
     }) });
-    mocks.reload.mockResolvedValue({ data: { draft: { ...props.initialDraft, revision: 2 } } });
+    mocks.reload.mockResolvedValue({ data: {
+      process: { revision: 3, editorialState: 'DRAFT' },
+      draft: { ...props.initialDraft, revision: 2 },
+    } });
     await user.click(button);
     await user.click(screen.getByRole('button', { name: 'Valider quand même' }));
     expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ expectedRevision: 1 }));
     expect(mocks.validate).toHaveBeenCalledWith(expect.objectContaining({ expectedRevision: 3 }));
+  });
+
+  it('sort du conflit de révision sans boucle après un rechargement autoritatif', async () => {
+    const user = userEvent.setup();
+    const current = { ...readyDraft, revision: 2 };
+    view({ canValidate: true, processRevision: 3, initialDraft: current });
+    const server = { data: {
+      process: { revision: 4, editorialState: 'DRAFT' },
+      draft: { ...current, revision: 3 },
+    } };
+    mocks.reload.mockResolvedValue(server);
+    mocks.validate.mockReturnValue({
+      unwrap: vi.fn().mockResolvedValue({ revision: 5, editorialState: 'VALIDATED' }),
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Valider la Fiche process' }));
+    await user.click(screen.getByRole('button', { name: 'Valider quand même' }));
+    expect(mocks.validate).not.toHaveBeenCalled();
+    expect(await screen.findByText(/version plus récente.*chargée/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Fermer' }));
+    const button = screen.getByRole('button', { name: 'Valider la Fiche process' });
+    await waitFor(() => expect(button).toBeEnabled());
+    await user.click(button);
+    await user.click(screen.getByRole('button', { name: 'Valider quand même' }));
+    await waitFor(() => expect(mocks.validate).toHaveBeenCalledWith(expect.objectContaining({
+      expectedRevision: 4,
+    })));
+  });
+
+  it('différencie un conflit serveur répétable malgré une révision inchangée', async () => {
+    const user = userEvent.setup();
+    view({ canValidate: true, processRevision: 0, initialDraft: readyDraft });
+    mocks.reload.mockResolvedValue({ data: {
+      process: { revision: 0, editorialState: 'DRAFT' }, draft: readyDraft,
+    } });
+    mocks.validate.mockReturnValue({
+      unwrap: vi.fn().mockRejectedValue({ data: { code: 'PROCESS_SHEET_CHANGED' } }),
+    });
+    await user.click(screen.getByRole('button', { name: 'Valider la Fiche process' }));
+    await user.click(screen.getByRole('button', { name: 'Valider quand même' }));
+    expect(await screen.findByText(/version semble à jour/i)).toBeInTheDocument();
+    expect(mocks.validate).toHaveBeenCalledTimes(1);
   });
 
   it('explique pourquoi une Fiche process déjà validée ne peut pas être validée à nouveau', () => {
