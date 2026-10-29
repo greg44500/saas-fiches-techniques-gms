@@ -90,6 +90,7 @@ function ProcessSheetDraftEditor({
   const [exportProcessPdf, exporting] = useExportProcessSheetPdfMutation();
   const [exportError, setExportError] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [validationSyncing, setValidationSyncing] = useState(false);
   const [validationErrorCode, setValidationErrorCode] = useState('');
   const [confirmValidation, setConfirmValidation] = useState(false);
   const usedIngredients = new Set(form.phases.flatMap((phase) => [
@@ -101,8 +102,9 @@ function ProcessSheetDraftEditor({
   ).length;
   const documented = form.phases.some((phase) =>
     (phase.steps ?? []).some((step) => step.title?.trim() && step.instructions?.trim()));
-  const editable = canEdit && !saving.isLoading;
-  const exportDisabled = !canExport || dirty || conflict || saving.isLoading || exporting.isLoading;
+  const editable = canEdit && !saving.isLoading && !validationSyncing;
+  const exportDisabled = !canExport || dirty || conflict || saving.isLoading
+    || exporting.isLoading || validationSyncing;
   const exportHelp = !canExport
     ? 'Votre rôle ne permet pas l’export PDF'
     : dirty || conflict
@@ -315,11 +317,12 @@ function ProcessSheetDraftEditor({
 
   const validate = async () => {
     if (!canValidate || dirty || conflict || saving.isLoading || validating.isLoading
-      || serverRevisions.draft !== revision || processRevision > serverRevisions.process
+      || validationSyncing || serverRevisions.draft !== revision || processRevision > serverRevisions.process
       || editorialState === 'VALIDATED' || compositionOutdated) return;
     setValidationError('');
     setValidationErrorCode('');
     let attemptedRevision = null;
+    setValidationSyncing(true);
     try {
       // A background invalidation can race with the editor's local revision
       // state. Refresh before the POST, but never silently validate newly
@@ -382,6 +385,8 @@ function ProcessSheetDraftEditor({
                     ? 'Impossible de vérifier la dernière version de la Fiche process. '
                       + 'Aucune validation n’a été lancée.'
                     : 'La validation n’a pas abouti. Aucune validation n’a été enregistrée.');
+    } finally {
+      setValidationSyncing(false);
     }
   };
 
@@ -435,7 +440,7 @@ function ProcessSheetDraftEditor({
   };
 
   const validationDisabled = !canValidate || dirty || saving.isLoading
-    || validating.isLoading || conflict || serverRevisions.draft !== revision
+    || validating.isLoading || validationSyncing || conflict || serverRevisions.draft !== revision
     || processRevision > serverRevisions.process
     || editorialState === 'VALIDATED' || compositionOutdated;
   const validationHelp = !canValidate
@@ -449,10 +454,10 @@ function ProcessSheetDraftEditor({
           : conflict || serverRevisions.draft !== revision
             || processRevision > serverRevisions.process
             ? 'Actualiser les données'
-            : saving.isLoading || validating.isLoading
+            : saving.isLoading || validating.isLoading || validationSyncing
               ? 'Opération en cours'
               : 'Valider';
-  const saveDisabled = !canEdit || !dirty || saving.isLoading || conflict;
+  const saveDisabled = !canEdit || !dirty || saving.isLoading || validationSyncing || conflict;
   const saveHelp = !canEdit
     ? 'Édition non autorisée'
     : conflict
