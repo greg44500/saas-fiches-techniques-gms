@@ -52,7 +52,7 @@ vi.mock('@/features/workspace/components/workspace-context', () => ({
 import { ProcessSheetsPage } from '@/features/process-sheets/pages/process-sheets-page';
 
 const processes = [{
-  id: 'process-1',
+  id: 'process-1', revision: 0,
   title: 'Fabrication tartine',
   technicalSheetId: 'sheet-1',
   technicalSheetName: 'Tartine auvergnate',
@@ -60,7 +60,7 @@ const processes = [{
   status: 'ACTIVE',
   updatedAt: '2026-10-26T12:00:00.000Z',
 }, {
-  id: 'process-2',
+  id: 'process-2', revision: 0,
   title: 'Préparation bourguignon',
   technicalSheetId: 'sheet-2',
   technicalSheetName: 'Bœuf Bourguignon',
@@ -186,6 +186,31 @@ describe('M-006 — liste des Fiches process uniquement', () => {
     expect(mocks.navigate).not.toHaveBeenCalled();
     await user.click(screen.getByRole('button', { name: 'Fermer' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('supprime après confirmation avec contrôle de révision', async () => {
+    mocks.can.mockImplementation((permission) => [
+      PROCESS_SHEET_PERMISSION.READ,
+      PROCESS_SHEET_PERMISSION.CREATE,
+      PROCESS_SHEET_PERMISSION.DELETE,
+      TECHNICAL_SHEET_PERMISSION.READ,
+    ].includes(permission));
+    mocks.remove.mockReturnValue({ unwrap: vi.fn().mockResolvedValue({ deletedId: 'process-1' }) });
+    renderPage();
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', {
+      name: 'Actions de la Fiche process Fabrication tartine',
+    }));
+    await user.click(screen.getByRole('button', { name: 'Supprimer', exact: true }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Supprimer définitivement cette Fiche process ?',
+    });
+    expect(dialog).toHaveTextContent('La Fiche technique associée sera conservée');
+    await user.click(within(dialog).getByRole('button', { name: 'Supprimer définitivement' }));
+    expect(mocks.remove).toHaveBeenCalledWith({
+      workspaceId: 'workspace-1', dossierId: 'dossier-1',
+      processSheetId: 'process-1', expectedRevision: 0,
+    });
   });
 
   it('ouvre la modale puis la Fiche process créée', async () => {
