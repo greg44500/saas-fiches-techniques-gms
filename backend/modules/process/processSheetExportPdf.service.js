@@ -13,7 +13,10 @@ const MUTED = '0.37 0.43 0.48';
 const ACCENT = '0.06 0.43 0.48';
 const BORDER = '0.82 0.87 0.88';
 
-const safeText = (value) => String(value ?? '').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, ' ');
+const safeText = (value) => [...String(value ?? '')].map((character) => {
+    const code = character.codePointAt(0);
+    return code < 32 && ![9, 10, 13].includes(code) ? ' ' : character;
+}).join('');
 const point = (value) => Number(value.toFixed(2));
 
 const textCommand = ({ x, y, value, size = 10, bold = false, color = INK }) =>
