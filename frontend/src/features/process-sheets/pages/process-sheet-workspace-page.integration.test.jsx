@@ -110,7 +110,7 @@ describe('M-006 — chaîne page → éditeur réel → sauvegarde', () => {
     expect(within(controls).getByRole('button', { name: 'Actualiser la composition' }))
       .toHaveAttribute('aria-disabled', 'true');
     expect(within(controls).getByRole('button', {
-      name: 'Exporter la Fiche process en PDF',
+      name: 'Exporter',
     })).toHaveAttribute('aria-disabled', 'true');
     await addFreePhase(user);
     expect(screen.getByRole('region', { name: 'Phase 1' })).toBeInTheDocument();

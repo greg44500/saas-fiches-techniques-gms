@@ -59,7 +59,7 @@ function ProcessSheetControlPanel({
         Icon={FileDown}
         disabled={exportDisabled}
         onClick={onExport}
-        label="Exporter la Fiche process en PDF"
+        label="Exporter"
         tooltip={exportHelp}
       />
       <ProcessControlAction

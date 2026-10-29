@@ -44,7 +44,7 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
       .toHaveAttribute('aria-disabled', 'true');
     expect(within(panel).getByRole('button', { name: 'Valider la Fiche process' }))
       .toHaveAttribute('aria-disabled', 'true');
-    expect(within(panel).getByRole('button', { name: 'Exporter la Fiche process en PDF' }))
+    expect(within(panel).getByRole('button', { name: 'Exporter' }))
       .toHaveAttribute('aria-disabled', 'true');
   });
 
@@ -67,7 +67,7 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
     await user.click(compare);
     await user.click(screen.getByRole('button', { name: 'Enregistrer le brouillon' }));
     await user.click(screen.getByRole('button', { name: 'Valider la Fiche process' }));
-    await user.click(screen.getByRole('button', { name: 'Exporter la Fiche process en PDF' }));
+    await user.click(screen.getByRole('button', { name: 'Exporter' }));
     expect(callbacks.onReconcile).not.toHaveBeenCalled();
     expect(callbacks.onSave).not.toHaveBeenCalled();
     expect(callbacks.onValidate).not.toHaveBeenCalled();
@@ -108,7 +108,7 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
     const user = userEvent.setup();
     const { callbacks } = view({ saveDisabled: false, validationDisabled: false });
     const exportAction = screen.getByRole('button', {
-      name: 'Exporter la Fiche process en PDF',
+      name: 'Exporter',
     });
     expect(exportAction).toHaveAttribute('aria-disabled', 'true');
     exportAction.focus();
@@ -124,7 +124,7 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
   it('déclenche le téléchargement uniquement quand l’export est disponible', async () => {
     const user = userEvent.setup();
     const { callbacks } = view({ exportDisabled: false, exportHelp: 'Télécharger le PDF' });
-    await user.click(screen.getByRole('button', { name: 'Exporter la Fiche process en PDF' }));
+    await user.click(screen.getByRole('button', { name: 'Exporter' }));
     expect(callbacks.onExport).toHaveBeenCalledOnce();
   });
 
@@ -142,7 +142,7 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
     await user.click(within(panel).getByRole('button', { name: 'Enregistrer le brouillon' }));
     await user.click(within(panel).getByRole('button', { name: 'Valider la Fiche process' }));
     expect(within(panel).getByRole('button', {
-      name: 'Exporter la Fiche process en PDF',
+      name: 'Exporter',
     })).toHaveAttribute('aria-disabled', 'true');
     expect(callbacks.onPreview).toHaveBeenCalledOnce();
     expect(callbacks.onReconcile).toHaveBeenCalledOnce();
