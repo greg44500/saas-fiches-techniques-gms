@@ -12,7 +12,9 @@ import {
 } from '@/features/process-sheets/api/process-sheets-api';
 import { ProcessSheetPreview } from '@/features/process-sheets/components/process-sheet-preview';
 
-function ProcessSheetRowActions({ dossierId, workspaceId, process, onOpen, canDelete = false }) {
+function ProcessSheetRowActions({
+  dossierId, workspaceId, process, onOpen, canDelete = false, deleteUnavailableReason = null,
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -77,13 +79,18 @@ function ProcessSheetRowActions({ dossierId, workspaceId, process, onOpen, canDe
             disabled={!canDelete}
             onClick={() => { setMenuOpen(false); setDeleteError(''); setDeleteOpen(true); }}
             size="sm"
-            title={!canDelete ? 'Suppression non autorisée ou Fiche technique inactive' : undefined}
+            title={!canDelete ? deleteUnavailableReason : undefined}
             type="button"
             variant="ghost"
           >
             <Trash2 aria-hidden="true" className="size-4" />
             Supprimer
           </Button>
+          {!canDelete && deleteUnavailableReason && (
+            <p className="px-2 text-xs text-muted-foreground" role="status">
+              {deleteUnavailableReason}
+            </p>
+          )}
         </PopoverContent>
       </Popover>
       <DialogRoot onOpenChange={(open) => { if (!open && !removal.isLoading) setDeleteOpen(false); }}
