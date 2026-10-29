@@ -8,7 +8,7 @@ import {
 } from '@/features/process-sheets/components/process-sheet-control-panel';
 
 const actions = () => ({
-  onPreview: vi.fn(), onReconcile: vi.fn(), onSave: vi.fn(), onValidate: vi.fn(),
+  onPreview: vi.fn(), onReconcile: vi.fn(), onSave: vi.fn(), onValidate: vi.fn(), onExport: vi.fn(),
 });
 
 function view(overrides = {}) {
@@ -71,6 +71,7 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
     expect(callbacks.onReconcile).not.toHaveBeenCalled();
     expect(callbacks.onSave).not.toHaveBeenCalled();
     expect(callbacks.onValidate).not.toHaveBeenCalled();
+    expect(callbacks.onExport).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -103,7 +104,7 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
       expect(callbacks[callback]).not.toHaveBeenCalled();
     });
 
-  it('garde l’export PDF visible et non actionnable tant qu’il n’existe pas', async () => {
+  it('garde l’export PDF accessible au focus et neutralisé sans autorisation', async () => {
     const user = userEvent.setup();
     const { callbacks } = view({ saveDisabled: false, validationDisabled: false });
     const exportAction = screen.getByRole('button', {
@@ -112,12 +113,19 @@ describe('M-006 — panneau de contrôle de la Fiche process', () => {
     expect(exportAction).toHaveAttribute('aria-disabled', 'true');
     exportAction.focus();
     expect(exportAction).toHaveFocus();
-    expect(await screen.findByText('Export PDF à venir')).toBeInTheDocument();
+    expect(await screen.findByText('Export PDF indisponible')).toBeInTheDocument();
     await user.keyboard('{Enter}');
     await user.keyboard(' ');
     await user.click(exportAction);
     expect(callbacks.onSave).not.toHaveBeenCalled();
     expect(callbacks.onValidate).not.toHaveBeenCalled();
+  });
+
+  it('déclenche le téléchargement uniquement quand l’export est disponible', async () => {
+    const user = userEvent.setup();
+    const { callbacks } = view({ exportDisabled: false, exportHelp: 'Télécharger le PDF' });
+    await user.click(screen.getByRole('button', { name: 'Exporter la Fiche process en PDF' }));
+    expect(callbacks.onExport).toHaveBeenCalledOnce();
   });
 
   it('exécute uniquement les commandes autorisées sans changer leur emplacement', async () => {
