@@ -5,11 +5,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const mocks = vi.hoisted(() => ({
-  save: vi.fn(), validate: vi.fn(), reload: vi.fn(), phaseTitles: vi.fn(), createTitle: vi.fn(),
+  save: vi.fn(), validate: vi.fn(), exportPdf: vi.fn(), reload: vi.fn(), phaseTitles: vi.fn(), createTitle: vi.fn(),
 }));
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useSaveProcessSheetDraftMutation: () => [mocks.save, { isLoading: false }],
   useValidateProcessSheetMutation: () => [mocks.validate, { isLoading: false }],
+  useExportProcessSheetPdfMutation: () => [mocks.exportPdf, { isLoading: false }],
   useListProcessPhaseTitlesQuery: (...args) => mocks.phaseTitles(...args),
   useCreateProcessPhaseTitleMutation: () => [mocks.createTitle, { isLoading: false }],
 }));
