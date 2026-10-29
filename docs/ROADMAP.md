@@ -1,3 +1,35 @@
+# SAAS-FICHES-TECHNIQUES-GMS — Point de situation consolidé (2026-10-29)
+
+**Source d'autorité :** code et tests/gates exécutés sur GitHub, puis contrats métier. Les étapes datées conservées plus bas constituent l'historique du développement et ne sont pas une liste de tâches actuellement ouvertes.
+
+## Livraisons confirmées
+
+| Périmètre | État sur `main` | Précision |
+| --- | --- | --- |
+| M-001 à M-003 | Intégrés | Dossiers/accès, référentiels Produits et Fournisseurs/Articles/tarification ; extensions spécifiques toujours à arbitrer |
+| M-004 | Intégré | Fiches techniques, validation et exports PDF/CSV/XLSX ; impression dédiée et envoi e-mail différés |
+| M-005 | Intégré | Atelier d'optimisation, sans préjuger des optimisations avancées futures |
+| M-006 | Intégré | Fiches process, édition, sauvegarde, validation/revalidation, réconciliation, bibliothèques de titres et centre d'aide (neuf procédures) ; suppression autonome et export PDF/impression non livrés |
+
+PR produit [#51](https://github.com/greg44500/saas-fiches-techniques-gms/pull/51), [#52](https://github.com/greg44500/saas-fiches-techniques-gms/pull/52), [#54](https://github.com/greg44500/saas-fiches-techniques-gms/pull/54) et [#53](https://github.com/greg44500/saas-fiches-techniques-gms/pull/53) **fusionnées**. `main` = `d7baf3e3cae68e14eda982a6dd3c741770c2d146`. [Core Gate produit #243](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40710767152) **réussie** sur ce commit le 2026-10-28. Core intégré `v1.2.1` au commit `42beaff67200ca4e956378e2273b4eae440f47bc` ; produit `0.1.0` en développement.
+
+## Priorités après la fusion M-006
+
+1. **Clôture Git et documentaire :** synchronisation locale de `main`, audit puis suppression contrôlée des branches fusionnées effectués le 2026-10-29. Actualisation du présent état, de `docs/DEBT.md`, de `docs/REPRISE-CURRENT.md` et de `docs/m006/M-006-HELP-AUDIT.md` dans la branche documentaire `docs/reconcile-m006-postmerge`.
+2. **Recettes complémentaires :** contrôle local/visuel des flux métiers sensibles, droits, tenancy, clavier/mobile, centre d'aide et réconciliation M-004/M-006 ; vérifier l'état effectif des migrations de base. Une CI verte ne vaut pas validation manuelle exhaustive.
+3. **Prochain chantier distinct : audit de préparation au déploiement** (sans mise en production implicite) : sécurité, architecture, configuration, MongoDB, fichiers, sauvegardes, emails, jobs, monitoring, RGPD, performance, préproduction et retour arrière. Cadrage et arbitrage avant modification.
+4. **Backlog fonctionnel à arbitrer, non lancé :** M-006 suppression autonome, M-006 export PDF/impression, M-004 impression/envoi e-mail, historiques/prix/alertes, imports automatisés, illustrations, IA et extensions avancées. Ces fonctions ne sont pas toutes présumées bloquantes pour une V1.
+
+**Limites des preuves :** les tests inclus dans la gate GitHub sont réussis sur le commit post-fusion ; l'exécution locale complémentaire, les tests en conditions de production, la recette accessible et les migrations dans l'environnement cible ne sont pas attestés par cette seule gate.
+
+---
+
+## Historique de roadmap — notes datées conservées
+
+Les mentions ci-après de PR ou de lots « en attente », « non livrés » ou « non testés » reflètent leur état à leur date de rédaction, pas le statut consolidé ci-dessus.
+
+---
+
 ## Finalisation de l'aide M-006 sur la base Core alignée (2026-10-28)
 
 La PR métier #53 contient neuf procédures utilisateur M-006. Sa Core Gate #238 a réussi sur le commit initial. La PR d'alignement Core #54 est fusionnée dans `main` (`383bb4ae`) et la Core Gate #241 post-merge a réussi. La branche Help intègre désormais ce `main` sans changement de versions ; la gate du **commit combiné** et la QA manuelle restent à contrôler avant fusion. Le PDF M-006 et la suppression autonome restent différés.
