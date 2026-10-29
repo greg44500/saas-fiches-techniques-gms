@@ -32,6 +32,8 @@ const BUSINESS_ACTIVITY_ACTION_REGISTRY = Object.freeze({
         label: 'Produit réactivé dans le catalogue',
     }),
     PROCESS_SHEET_CREATED: Object.freeze({ value: 'PROCESS_SHEET_CREATED', label: 'Fiche process créée' }),
+    PROCESS_SHEET_EXPORTED: Object.freeze({ value: 'PROCESS_SHEET_EXPORTED', label: 'Fiche process exportée' }),
+    PROCESS_SHEET_DELETED: Object.freeze({ value: 'PROCESS_SHEET_DELETED', label: 'Fiche process supprimée définitivement' }),
     PROCESS_SHEET_DRAFT_SAVED: Object.freeze({ value: 'PROCESS_SHEET_DRAFT_SAVED', label: 'Brouillon de Fiche process enregistré' }),
     PROCESS_SHEET_VALIDATED: Object.freeze({ value: 'PROCESS_SHEET_VALIDATED', label: 'Fiche process validée' }),
     PROCESS_SHEET_COMPOSITION_RECONCILED: Object.freeze({ value: 'PROCESS_SHEET_COMPOSITION_RECONCILED', label: 'Composition liée à la Fiche process actualisée' }),

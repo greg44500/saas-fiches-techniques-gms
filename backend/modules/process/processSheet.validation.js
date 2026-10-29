@@ -23,6 +23,10 @@ const eligibleTechnicalSheetQuerySchema = z.strictObject({
     search: z.string().trim().min(1).max(120).optional(),
 });
 
+const deleteProcessSheetSchema = z.strictObject({
+    expectedRevision: z.number().int().min(0),
+});
+
 const validateProcessSheetSchema = z.strictObject({
     expectedRevision: z.number().int().min(0),
 });
@@ -53,5 +57,6 @@ export {
     eligibleTechnicalSheetQuerySchema,
     processCreateSchema,
     validateProcessSheetSchema,
+    deleteProcessSheetSchema,
     reconcileProcessSheetSchema,
 };
