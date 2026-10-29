@@ -560,7 +560,9 @@ function ProcessSheetDraftEditor({
             </DialogHeader>
             <div className="mt-4 space-y-2 text-sm">
               {!documented && (
-                <p role="status">Ajoutez une étape avec des instructions avant de valider.</p>
+                <p className="font-medium text-destructive" role="status">
+                  Ajoutez une étape avec des instructions avant de valider.
+                </p>
               )}
               <p role="status">
                 {unassignedCount} ingrédient(s) ne sont associés à aucune phase ou étape.

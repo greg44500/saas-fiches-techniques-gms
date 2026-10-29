@@ -692,8 +692,14 @@ describe('M-006 — arbre phases/étapes et éditeur contextuel', () => {
     const user = userEvent.setup();
     view({ canValidate: true, processRevision: 0 });
     await user.click(screen.getByRole('button', { name: 'Valider la Fiche process' }));
-    expect(screen.getByRole('dialog', { name: 'Valider avec des ingrédients non affectés ?' }))
-      .toHaveTextContent('Ajoutez une étape avec des instructions');
+    const dialog = screen.getByRole('dialog', {
+      name: 'Valider avec des ingrédients non affectés ?',
+    });
+    expect(dialog).toHaveTextContent('Ajoutez une étape avec des instructions');
+    expect(within(dialog).getByText('Ajoutez une étape avec des instructions avant de valider.'))
+      .toHaveClass('font-medium', 'text-destructive');
+    expect(within(dialog).getByText(/ingrédient\(s\) ne sont associés/))
+      .not.toHaveClass('text-destructive');
     expect(screen.getByRole('button', { name: 'Valider quand même' })).toBeDisabled();
     expect(mocks.validate).not.toHaveBeenCalled();
   });
