@@ -55,7 +55,7 @@ const newCanvas = ({ process, dossierName, generatedAt }) => {
     let page;
     const date = generatedAt.toLocaleDateString('fr-FR', { timeZone: 'UTC' });
     const isDraft = process.editorialState !== 'VALIDATED';
-    const status = isDraft ? 'BROUILLON - DOCUMENT NON VALIDE' : 'FICHE VALIDEE';
+    const status = isDraft ? 'BROUILLON — DOCUMENT NON VALIDÉ' : 'FICHE VALIDÉE';
     const isArchived = process.status === 'ARCHIVED';
 
     const startPage = () => {
@@ -63,7 +63,7 @@ const newCanvas = ({ process, dossierName, generatedAt }) => {
         pages.push(page);
         page.commands.push(rectCommand({ x: 0, y: H - 9, width: W, height: 9, color: ACCENT }));
         page.commands.push(textCommand({ x: LEFT, y: H - 43, size: 9, bold: true, color: ACCENT, value: 'FICHE PROCESS / FABRICATION' }));
-        const titleLines = wrapText(process.title, RIGHT - LEFT, 17).slice(0, 2);
+        const titleLines = wrapText(process.title, RIGHT - LEFT, 17).slice(0, 4);
         titleLines.forEach((line, i) => page.commands.push(textCommand({
             x: LEFT, y: H - 71 - i * 20, size: 17, bold: true, value: line,
         })));
@@ -77,7 +77,7 @@ const newCanvas = ({ process, dossierName, generatedAt }) => {
         page.commands.push(textCommand({
             x: LEFT + 9, y: afterTitle - 36, size: 9, bold: true,
             color: isDraft ? '0.40 0.27 0.09' : '0.06 0.34 0.27',
-            value: status + (isArchived ? '  |  ARCHIVEE' : ''),
+            value: status + (isArchived ? '  |  ARCHIVÉE' : ''),
         }));
         page.commands.push(lineCommand(LEFT, afterTitle - 52, RIGHT, afterTitle - 52));
         page.y = Math.min(BODY_TOP, afterTitle - 72);
@@ -129,7 +129,7 @@ const newCanvas = ({ process, dossierName, generatedAt }) => {
             p.commands.push(lineCommand(LEFT, 48, RIGHT, 48));
             p.commands.push(textCommand({
                 x: LEFT, y: 34, size: 8, color: MUTED,
-                value: 'Fiche process  |  ' + status + '  |  Generee le ' + date,
+                value: 'Fiche process  |  ' + status + '  |  Générée le ' + date,
             }));
             p.commands.push(textCommand({
                 x: RIGHT - 77, y: 34, size: 8, color: MUTED,
@@ -155,7 +155,7 @@ const writeControls = (doc, label, entries = []) => {
         if (typeof entry === 'string') doc.paragraph('- ' + entry, { indent: 18, size: 9, gap: 2 });
         else doc.paragraph('- ' + [
             entry.instruction,
-            entry.expectedCriterion && 'Critere : ' + entry.expectedCriterion,
+            entry.expectedCriterion && 'Critère : ' + entry.expectedCriterion,
             entry.correctiveAction && 'Action corrective : ' + entry.correctiveAction,
         ].filter(Boolean).join('  |  '), { indent: 18, size: 9, gap: 2 });
     }
@@ -170,9 +170,9 @@ const buildProcessSheetPdf = ({
     }
     const doc = newCanvas({ process, dossierName, generatedAt });
     const ingredients = new Map((sourceIngredients.lines ?? [])
-        .map(line => [line.lineKey, line.productVariantName ?? 'Reference indisponible']));
+        .map(line => [line.lineKey, line.productVariantName ?? 'Référence indisponible']));
     const ingredientNames = (keys) => (keys ?? []).map(key =>
-        ingredients.get(key) ?? 'Ingredient non retrouve (' + key + ')');
+        ingredients.get(key) ?? 'Ingrédient non retrouvé (' + key + ')');
 
     if (process.editorialState === 'VALIDATED' && process.validatedAt) {
         doc.addLine('Validation : ' + new Date(process.validatedAt)
@@ -180,26 +180,26 @@ const buildProcessSheetPdf = ({
     }
     const phases = draft.phases ?? [];
     const stepCount = phases.reduce((sum, phase) => sum + (phase.steps ?? []).length, 0);
-    doc.addLine(phases.length + ' phase(s)  |  ' + stepCount + ' etape(s)',
+    doc.addLine(phases.length + ' phase(s)  |  ' + stepCount + ' étape(s)',
         { size: 9, color: MUTED, leading: 24 });
-    if (!phases.length) doc.paragraph('Aucune phase enregistree dans cette Fiche process.');
+    if (!phases.length) doc.paragraph('Aucune phase enregistrée dans cette Fiche process.');
     for (const [index, phase] of phases.entries()) {
         doc.heading('PHASE ' + String(index + 1).padStart(2, '0') + '  |  ' + phase.title, { phase: true });
         doc.paragraph(phase.instructions, { indent: 10 });
-        doc.labelValues('Ingredients de la phase', ingredientNames(phase.ingredientLineKeys));
+        doc.labelValues('Ingrédients de la phase', ingredientNames(phase.ingredientLineKeys));
         for (const [stepIndex, step] of (phase.steps ?? []).entries()) {
             const number = String(index + 1).padStart(2, '0') + '.'
                 + String(stepIndex + 1).padStart(2, '0');
-            doc.heading('ETAPE ' + number + '  |  ' + step.title);
+            doc.heading('ÉTAPE ' + number + '  |  ' + step.title);
             doc.paragraph(step.instructions, { indent: 13 });
-            doc.labelValues('Ingredients', ingredientNames(step.ingredientLineKeys));
+            doc.labelValues('Ingrédients', ingredientNames(step.ingredientLineKeys));
             const duration = formatDuration(step.duration);
-            if (step.temperatureCelsius != null) duration.push('Temperature : ' + step.temperatureCelsius + ' °C');
+            if (step.temperatureCelsius != null) duration.push('Température : ' + step.temperatureCelsius + ' °C');
             doc.labelValues('Parametres', duration);
-            doc.labelValues('Equipements', step.equipment);
+            doc.labelValues('Équipements', step.equipment);
             doc.labelValues('Vigilance', step.manufacturingVigilance);
-            writeControls(doc, 'CONTROLES QUALITE', step.qualityControls);
-            writeControls(doc, 'MAITRISE SANITAIRE', step.sanitaryControls);
+            writeControls(doc, 'CONTRÔLES QUALITÉ', step.qualityControls);
+            writeControls(doc, 'MAÎTRISE SANITAIRE', step.sanitaryControls);
             doc.ensure(14);
         }
     }
@@ -209,11 +209,11 @@ const buildProcessSheetPdf = ({
     ]));
     const unassigned = (sourceIngredients.lines ?? []).filter(line => !used.has(line.lineKey));
     if (unassigned.length) {
-        doc.heading('INGREDIENTS NON AFFECTES');
-        doc.paragraph('Ces ingredients figurent dans la composition source, sans affectation a une phase ou etape.',
+        doc.heading('INGRÉDIENTS NON AFFECTÉS');
+        doc.paragraph('Ces ingrédients figurent dans la composition source, sans affectation à une phase ou étape.',
             { size: 9 });
         for (const line of unassigned) {
-            doc.paragraph('- ' + (line.productVariantName ?? 'Reference indisponible'),
+            doc.paragraph('- ' + (line.productVariantName ?? 'Référence indisponible'),
                 { indent: 12, size: 9, gap: 2 });
         }
     }

@@ -48,7 +48,7 @@ describe('M-006 — génération PDF multi-pages', () => {
         expect(raw).toContain('/MediaBox [0 0 595.28 841.89]');
         expect(raw).toContain(encodeWinAnsiHex('PHASE 01'));
         expect(raw).toContain(encodeWinAnsiHex('ETAPE 01.01'));
-        expect(raw).toContain(encodeWinAnsiHex('BROUILLON - DOCUMENT NON VALIDE'));
+        expect(raw).toContain(encodeWinAnsiHex('BROUILLON — DOCUMENT NON VALIDÉ'));
         expect(raw).toContain(encodeWinAnsiHex('Cuire à feu doux.'));
         expect(raw).toContain(encodeWinAnsiHex('Échalote'));
         expect(raw).toContain(encodeWinAnsiHex('Farine'));
@@ -66,7 +66,7 @@ describe('M-006 — génération PDF multi-pages', () => {
         expect(count).toBeGreaterThan(1);
         expect((raw.match(/\/Type \/Page \/Parent/g) ?? [])).toHaveLength(count);
         expect((raw.match(/Page /g) ?? []).length).toBeGreaterThanOrEqual(count);
-        expect(raw).toContain(encodeWinAnsiHex('FICHE VALIDEE'));
+        expect(raw).toContain(encodeWinAnsiHex('FICHE VALIDÉE'));
     });
 
     it('conserve les retours à la ligne et ne crée pas de document sans données', () => {
