@@ -19,3 +19,11 @@ Le propriétaire a approuvé les cinq décisions détaillées dans `docs/m006/M-
 **Ne pas fusionner sur la seule présence de ce code.** Aucune nouvelle exécution locale ou CI, QA de pagination PDF ni test de migration sur la base cible n'a encore été rapportée pour ce HEAD. Contrôles à obtenir : Vitest backend/RTL, ESLint, build, `npm run release:check`, E2E de suppression/création sous MongoDB rs0, puis examen visuel des vrais PDF multipages avec accents, longs titres, sauts de page et variantes Brouillon/Validée/Archivée.
 
 Après validation des tests par le propriétaire : PR unique, gate GitHub, merge sous contrôle du propriétaire. L'audit de préparation au déploiement restera ultérieur.
+
+## Correctif de synchronisation de validation (2026-10-29)
+
+Un retour utilisateur montrait une modale `PROCESS_SHEET_CHANGED` lors de la validation, suivie du même refus après « Actualiser la Fiche process ».
+
+Le frontend distingue désormais `ProcessSheet.revision` du jeton de contenu `ProcessSheetDraft.revision` lors d'un **GET autoritatif immédiatement avant POST /validate**. Si l'un des deux a avancé, la dernière version est chargée et la validation n'est **pas envoyée automatiquement** sans relecture par l'utilisateur. Lorsqu'un POST reste en conflit, un nouveau GET distingue une réelle modification concurrente d'un refus répétable sans changement visible, afin d'éviter les consignes d'actualisation en boucle. Des tests RTL de ces deux scénarios ont été ajoutés.
+
+**Preuves restantes :** exécution locale des tests RTL et du parcours réel. Ce changement ne supprime ni le contrôle serveur `expectedRevision`, ni la protection de concurrence transactionnelle M-006. Si le conflit persiste avec des révisions identiques, relever le GET de la Fiche process et le corps/réponse du POST de validation avant toute nouvelle correction backend.
