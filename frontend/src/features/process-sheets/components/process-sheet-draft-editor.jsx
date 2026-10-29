@@ -284,62 +284,117 @@ function ProcessSheetDraftEditor({
         : 'Votre travail reste affiché. Réessayez l’enregistrement ou contactez un responsable si le problème persiste.');
     }
   };
+  // Keep the saved content revision and the aggregate revision together.
+  // The GET response is authoritative; never infer one from the other.
+  const applyServerSnapshot = (data) => {
+    setForm(normalize(data.draft));
+    setRevision(data.draft.revision);
+    setServerRevisions({
+      process: data.process.revision, draft: data.draft.revision,
+    });
+    setDirty(false);
+    setConflict(false);
+    setSaveError(false);
+    setMessage('');
+    setActivePhaseId(data.draft.phases?.[0]?.id ?? null);
+    setActiveStepId(data.draft.phases?.[0]?.steps?.[0]?.id ?? null);
+    setExpandedPhaseIds(data.draft.phases?.[0]?.id ? [data.draft.phases[0].id] : []);
+    setMobileView('structure');
+  };
+
+  const fetchServerSnapshot = async () => {
+    const result = await onReload();
+    const data = result?.data;
+    if (!data?.process || !data?.draft
+      || !Number.isInteger(data.process.revision)
+      || !Number.isInteger(data.draft.revision)) {
+      throw new Error('Process server snapshot unavailable');
+    }
+    return data;
+  };
+
   const validate = async () => {
     if (!canValidate || dirty || conflict || saving.isLoading || validating.isLoading
       || serverRevisions.draft !== revision || processRevision > serverRevisions.process
       || editorialState === 'VALIDATED' || compositionOutdated) return;
     setValidationError('');
+    setValidationErrorCode('');
+    let attemptedRevision = null;
     try {
+      // A background invalidation can race with the editor's local revision
+      // state. Refresh before the POST, but never silently validate newly
+      // received content the user has not yet reviewed.
+      const latest = await fetchServerSnapshot();
+      if (latest.process.revision !== serverRevisions.process
+        || latest.draft.revision !== revision) {
+        applyServerSnapshot(latest);
+        setValidationErrorCode('PROCESS_SHEET_REFRESHED');
+        setValidationError(
+          'Une version plus récente de cette Fiche process a été chargée. '
+          + 'Vérifiez son contenu, puis relancez la validation si elle convient.',
+        );
+        return;
+      }
+      attemptedRevision = latest.process.revision;
       await validateSheet({
         workspaceId, dossierId, processSheetId,
-        expectedRevision: serverRevisions.process,
+        expectedRevision: attemptedRevision,
       }).unwrap();
-      await onReload();
+      const saved = await fetchServerSnapshot();
+      applyServerSnapshot(saved);
     } catch (error) {
       const code = error?.data?.code ?? '';
       setValidationErrorCode(code);
+      if (code === 'PROCESS_SHEET_CHANGED') {
+        // Distinguish a real concurrent write from a repeatable server
+        // conflict. Never retry the destructive state transition blindly.
+        try {
+          const latest = await fetchServerSnapshot();
+          const changed = latest.process.revision !== attemptedRevision;
+          applyServerSnapshot(latest);
+          setValidationErrorCode(changed ? 'PROCESS_SHEET_REFRESHED'
+            : 'PROCESS_SHEET_VALIDATE_UNEXPECTED_CONFLICT');
+          setValidationError(changed
+            ? 'Une autre modification a été enregistrée pendant la validation. '
+              + 'La dernière version est chargée : vérifiez-la avant de relancer.'
+            : 'Le serveur a refusé la validation alors que la version semble à jour. '
+              + 'Aucune validation n’a été enregistrée. Si cela se reproduit, '
+              + 'le conflit doit être diagnostiqué côté serveur.');
+        } catch {
+          setValidationError('La validation a rencontré un conflit et '
+            + 'l’actualisation a échoué. Vérifiez votre connexion avant de réessayer.');
+        }
+        return;
+      }
       setValidationError(code === 'PROCESS_SHEET_PARENT_CHANGED'
         ? 'La Fiche technique associée a été validée de nouveau. Comparez les compositions pour continuer.'
         : code === 'PROCESS_SHEET_PARENT_REVISION_OPEN'
           ? 'Une modification de la Fiche technique est en cours. Elle doit être terminée avant la validation.'
           : code === 'PROCESS_SHEET_PARENT_INACTIVE' || code === 'PROCESS_SHEET_PARENT_UNVALIDATED'
             ? 'La Fiche technique associée doit être active et validée pour continuer.'
-          : code === 'PROCESS_SHEET_CHANGED'
-            ? 'Cette Fiche process a changé depuis son ouverture. Actualisez ses données avant de continuer.'
             : code === 'PROCESS_SHEET_ALREADY_VALIDATED'
               ? 'Cette Fiche process est déjà validée.'
               : code === 'PROCESS_SHEET_STEP_REQUIRED'
                 ? 'Ajoutez au moins une phase et une étape avec des instructions.'
                 : code === 'PROCESS_SHEET_INGREDIENT_INVALID'
                   ? 'Une association d’ingrédient doit être vérifiée avant validation.'
-                  : 'La validation n’a pas abouti. Aucune validation n’a été enregistrée.');
+                  : error?.message === 'Process server snapshot unavailable'
+                    ? 'Impossible de vérifier la dernière version de la Fiche process. '
+                      + 'Aucune validation n’a été lancée.'
+                    : 'La validation n’a pas abouti. Aucune validation n’a été enregistrée.');
     }
   };
+
   const reload = async () => {
     try {
-      const fresh = await onReload();
-      if (!fresh?.data?.draft) {
-        setSaveError(true);
-        setMessage('Impossible de recharger le brouillon. Les modifications locales restent affichées.');
-        return;
-      }
-      setForm(normalize(fresh.data.draft));
-      setRevision(fresh.data.draft.revision);
-      setServerRevisions({
-        process: fresh.data.process.revision, draft: fresh.data.draft.revision,
-      });
-      setDirty(false);
-      setConflict(false);
-      setSaveError(false);
-      setMessage('');
+      const fresh = await fetchServerSnapshot();
+      applyServerSnapshot(fresh);
       setValidationError('');
-      setActivePhaseId(fresh.data.draft.phases?.[0]?.id ?? null);
-      setActiveStepId(fresh.data.draft.phases?.[0]?.steps?.[0]?.id ?? null);
-      setExpandedPhaseIds(fresh.data.draft.phases?.[0]?.id ? [fresh.data.draft.phases[0].id] : []);
-      setMobileView('structure');
+      setValidationErrorCode('');
     } catch {
       setSaveError(true);
-      setMessage('Impossible de recharger le brouillon. Les modifications locales restent affichées.');
+      setMessage('Impossible de recharger la Fiche process. '
+        + 'Les modifications locales restent affichées.');
     }
   };
   const currentPhaseIndex = form.phases.findIndex((phase) => phase.id === activePhaseId);
