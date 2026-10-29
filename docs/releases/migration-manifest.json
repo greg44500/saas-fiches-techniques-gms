@@ -238,6 +238,14 @@
       "dependsOn": [
         "m006-process-editor-permission"
       ]
+    },
+    {
+      "id": "m006-process-finalization-permissions",
+      "script": "migration:m006-process-finalization-permissions",
+      "runner": "backend/migrations/runBackfillM006ProcessFinalizationPermissionsMigration.js",
+      "dependsOn": [
+        "m006-process-validate-permission"
+      ]
     }
   ]
 }

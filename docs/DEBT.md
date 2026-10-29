@@ -1,3 +1,16 @@
+## M-006 — Preuves manquantes de finalisation (2026-10-29)
+
+Les services PDF et suppression ont été développés sur `feature/m006-finalisation-ui-ux-global`. La présence de code et de tests **ne prouve pas leur réussite**. Les notes historiques ci-dessous qui indiquent « non implémenté » restent vraies pour `main` tant que la PR n'est pas fusionnée.
+
+- Exécuter les tests de PDF multipage et HTTP (droits, tenancy, 400/403/404/409, parent archivé, rollback et libération de l'unicité 1:1), RTL, lint et gate complète avec Node 24/MongoDB `rs0`/ClamAV.
+- Vérifier la migration idempotente `migration:m006-process-finalization-permissions` sur une base de développement et les permissions des rôles personnalisés (aucun octroi silencieux).
+- Contrôler visuellement les PDF de vraies Fiches process : pages multiples, instructions longues, accents, phases et étapes, contrôles qualité/sanitaires, brouillons et archives ; confirmer l'absence de fichiers générés stockés.
+- Vérifier les confirmations destructives, l'accessibilité clavier/mobile, le non-effacement de la Fiche technique, la recréation éligible et le journal d'audit minimal.
+
+**Blocage de livraison :** aucune gate sur ce HEAD ni E2E M-006 spécifique attestés. PR/merge après validation du propriétaire.
+
+---
+
 # SAAS-FICHES-TECHNIQUES-GMS — Requalification des dettes (2026-10-29)
 
 **Règle de lecture :** les notes datées ci-dessous sont conservées pour la traçabilité des incidents et décisions, mais leurs statuts « PR non fusionnée » ou « gate à exécuter » sont historiques. Requalifier une preuve de livraison ne signifie ni supprimer la dette fonctionnelle ni déclarer les recettes manuelles réussies.

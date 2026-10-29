@@ -74,7 +74,8 @@
     "migration:m006-process-sheets": "node backend/migrations/runEnsureM006ProcessSheetMigration.js",
     "migration:m006-process-editor-permission": "node backend/migrations/runBackfillM006ProcessEditPermissionMigration.js",
     "migration:m006-default-phase-titles": "node backend/migrations/runSeedM006DefaultProcessPhasesMigration.js",
-    "migration:m006-process-validate-permission": "node backend/migrations/runBackfillM006ProcessValidatePermissionMigration.js"
+    "migration:m006-process-validate-permission": "node backend/migrations/runBackfillM006ProcessValidatePermissionMigration.js",
+    "migration:m006-process-finalization-permissions": "node backend/migrations/runBackfillM006ProcessFinalizationPermissionsMigration.js"
   },
   "license": "UNLICENSED",
   "dependencies": {

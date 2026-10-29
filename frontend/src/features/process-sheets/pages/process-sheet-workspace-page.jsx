@@ -73,6 +73,7 @@ function ProcessSheetWorkspacePage() {
         processTitle={process.title}
         canEdit={canEdit}
         canValidate={canValidate}
+        canExport={Boolean(can?.(PROCESS_SHEET_PERMISSION.EXPORT))}
         editorialState={process.editorialState}
         processRevision={process.revision}
         compositionOutdated={compositionOutdated}

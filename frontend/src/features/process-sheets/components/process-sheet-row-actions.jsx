@@ -7,12 +7,19 @@ import {
   DialogOverlay, DialogPortal, DialogRoot, DialogTitle,
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useGetProcessSheetQuery } from '@/features/process-sheets/api/process-sheets-api';
+import {
+  useDeleteProcessSheetMutation, useGetProcessSheetQuery,
+} from '@/features/process-sheets/api/process-sheets-api';
 import { ProcessSheetPreview } from '@/features/process-sheets/components/process-sheet-preview';
 
-function ProcessSheetRowActions({ dossierId, workspaceId, process, onOpen }) {
+function ProcessSheetRowActions({
+  dossierId, workspaceId, process, onOpen, canDelete = false, deleteUnavailableReason = null,
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [removeProcess, removal] = useDeleteProcessSheetMutation();
   const detail = useGetProcessSheetQuery(
     { workspaceId, dossierId, processSheetId: process.id },
     { skip: !previewOpen },
@@ -21,6 +28,22 @@ function ProcessSheetRowActions({ dossierId, workspaceId, process, onOpen }) {
   const openPreview = () => {
     setMenuOpen(false);
     setPreviewOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!canDelete || removal.isLoading) return;
+    setDeleteError('');
+    try {
+      await removeProcess({
+        workspaceId, dossierId, processSheetId: process.id,
+        expectedRevision: process.revision,
+      }).unwrap();
+      setDeleteOpen(false);
+    } catch (error) {
+      setDeleteError(error?.data?.code === 'PROCESS_SHEET_DELETE_CONFLICT'
+        ? 'La Fiche process a changé. Actualisez la liste avant de réessayer.'
+        : 'Suppression impossible. La Fiche process n’a pas été supprimée.');
+    }
   };
 
   return (
@@ -53,20 +76,48 @@ function ProcessSheetRowActions({ dossierId, workspaceId, process, onOpen }) {
           </Button>
           <Button
             className="w-full justify-start text-destructive"
-            disabled
+            disabled={!canDelete}
+            onClick={() => { setMenuOpen(false); setDeleteError(''); setDeleteOpen(true); }}
             size="sm"
-            title="La suppression définitive n’est pas encore disponible"
+            title={!canDelete ? deleteUnavailableReason : undefined}
             type="button"
             variant="ghost"
           >
             <Trash2 aria-hidden="true" className="size-4" />
             Supprimer
           </Button>
-          <p className="px-2 text-xs text-muted-foreground">
-            Suppression indisponible pour le moment.
-          </p>
+          {!canDelete && deleteUnavailableReason && (
+            <p className="px-2 text-xs text-muted-foreground" role="status">
+              {deleteUnavailableReason}
+            </p>
+          )}
         </PopoverContent>
       </Popover>
+      <DialogRoot onOpenChange={(open) => { if (!open && !removal.isLoading) setDeleteOpen(false); }}
+        open={deleteOpen}>
+        <DialogPortal>
+          <DialogOverlay className="backdrop-blur-none" />
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Supprimer définitivement cette Fiche process ?</DialogTitle>
+              <DialogDescription>
+                La Fiche process « {process.title} » et toutes ses phases et étapes seront
+                supprimées définitivement. Cette action est irréversible.
+                La Fiche technique associée sera conservée.
+              </DialogDescription>
+            </DialogHeader>
+            {deleteError && <p role="alert" className="text-sm text-destructive">{deleteError}</p>}
+            <DialogFooter>
+              <Button disabled={removal.isLoading} onClick={() => setDeleteOpen(false)}
+                type="button" variant="outline">Annuler</Button>
+              <Button disabled={removal.isLoading || !canDelete} onClick={confirmDelete}
+                type="button" variant="destructive">
+                {removal.isLoading ? 'Suppression…' : 'Supprimer définitivement'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </DialogPortal>
+      </DialogRoot>
       <DialogRoot onOpenChange={(next) => { if (!next) setPreviewOpen(false); }}
         open={previewOpen}>
         <DialogPortal>

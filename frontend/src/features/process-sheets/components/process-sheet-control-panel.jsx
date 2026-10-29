@@ -24,7 +24,8 @@ function ProcessControlAction({
 function ProcessSheetControlPanel({
   previewActive, compositionDisabled, compositionHelp,
   saveDisabled, saveHelp, validationDisabled, validationHelp,
-  onPreview, onReconcile, onSave, onValidate,
+  exportDisabled = true, exportHelp = 'Export PDF indisponible',
+  onPreview, onReconcile, onSave, onValidate, onExport,
 }) {
   return (
     <div
@@ -56,9 +57,10 @@ function ProcessSheetControlPanel({
       />
       <ProcessControlAction
         Icon={FileDown}
-        disabled
-        label="Exporter la Fiche process en PDF"
-        tooltip="Export PDF à venir"
+        disabled={exportDisabled}
+        onClick={onExport}
+        label="Exporter"
+        tooltip={exportHelp}
       />
       <ProcessControlAction
         Icon={CheckCircle2}

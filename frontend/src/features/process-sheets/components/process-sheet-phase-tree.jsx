@@ -95,15 +95,16 @@ function ProcessSheetPhaseTree({
                       <button
                         aria-label={'Sélectionner phase ' + (i + 1) + ' : ' + (phase.title || 'Phase sans titre')}
                         aria-pressed={selected}
-                        className={'min-w-0 flex-1 rounded-md px-2 py-2 text-left text-sm transition-colors duration-150 motion-reduce:transition-none '
+                        title={phase.title || 'Phase sans titre'}
+                        className={'flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors duration-150 motion-reduce:transition-none '
                           + (selected ? 'bg-muted font-semibold text-foreground' : 'hover:bg-muted/60')}
                         onClick={() => onSelectPhase(phase.id)}
                         type="button"
                       >
-                        <span className="mr-2 text-xs tabular-nums text-muted-foreground">
+                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                           {String(i + 1).padStart(2, '0')}
                         </span>
-                        <span className="break-words">{phase.title || 'Phase sans titre'}</span>
+                        <span className="min-w-0 flex-1 truncate">{phase.title || 'Phase sans titre'}</span>
                       </button>
                     )}
                     {!disabled && !editing && (
@@ -143,15 +144,16 @@ function ProcessSheetPhaseTree({
                               <button
                                 aria-label={'Sélectionner étape ' + (j + 1) + ' : ' + (step.title || 'Étape sans titre')}
                                 aria-pressed={stepSelected}
-                                className={'min-w-0 flex-1 rounded-md px-2 py-2 text-left text-sm transition-colors duration-150 motion-reduce:transition-none '
+                                title={step.title || 'Étape sans titre'}
+                                className={'flex min-w-0 flex-1 items-center gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors duration-150 motion-reduce:transition-none '
                                   + (stepSelected ? 'bg-muted font-medium text-foreground' : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground')}
                                 onClick={() => onSelectStep(phase.id, step.id)}
                                 type="button"
                               >
-                                <span className="mr-2 text-xs tabular-nums">
+                                <span className="shrink-0 text-xs tabular-nums">
                                   {i + 1}.{j + 1}
                                 </span>
-                                <span className="break-words">{step.title || 'Étape sans titre'}</span>
+                                <span className="min-w-0 flex-1 truncate">{step.title || 'Étape sans titre'}</span>
                               </button>
                               {!disabled && (
                                 <ProcessIconAction

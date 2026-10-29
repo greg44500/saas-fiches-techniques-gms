@@ -46,20 +46,20 @@ describe('M-006 — centre d’aide Fiches process', () => {
         expect(PROCESS_SHEET_HELP_MODULE.workspaceRemediationEntryIds).toEqual([]);
     });
 
-    it('documente les contrats sensibles sans présenter les actions différées comme disponibles', () => {
+    it('documente les contrats sensibles et les actions de finalisation', () => {
         const entry = (suffix) => ACTIVE_HELP_REGISTRY.entriesById[prefix + suffix];
         expect(entry('create').prerequisites.join(' ')).toMatch(/validation officielle/);
         expect(entry('create').prerequisites.join(' ')).toMatch(/sans brouillon/);
         expect(entry('validate').edgeCases.join(' ')).toMatch(/non affectés n’empêchent pas/);
         expect(entry('save').edgeCases.join(' ')).toMatch(/repasse à Brouillon/);
         expect(entry('reconcile').edgeCases.join(' ')).toMatch(/prix, quantité, unité, fournisseur/);
-        expect(entry('states').edgeCases.join(' ')).toMatch(/PDF.*désactivée/);
-        expect(entry('states').edgeCases.join(' ')).toMatch(/Supprimer est désactivé/);
+        expect(entry('states').edgeCases.join(' ')).toMatch(/PDF.*process-sheet:export/);
+        expect(entry('states').edgeCases.join(' ')).toMatch(/suppression autonome.*process-sheet:delete/);
         expect(entry('phase_titles').edgeCases.join(' ')).toMatch(/ne copie pas les étapes/);
 
         const allSteps = PROCESS_SHEET_HELP_MODULE.entries.flatMap(({ steps }) => steps);
-        expect(allSteps).not.toContainEqual(expect.stringMatching(/téléchargez.*PDF/i));
-        expect(allSteps).not.toContainEqual(expect.stringMatching(/supprimez définitivement.*Fiche process/i));
+        expect(allSteps).toContainEqual(expect.stringMatching(/téléchargez.*PDF/i));
+        expect(allSteps).toContainEqual(expect.stringMatching(/sélectionnez Supprimer/i));
     });
 
     it('exige les permissions métier adaptées à chaque parcours', () => {

@@ -1,3 +1,13 @@
+# Reprise M-006 — finalisation PDF et suppression (2026-10-29)
+
+**Branche de travail :** `feature/m006-finalisation-ui-ux-global` (issue du `main` au commit `6dad4e9d`). Le propriétaire a validé les cinq choix du contrat PDF/suppression. Les services backend, routes, permissions, migration, interface, aide et tests associés sont committés sur cette branche, **pas sur `main`**.
+
+**Statut qualité : À VÉRIFIER.** Aucune nouvelle gate locale, CI ou recette de vrais PDF multipages n'est attestée pour ces commits. Vérifier la migration des permissions Owner, les tests backend/RTL, le PDF imprimable, l'isolation Workspace/Dossier, les conflits et la recréation après suppression avant une unique PR. Les choix précis et la preuve de progression figurent dans `docs/m006/M-006-FINALISATION-PDF-SUPPRESSION-CADRAGE.md` et `docs/releases/M-006-FINALISATION-IMPLEMENTATION.md`.
+
+**Ordre des chantiers :** finaliser M-006 puis seulement cadrer l'audit de préparation au déploiement. Aucun changement Core, release ou infrastructure.
+
+---
+
 # SAAS-FICHES-TECHNIQUES-GMS — Reprise courante (2026-10-29)
 
 **Statut de référence :** clôture Git de M-006 confirmée et réconciliation documentaire en cours. Cette synthèse actualisée prime sur les notes de reprise datées conservées plus bas ; elle ne les efface pas.

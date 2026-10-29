@@ -1,6 +1,8 @@
 import {
     getProcessSheetReconciliation, reconcileProcessSheet,
 } from './processSheetReconciliation.service.js';
+import { deleteProcessSheet } from './processSheetDelete.service.js';
+import { exportProcessSheetPdf } from './processSheetExport.service.js';
 import { DOSSIER_STATUS } from '../dossier/dossier.registry.js';
 import { updateProcessSheetDraft } from './processSheetDraft.service.js';
 import { validateProcessSheet } from './processSheetValidation.service.js';
@@ -80,4 +82,29 @@ const validate = async (req, res) => {
     res.status(200).json({ status: 'success', data: { process } });
 };
 
-export { create, eligible, get, list, saveDraft, validate, getReconciliation, applyReconciliation };
+const remove = async (req, res) => {
+    const data = await deleteProcessSheet({
+        ...scope(req), processSheetId: req.validated.params.processSheetId,
+        actorId: req.user._id, expectedRevision: req.validated.body.expectedRevision,
+    });
+    res.status(200).json({ status: 'success', data });
+};
+
+const exportPdf = async (req, res) => {
+    const artifact = await exportProcessSheetPdf({
+        ...scope(req), processSheetId: req.validated.params.processSheetId,
+        actorId: req.user._id, dossierName: req.dossier.name,
+    });
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition',
+        "attachment; filename*=UTF-8''" + encodeURIComponent(artifact.fileName));
+    res.setHeader('Content-Length', artifact.buffer.length);
+    res.status(200).send(artifact.buffer);
+};
+
+export {
+    create, eligible, get, list, saveDraft, validate, remove, exportPdf,
+    getReconciliation, applyReconciliation,
+};

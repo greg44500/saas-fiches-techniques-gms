@@ -1,3 +1,11 @@
+## Finalisation M-006 — PDF et suppression en branche (2026-10-29)
+
+Les cinq décisions commerciales/techniques ont été validées. Les deux fonctionnalités sont **implémentées sur `feature/m006-finalisation-ui-ux-global` mais non fusionnées** : PDF A4 multipage depuis le contenu enregistré (Brouillon ou Validée, archives consultables) ; suppression définitive de M-006 en transaction sans modification du contenu M-004. Permissions spécifiques, migration de rôles système, UI, audit et tests ajoutés.
+
+**En attente :** tests locaux Vitest/Supertest, RTL, ESLint, build, `release:check`, vérification de vrais PDF imprimables, validation des permissions et sécurité multi-tenants. Ne pas considérer le code livré sur `main` avant PR/merge. L'audit de préparation au déploiement suit la validation de M-006.
+
+---
+
 # SAAS-FICHES-TECHNIQUES-GMS — Point de situation consolidé (2026-10-29)
 
 **Source d'autorité :** code et tests/gates exécutés sur GitHub, puis contrats métier. Les étapes datées conservées plus bas constituent l'historique du développement et ne sont pas une liste de tâches actuellement ouvertes.

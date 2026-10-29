@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 const captured = vi.hoisted(() => ({
   tags: [], endpoints: {},
   listTitlesHook: vi.fn(), createTitleHook: vi.fn(), validateHook: vi.fn(),
-  reviewHook: vi.fn(), reconcileHook: vi.fn(),
+  reviewHook: vi.fn(), reconcileHook: vi.fn(), deleteHook: vi.fn(), exportHook: vi.fn(),
 }));
 
 vi.mock('@/services/api/base-api', () => ({
@@ -23,6 +23,8 @@ vi.mock('@/services/api/base-api', () => ({
             useValidateProcessSheetMutation: captured.validateHook,
             useGetProcessSheetReconciliationQuery: captured.reviewHook,
             useReconcileProcessSheetMutation: captured.reconcileHook,
+            useDeleteProcessSheetMutation: captured.deleteHook,
+            useExportProcessSheetPdfMutation: captured.exportHook,
           };
         }),
       };
@@ -38,6 +40,8 @@ import {
   useValidateProcessSheetMutation,
   useGetProcessSheetReconciliationQuery,
   useReconcileProcessSheetMutation,
+  useDeleteProcessSheetMutation,
+  useExportProcessSheetPdfMutation,
 } from '@/features/process-sheets/api/process-sheets-api';
 
 const scope = {
@@ -51,6 +55,8 @@ describe('M-006 — contrats frontend RTK Query', () => {
     expect(useValidateProcessSheetMutation).toBe(captured.validateHook);
     expect(useGetProcessSheetReconciliationQuery).toBe(captured.reviewHook);
     expect(useReconcileProcessSheetMutation).toBe(captured.reconcileHook);
+    expect(useDeleteProcessSheetMutation).toBe(captured.deleteHook);
+    expect(useExportProcessSheetPdfMutation).toBe(captured.exportHook);
   });
 
   it('déclare les seules routes réelles du backend M-006', () => {
@@ -61,6 +67,7 @@ describe('M-006 — contrats frontend RTK Query', () => {
       'listDossierPhaseTemplates', 'listEligibleProcessTechnicalSheets',
       'listProcessSheets', 'listWorkspacePhaseTemplates', 'saveProcessSheetDraft',
       'validateProcessSheet', 'getProcessSheetReconciliation', 'reconcileProcessSheet',
+      'deleteProcessSheet', 'exportProcessSheetPdf',
     ].sort());
     expect(captured.tags).toEqual(expect.arrayContaining([
       'ProcessSheetComposition', 'ProcessSheetList', 'ProcessSheet',
@@ -220,6 +227,22 @@ describe('M-006 — contrats frontend RTK Query', () => {
     )).toEqual([
       { type: 'ProcessSheet', id: 'w:d:process-1' },
       { type: 'ProcessSheetList', id: 'w:d' },
+    ]);
+  });
+
+  it('déclare suppression et PDF sans muter une Fiche technique', () => {
+    const input = { workspaceId: 'w', dossierId: 'd', processSheetId: 'p', expectedRevision: 5 };
+    expect(captured.endpoints.deleteProcessSheet.query(input)).toEqual({
+      url: '/workspaces/w/dossiers/d/process-sheets/p',
+      method: 'DELETE', body: { expectedRevision: 5 },
+    });
+    expect(captured.endpoints.exportProcessSheetPdf.query(input)).toMatchObject({
+      url: '/workspaces/w/dossiers/d/process-sheets/p/export/pdf',
+    });
+    expect(captured.endpoints.deleteProcessSheet.invalidatesTags(null, null, input)).toEqual([
+      { type: 'ProcessSheetList', id: 'w:d' },
+      { type: 'ProcessSheet', id: 'w:d:p' },
+      { type: 'EligibleProcessTechnicalSheets', id: 'w:d' },
     ]);
   });
 

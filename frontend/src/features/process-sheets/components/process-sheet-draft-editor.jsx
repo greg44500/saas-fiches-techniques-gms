@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
+import { downloadBlob } from '@/features/files/lib/download-blob';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +12,7 @@ import {
   DialogOverlay, DialogPortal, DialogRoot, DialogTitle,
 } from '@/components/ui/dialog';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { useSaveProcessSheetDraftMutation, useValidateProcessSheetMutation } from '@/features/process-sheets/api/process-sheets-api';
+import { useExportProcessSheetPdfMutation, useSaveProcessSheetDraftMutation, useValidateProcessSheetMutation } from '@/features/process-sheets/api/process-sheets-api';
 import { ProcessIngredientRail } from '@/features/process-sheets/components/process-ingredient-rail';
 import { ProcessSheetControlPanel } from '@/features/process-sheets/components/process-sheet-control-panel';
 import { ProcessSheetPhaseEditor } from '@/features/process-sheets/components/process-sheet-phase-editor';
@@ -57,7 +58,7 @@ const MOBILE_VIEWS = [
 ];
 
 function ProcessSheetDraftEditor({
-  initialDraft, sourceIngredients, canEdit, canValidate = false,
+  initialDraft, sourceIngredients, canEdit, canValidate = false, canExport = false,
   editorialState = 'DRAFT', compositionOutdated = false, processRevision = 0,
   canReadPhaseLibrary = false,
   dossierId, processSheetId, workspaceId,
@@ -86,7 +87,10 @@ function ProcessSheetDraftEditor({
   const [showPreview, setShowPreview] = useState(false);
   const [saveDraft, saving] = useSaveProcessSheetDraftMutation();
   const [validateSheet, validating] = useValidateProcessSheetMutation();
+  const [exportProcessPdf, exporting] = useExportProcessSheetPdfMutation();
+  const [exportError, setExportError] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [validationSyncing, setValidationSyncing] = useState(false);
   const [validationErrorCode, setValidationErrorCode] = useState('');
   const [confirmValidation, setConfirmValidation] = useState(false);
   const usedIngredients = new Set(form.phases.flatMap((phase) => [
@@ -98,7 +102,25 @@ function ProcessSheetDraftEditor({
   ).length;
   const documented = form.phases.some((phase) =>
     (phase.steps ?? []).some((step) => step.title?.trim() && step.instructions?.trim()));
-  const editable = canEdit && !saving.isLoading;
+  const editable = canEdit && !saving.isLoading && !validationSyncing;
+  const exportDisabled = !canExport || dirty || conflict || saving.isLoading
+    || exporting.isLoading || validationSyncing;
+  const exportHelp = !canExport
+    ? 'Votre rôle ne permet pas l’export PDF'
+    : dirty || conflict
+      ? 'Enregistrez les modifications avant d’exporter'
+      : exporting.isLoading ? 'Génération du PDF…' : 'Télécharger le PDF du contenu enregistré';
+
+  const exportPdf = async () => {
+    if (exportDisabled) return;
+    setExportError('');
+    try {
+      const artifact = await exportProcessPdf({ workspaceId, dossierId, processSheetId }).unwrap();
+      downloadBlob(artifact.blob, artifact.fileName);
+    } catch {
+      setExportError('Le PDF n’a pas pu être généré. Aucun téléchargement n’a été effectué.');
+    }
+  };
 
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
@@ -264,62 +286,120 @@ function ProcessSheetDraftEditor({
         : 'Votre travail reste affiché. Réessayez l’enregistrement ou contactez un responsable si le problème persiste.');
     }
   };
+  // Keep the saved content revision and the aggregate revision together.
+  // The GET response is authoritative; never infer one from the other.
+  const applyServerSnapshot = (data) => {
+    setForm(normalize(data.draft));
+    setRevision(data.draft.revision);
+    setServerRevisions({
+      process: data.process.revision, draft: data.draft.revision,
+    });
+    setDirty(false);
+    setConflict(false);
+    setSaveError(false);
+    setMessage('');
+    setActivePhaseId(data.draft.phases?.[0]?.id ?? null);
+    setActiveStepId(data.draft.phases?.[0]?.steps?.[0]?.id ?? null);
+    setExpandedPhaseIds(data.draft.phases?.[0]?.id ? [data.draft.phases[0].id] : []);
+    setMobileView('structure');
+  };
+
+  const fetchServerSnapshot = async () => {
+    const result = await onReload();
+    const data = result?.data;
+    if (!data?.process || !data?.draft
+      || !Number.isInteger(data.process.revision)
+      || !Number.isInteger(data.draft.revision)) {
+      throw new Error('Process server snapshot unavailable');
+    }
+    return data;
+  };
+
   const validate = async () => {
     if (!canValidate || dirty || conflict || saving.isLoading || validating.isLoading
-      || serverRevisions.draft !== revision || processRevision > serverRevisions.process
+      || validationSyncing || serverRevisions.draft !== revision || processRevision > serverRevisions.process
       || editorialState === 'VALIDATED' || compositionOutdated) return;
     setValidationError('');
+    setValidationErrorCode('');
+    let attemptedRevision = null;
+    setValidationSyncing(true);
     try {
+      // A background invalidation can race with the editor's local revision
+      // state. Refresh before the POST, but never silently validate newly
+      // received content the user has not yet reviewed.
+      const latest = await fetchServerSnapshot();
+      if (latest.process.revision !== serverRevisions.process
+        || latest.draft.revision !== revision) {
+        applyServerSnapshot(latest);
+        setValidationErrorCode('PROCESS_SHEET_REFRESHED');
+        setValidationError(
+          'Une version plus récente de cette Fiche process a été chargée. '
+          + 'Vérifiez son contenu, puis relancez la validation si elle convient.',
+        );
+        return;
+      }
+      attemptedRevision = latest.process.revision;
       await validateSheet({
         workspaceId, dossierId, processSheetId,
-        expectedRevision: serverRevisions.process,
+        expectedRevision: attemptedRevision,
       }).unwrap();
-      await onReload();
+      const saved = await fetchServerSnapshot();
+      applyServerSnapshot(saved);
     } catch (error) {
       const code = error?.data?.code ?? '';
       setValidationErrorCode(code);
+      if (code === 'PROCESS_SHEET_CHANGED') {
+        // Distinguish a real concurrent write from a repeatable server
+        // conflict. Never retry the destructive state transition blindly.
+        try {
+          const latest = await fetchServerSnapshot();
+          const changed = latest.process.revision !== attemptedRevision;
+          applyServerSnapshot(latest);
+          setValidationErrorCode(changed ? 'PROCESS_SHEET_REFRESHED'
+            : 'PROCESS_SHEET_VALIDATE_UNEXPECTED_CONFLICT');
+          setValidationError(changed
+            ? 'Une autre modification a été enregistrée pendant la validation. '
+              + 'La dernière version est chargée : vérifiez-la avant de relancer.'
+            : 'Le serveur a refusé la validation alors que la version semble à jour. '
+              + 'Aucune validation n’a été enregistrée. Si cela se reproduit, '
+              + 'le conflit doit être diagnostiqué côté serveur.');
+        } catch {
+          setValidationError('La validation a rencontré un conflit et '
+            + 'l’actualisation a échoué. Vérifiez votre connexion avant de réessayer.');
+        }
+        return;
+      }
       setValidationError(code === 'PROCESS_SHEET_PARENT_CHANGED'
         ? 'La Fiche technique associée a été validée de nouveau. Comparez les compositions pour continuer.'
         : code === 'PROCESS_SHEET_PARENT_REVISION_OPEN'
           ? 'Une modification de la Fiche technique est en cours. Elle doit être terminée avant la validation.'
           : code === 'PROCESS_SHEET_PARENT_INACTIVE' || code === 'PROCESS_SHEET_PARENT_UNVALIDATED'
             ? 'La Fiche technique associée doit être active et validée pour continuer.'
-          : code === 'PROCESS_SHEET_CHANGED'
-            ? 'Cette Fiche process a changé depuis son ouverture. Actualisez ses données avant de continuer.'
             : code === 'PROCESS_SHEET_ALREADY_VALIDATED'
               ? 'Cette Fiche process est déjà validée.'
               : code === 'PROCESS_SHEET_STEP_REQUIRED'
                 ? 'Ajoutez au moins une phase et une étape avec des instructions.'
                 : code === 'PROCESS_SHEET_INGREDIENT_INVALID'
                   ? 'Une association d’ingrédient doit être vérifiée avant validation.'
-                  : 'La validation n’a pas abouti. Aucune validation n’a été enregistrée.');
+                  : error?.message === 'Process server snapshot unavailable'
+                    ? 'Impossible de vérifier la dernière version de la Fiche process. '
+                      + 'Aucune validation n’a été lancée.'
+                    : 'La validation n’a pas abouti. Aucune validation n’a été enregistrée.');
+    } finally {
+      setValidationSyncing(false);
     }
   };
+
   const reload = async () => {
     try {
-      const fresh = await onReload();
-      if (!fresh?.data?.draft) {
-        setSaveError(true);
-        setMessage('Impossible de recharger le brouillon. Les modifications locales restent affichées.');
-        return;
-      }
-      setForm(normalize(fresh.data.draft));
-      setRevision(fresh.data.draft.revision);
-      setServerRevisions({
-        process: fresh.data.process.revision, draft: fresh.data.draft.revision,
-      });
-      setDirty(false);
-      setConflict(false);
-      setSaveError(false);
-      setMessage('');
+      const fresh = await fetchServerSnapshot();
+      applyServerSnapshot(fresh);
       setValidationError('');
-      setActivePhaseId(fresh.data.draft.phases?.[0]?.id ?? null);
-      setActiveStepId(fresh.data.draft.phases?.[0]?.steps?.[0]?.id ?? null);
-      setExpandedPhaseIds(fresh.data.draft.phases?.[0]?.id ? [fresh.data.draft.phases[0].id] : []);
-      setMobileView('structure');
+      setValidationErrorCode('');
     } catch {
       setSaveError(true);
-      setMessage('Impossible de recharger le brouillon. Les modifications locales restent affichées.');
+      setMessage('Impossible de recharger la Fiche process. '
+        + 'Les modifications locales restent affichées.');
     }
   };
   const currentPhaseIndex = form.phases.findIndex((phase) => phase.id === activePhaseId);
@@ -360,7 +440,7 @@ function ProcessSheetDraftEditor({
   };
 
   const validationDisabled = !canValidate || dirty || saving.isLoading
-    || validating.isLoading || conflict || serverRevisions.draft !== revision
+    || validating.isLoading || validationSyncing || conflict || serverRevisions.draft !== revision
     || processRevision > serverRevisions.process
     || editorialState === 'VALIDATED' || compositionOutdated;
   const validationHelp = !canValidate
@@ -374,10 +454,10 @@ function ProcessSheetDraftEditor({
           : conflict || serverRevisions.draft !== revision
             || processRevision > serverRevisions.process
             ? 'Actualiser les données'
-            : saving.isLoading || validating.isLoading
+            : saving.isLoading || validating.isLoading || validationSyncing
               ? 'Opération en cours'
               : 'Valider';
-  const saveDisabled = !canEdit || !dirty || saving.isLoading || conflict;
+  const saveDisabled = !canEdit || !dirty || saving.isLoading || validationSyncing || conflict;
   const saveHelp = !canEdit
     ? 'Édition non autorisée'
     : conflict
@@ -440,6 +520,9 @@ function ProcessSheetDraftEditor({
             compositionHelp={compositionHelp}
             saveDisabled={saveDisabled}
             saveHelp={saveHelp}
+            exportDisabled={exportDisabled}
+            exportHelp={exportHelp}
+            onExport={exportPdf}
             validationDisabled={validationDisabled}
             validationHelp={validationHelp}
             onPreview={() => setShowPreview((value) => !value)}
@@ -452,6 +535,7 @@ function ProcessSheetDraftEditor({
           />
         </div>
       </header>
+      {exportError && <p role="alert" className="text-sm text-destructive">{exportError}</p>}
       <div className="flex items-center gap-2">
         <h2 className="text-base font-semibold">Déroulement de fabrication</h2>
         <InfoTooltip label="À propos du brouillon process"
@@ -476,7 +560,9 @@ function ProcessSheetDraftEditor({
             </DialogHeader>
             <div className="mt-4 space-y-2 text-sm">
               {!documented && (
-                <p role="status">Ajoutez une étape avec des instructions avant de valider.</p>
+                <p className="font-medium text-destructive" role="status">
+                  Ajoutez une étape avec des instructions avant de valider.
+                </p>
               )}
               <p role="status">
                 {unassignedCount} ingrédient(s) ne sont associés à aucune phase ou étape.
@@ -568,7 +654,7 @@ function ProcessSheetDraftEditor({
               <SegmentedControl ariaLabel="Vue de l’atelier"
                 items={MOBILE_VIEWS} onValueChange={setMobileView} value={mobileView} />
             </div>
-            <div className="grid min-h-0 gap-4 lg:h-full xl:grid-cols-[minmax(15rem,0.85fr)_minmax(0,1.65fr)]">
+            <div className="grid min-h-0 gap-4 lg:h-full xl:grid-cols-[minmax(19rem,1.1fr)_minmax(0,1.4fr)]">
               <div className={'min-w-0 lg:min-h-0 lg:overflow-y-auto xl:border-r xl:border-border/70 xl:pr-4 '
                 + (mobileView === 'editor' ? 'hidden lg:block' : '')}>
                 <ProcessSheetPhaseTree

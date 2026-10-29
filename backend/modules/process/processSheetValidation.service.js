@@ -117,7 +117,14 @@ const validateProcessSheet = async ({
     const updated = await ProcessSheet.findOneAndUpdate(mongoose.trusted({
         _id: process._id, workspace: workspaceId, dossier: dossierId,
         status: TECHNICAL_SHEET_STATUS.ACTIVE, revision: expectedRevision,
-        editorialState: PROCESS_SHEET_EDITORIAL_STATE.DRAFT,
+        // Historical M-006 documents can physically lack editorialState.
+        // Mongoose hydrates its default DRAFT on read, but MongoDB cannot
+        // match editorialState: DRAFT against a missing field. Admit only
+        // that exact legacy case, and never an already-validated document.
+        validatedAt: null,
+        editorialState: mongoose.trusted({
+            $in: [PROCESS_SHEET_EDITORIAL_STATE.DRAFT, null],
+        }),
     }), {
         $set: {
             editorialState: PROCESS_SHEET_EDITORIAL_STATE.VALIDATED,
