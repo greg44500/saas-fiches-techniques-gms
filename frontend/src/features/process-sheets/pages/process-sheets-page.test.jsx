@@ -170,6 +170,9 @@ describe('M-006 — liste des Fiches process uniquement', () => {
     const deleteButton = screen.getByRole('button', { name: 'Supprimer' });
     expect(deleteButton).toBeDisabled();
     expect(deleteButton).toHaveClass('text-destructive');
+    expect(screen.getByText(
+      'Votre rôle ne dispose pas du droit de supprimer une Fiche process.',
+    )).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Prévisualiser' }));
     const dialog = await screen.findByRole('dialog', {
       name: 'Prévisualiser : Fabrication tartine',
