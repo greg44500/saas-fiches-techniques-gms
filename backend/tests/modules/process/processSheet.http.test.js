@@ -914,3 +914,76 @@ describe('M-006 — réconciliation officielle après revalidation M-004', () =>
         expect((await ProcessSheet.findById(process.id)).compositionValidation).toBeNull();
     });
 });
+
+
+describe('M-006 — export PDF et suppression autonome', () => {
+    it('exporte le contenu courant enregistré en PDF sans modifier M-004', async () => {
+        const valid = await createValidated('Fiche parent conservée');
+        const created = (await createProcess(valid.created.sheet.id, 'Process à exporter')
+            .expect(201)).body.data.process;
+        const response = await request(app).get(base + '/' + created.id + '/export/pdf')
+            .set(bearer(owner.token)).expect(200);
+        expect(response.headers['content-type']).toMatch(/application\/pdf/);
+        expect(response.headers['cache-control']).toBe('no-store');
+        expect(response.headers['content-disposition']).toMatch(/fiche-process-/);
+        expect(response.body.toString('latin1').startsWith('%PDF-1.4')).toBe(true);
+        expect(await TechnicalSheet.exists({ _id: valid.created.sheet.id })).toBeTruthy();
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: created.id, action: 'PROCESS_SHEET_EXPORTED',
+        })).toBe(1);
+    });
+
+    it('refuse export et suppression à un membre sans permission dédiée', async () => {
+        const valid = await createValidated();
+        const created = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        const member = await createWorkspaceMemberFixture({
+            workspaceId: owner.workspace._id, actorId: owner.owner._id,
+            permissions: [PROCESS_SHEET_PERMISSION.READ],
+        });
+        await grantDossierAccess({
+            workspaceId: owner.workspace._id, dossierId: dossier._id,
+            membershipId: member.membership._id, actorId: owner.owner._id,
+        });
+        await request(app).get(base + '/' + created.id + '/export/pdf')
+            .set(bearer(member.token)).expect(403);
+        await request(app).delete(base + '/' + created.id)
+            .set(bearer(member.token)).send({ expectedRevision: 0 }).expect(403);
+        expect(await ProcessSheet.exists({ _id: created.id })).toBeTruthy();
+    });
+
+    it('supprime définitivement uniquement M-006 et libère la relation 1:1', async () => {
+        const valid = await createValidated();
+        const first = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        await request(app).delete(base + '/' + first.id).set(bearer(owner.token))
+            .send({ unexpected: true }).expect(400);
+        await request(app).delete(base + '/' + first.id).set(bearer(owner.token))
+            .send({ expectedRevision: 10 }).expect(409);
+        expect(await ProcessSheet.exists({ _id: first.id })).toBeTruthy();
+        const removed = await request(app).delete(base + '/' + first.id)
+            .set(bearer(owner.token)).send({ expectedRevision: first.revision }).expect(200);
+        expect(removed.body.data).toEqual({ deletedId: first.id });
+        expect(await ProcessSheet.exists({ _id: first.id })).toBeFalsy();
+        expect(await ProcessSheetDraft.exists({ processSheet: first.id })).toBeFalsy();
+        expect(await TechnicalSheet.exists({ _id: valid.created.sheet.id })).toBeTruthy();
+        expect(await TechnicalSheetValidation.exists({ _id: valid.validated.validation.id })).toBeTruthy();
+        expect(await BusinessActivityEvent.countDocuments({
+            entityId: first.id, action: 'PROCESS_SHEET_DELETED',
+        })).toBe(1);
+        const second = (await createProcess(valid.created.sheet.id, 'Nouveau process')
+            .expect(201)).body.data.process;
+        expect(second.id).not.toBe(first.id);
+    });
+
+    it('interdit la suppression autonome après archivage du parent M-004', async () => {
+        const valid = await createValidated();
+        const created = (await createProcess(valid.created.sheet.id).expect(201)).body.data.process;
+        await archiveTechnicalSheet({
+            workspaceId: owner.workspace._id, dossierId: dossier._id,
+            technicalSheetId: valid.created.sheet.id, actorId: owner.owner._id,
+            expectedRevision: await getCurrentRevision(valid.created.sheet.id),
+        });
+        await request(app).delete(base + '/' + created.id)
+            .set(bearer(owner.token)).send({ expectedRevision: created.revision }).expect(409);
+        expect(await ProcessSheet.exists({ _id: created.id })).toBeTruthy();
+    });
+});
