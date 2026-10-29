@@ -113,15 +113,15 @@ describe('M-006 — génération PDF multi-pages', () => {
             editorialState: 'VALIDATED', validatedAt: new Date('2026-10-27T10:00:00Z'),
         });
         const raw = pdfCommands(pdf);
-        const count = Number(raw.match(/\\/Type \\/Pages \\/Count (\\d+)/)?.[1]);
+        const count = Number(raw.match(/\/Type \/Pages \/Count (\d+)/)?.[1]);
         expect(count).toBeGreaterThan(1);
-        expect((raw.match(/\\/Type \\/Page \\/Parent/g) ?? [])).toHaveLength(count);
+        expect((raw.match(/\/Type \/Page \/Parent/g) ?? [])).toHaveLength(count);
         expect((raw.match(/Page /g) ?? []).length).toBeGreaterThanOrEqual(count);
         expect(raw).not.toContain(encodeWinAnsiHex('FICHE VALIDÉE'));
     });
 
     it('conserve les retours à la ligne et refuse un document incomplet', () => {
-        expect(wrapText('A\\nB', 400)).toEqual(['A', 'B']);
+        expect(wrapText('A\nB', 400)).toEqual(['A', 'B']);
         expect(() => buildProcessSheetPdf({
             process, draft: null, sourceIngredients: { lines: [] },
         })).toThrow(TypeError);
