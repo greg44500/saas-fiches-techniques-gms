@@ -6,6 +6,8 @@ const W = 595.28;
 const H = 841.89;
 const LEFT = 44;
 const RIGHT = W - 44;
+// 12 mm: steps belong visually to their parent phase, including controls.
+const STEP_INDENT = 34;
 const BOTTOM = 62;
 const BODY_TOP = 706;
 const INK = '0.13 0.20 0.26';
@@ -53,13 +55,18 @@ const wrapText = (value, maxWidth, fontSize = 10) => {
     return lines;
 };
 
-const newCanvas = ({ process, dossierName, generatedAt }) => {
+const newCanvas = ({ process, generatedAt }) => {
     const pages = [];
     let page;
     const date = generatedAt.toLocaleDateString('fr-FR', { timeZone: 'UTC' });
     const isDraft = process.editorialState !== 'VALIDATED';
-    const status = isDraft ? 'BROUILLON — DOCUMENT NON VALIDÉ' : 'FICHE VALIDÉE';
     const isArchived = process.status === 'ARCHIVED';
+    // No validated-status banner; draft/archived markings stay on every page
+    // because those documents must not be mistaken for an active validation.
+    const qualifiers = [
+        ...(isDraft ? ['BROUILLON — DOCUMENT NON VALIDÉ'] : []),
+        ...(isArchived ? ['ARCHIVÉE'] : []),
+    ];
 
     const startPage = () => {
         page = { commands: [], y: BODY_TOP };
@@ -70,20 +77,10 @@ const newCanvas = ({ process, dossierName, generatedAt }) => {
         titleLines.forEach((line, i) => page.commands.push(textCommand({
             x: LEFT, y: H - 71 - i * 20, size: 17, bold: true, value: line,
         })));
-        const afterTitle = H - 81 - (titleLines.length - 1) * 20;
-        const linked = [process.technicalSheetName, dossierName].filter(Boolean).join('  |  ');
-        page.commands.push(textCommand({ x: LEFT, y: afterTitle - 17, size: 9, color: MUTED, value: linked }));
-        page.commands.push(rectCommand({
-            x: LEFT, y: afterTitle - 43, width: RIGHT - LEFT, height: 19,
-            color: isDraft ? '0.97 0.91 0.80' : '0.84 0.94 0.90',
-        }));
-        page.commands.push(textCommand({
-            x: LEFT + 9, y: afterTitle - 36, size: 9, bold: true,
-            color: isDraft ? '0.40 0.27 0.09' : '0.06 0.34 0.27',
-            value: status + (isArchived ? '  |  ARCHIVÉE' : ''),
-        }));
-        page.commands.push(lineCommand(LEFT, afterTitle - 52, RIGHT, afterTitle - 52));
-        page.y = Math.min(BODY_TOP, afterTitle - 72);
+        // Header shows only the business document identity. No dossier,
+        // linked M-004 title, validation date, status bar or phase counts.
+        page.y = Math.min(BODY_TOP, H - 114 - (titleLines.length - 1) * 20);
+        page.commands.push(lineCommand(LEFT, page.y + 20, RIGHT, page.y + 20));
     };
 
     const ensure = (required = 18) => {
@@ -102,29 +99,34 @@ const newCanvas = ({ process, dossierName, generatedAt }) => {
         }
         page.y -= gap;
     };
-    const heading = (label, { phase = false } = {}) => {
-        ensure(phase ? 70 : 41);
-        page.y -= phase ? 13 : 6;
-        const height = phase ? 28 : 23;
+    const heading = (label, { phase = false, indent = 0 } = {}) => {
+        const size = phase ? 12 : 10;
+        const lines = wrapText(label, RIGHT - LEFT - indent - 22, size);
+        const extraHeight = Math.max(0, lines.length - 1) * 16;
+        const height = (phase ? 28 : 23) + extraHeight;
+        const spacing = phase ? 13 : 6;
+        // Reserve title AND first line of content: no orphan headers.
+        ensure(height + spacing + 30);
+        page.y -= spacing;
+        const x = LEFT + indent;
         page.commands.push(rectCommand({
-            x: LEFT, y: page.y - 8, width: RIGHT - LEFT, height,
+            x, y: page.y - 8 - extraHeight,
+            width: RIGHT - LEFT - indent, height,
             color: phase ? '0.89 0.95 0.95' : '0.95 0.97 0.97',
         }));
         page.commands.push(rectCommand({
-            x: LEFT, y: page.y - 8, width: phase ? 4 : 2, height, color: ACCENT,
+            x, y: page.y - 8 - extraHeight,
+            width: phase ? 4 : 2, height, color: ACCENT,
         }));
-        const lines = wrapText(label, RIGHT - LEFT - 22, phase ? 12 : 10);
-        page.commands.push(textCommand({
-            x: LEFT + 12, y: page.y + (phase ? 2 : 0),
-            size: phase ? 12 : 10, color: INK, bold: true, value: lines[0] ?? label,
-        }));
-        page.y -= 22;
-        for (const extra of lines.slice(1)) addLine(extra, { x: LEFT + 12, size: 10, bold: true });
-        page.y -= 7;
+        lines.forEach((line, i) => page.commands.push(textCommand({
+            x: x + 12, y: page.y + (phase ? 2 : 0) - i * 16,
+            size, color: INK, bold: true, value: line,
+        })));
+        page.y -= 22 + extraHeight + 7;
     };
-    const labelValues = (label, values) => {
+    const labelValues = (label, values, { indent = STEP_INDENT + 13 } = {}) => {
         if (!values?.length) return;
-        paragraph(label + ' : ' + values.join(' ; '), { indent: 13, size: 9, color: MUTED, gap: 2 });
+        paragraph(label + ' : ' + values.join(' ; '), { indent, size: 9, color: MUTED, gap: 2 });
     };
     const footer = () => {
         for (let i = 0; i < pages.length; i += 1) {
@@ -132,7 +134,7 @@ const newCanvas = ({ process, dossierName, generatedAt }) => {
             p.commands.push(lineCommand(LEFT, 48, RIGHT, 48));
             p.commands.push(textCommand({
                 x: LEFT, y: 34, size: 8, color: MUTED,
-                value: 'Fiche process  |  ' + status + '  |  Générée le ' + date,
+                value: ['Fiche process', ...qualifiers, 'Générée le ' + date].join('  |  '),
             }));
             p.commands.push(textCommand({
                 x: RIGHT - 77, y: 34, size: 8, color: MUTED,
@@ -153,71 +155,64 @@ const formatDuration = (duration) => [
 
 const writeControls = (doc, label, entries = []) => {
     if (!entries.length) return;
-    doc.addLine(label, { x: LEFT + 13, size: 9, bold: true, color: ACCENT });
+    doc.addLine(label, { x: LEFT + STEP_INDENT + 13, size: 9, bold: true, color: ACCENT });
     for (const entry of entries) {
-        if (typeof entry === 'string') doc.paragraph('- ' + entry, { indent: 18, size: 9, gap: 2 });
+        if (typeof entry === 'string') doc.paragraph('- ' + entry, { indent: STEP_INDENT + 18, size: 9, gap: 2 });
         else doc.paragraph('- ' + [
             entry.instruction,
             entry.expectedCriterion && 'Critère : ' + entry.expectedCriterion,
             entry.correctiveAction && 'Action corrective : ' + entry.correctiveAction,
-        ].filter(Boolean).join('  |  '), { indent: 18, size: 9, gap: 2 });
+        ].filter(Boolean).join('  |  '), { indent: STEP_INDENT + 18, size: 9, gap: 2 });
     }
     doc.ensure(9);
 };
 
+// Ingredient occurrences are deliberately not deduplicated. If an assignment
+// has no instructions, display the ingredients rather than silently lose them.
+const instructionsWithIngredients = (instructions, names) => {
+    const narrative = String(instructions ?? '').trim();
+    if (!names.length) return narrative;
+    const cleaned = narrative.replace(/[.;:\s]+$/u, '');
+    return cleaned ? cleaned + ' : ' + names.join(', ')
+        : 'Ingrédients : ' + names.join(', ');
+};
+
 const buildProcessSheetPdf = ({
-    process, draft, sourceIngredients, dossierName = '', generatedAt = new Date(),
+    process, draft, sourceIngredients, generatedAt = new Date(),
 }) => {
     if (!process || !draft || !sourceIngredients) {
         throw new TypeError('Process, current content and ingredient projection are required.');
     }
-    const doc = newCanvas({ process, dossierName, generatedAt });
+    const doc = newCanvas({ process, generatedAt });
     const ingredients = new Map((sourceIngredients.lines ?? [])
         .map(line => [line.lineKey, line.productVariantName ?? 'Référence indisponible']));
     const ingredientNames = (keys) => (keys ?? []).map(key =>
         ingredients.get(key) ?? 'Ingrédient non retrouvé (' + key + ')');
 
-    if (process.editorialState === 'VALIDATED' && process.validatedAt) {
-        doc.addLine('Validation : ' + new Date(process.validatedAt)
-            .toLocaleDateString('fr-FR', { timeZone: 'UTC' }), { size: 9, color: MUTED });
-    }
     const phases = draft.phases ?? [];
-    const stepCount = phases.reduce((sum, phase) => sum + (phase.steps ?? []).length, 0);
-    doc.addLine(phases.length + ' phase(s)  |  ' + stepCount + ' étape(s)',
-        { size: 9, color: MUTED, leading: 24 });
     if (!phases.length) doc.paragraph('Aucune phase enregistrée dans cette Fiche process.');
     for (const [index, phase] of phases.entries()) {
         doc.heading('PHASE ' + String(index + 1).padStart(2, '0') + '  |  ' + phase.title, { phase: true });
-        doc.paragraph(phase.instructions, { indent: 10 });
-        doc.labelValues('Ingrédients de la phase', ingredientNames(phase.ingredientLineKeys));
+        doc.paragraph(
+            instructionsWithIngredients(phase.instructions, ingredientNames(phase.ingredientLineKeys)),
+            { indent: 10 },
+        );
         for (const [stepIndex, step] of (phase.steps ?? []).entries()) {
             const number = String(index + 1).padStart(2, '0') + '.'
                 + String(stepIndex + 1).padStart(2, '0');
-            doc.heading('ÉTAPE ' + number + '  |  ' + step.title);
-            doc.paragraph(step.instructions, { indent: 13 });
-            doc.labelValues('Ingrédients', ingredientNames(step.ingredientLineKeys));
+            doc.heading('ÉTAPE ' + number + '  |  ' + step.title, { indent: STEP_INDENT });
+            doc.paragraph(
+                instructionsWithIngredients(step.instructions, ingredientNames(step.ingredientLineKeys)),
+                { indent: STEP_INDENT + 13 },
+            );
             const duration = formatDuration(step.duration);
             if (step.temperatureCelsius != null) duration.push('Température : ' + step.temperatureCelsius + ' °C');
-            doc.labelValues('Parametres', duration);
+            doc.labelValues('Paramètres', duration);
             doc.labelValues('Équipements', step.equipment);
             doc.labelValues('Vigilance', step.manufacturingVigilance);
             writeControls(doc, 'CONTRÔLES QUALITÉ', step.qualityControls);
             writeControls(doc, 'MAÎTRISE SANITAIRE', step.sanitaryControls);
             doc.ensure(14);
-        }
-    }
-    const used = new Set(phases.flatMap(phase => [
-        ...(phase.ingredientLineKeys ?? []),
-        ...(phase.steps ?? []).flatMap(step => step.ingredientLineKeys ?? []),
-    ]));
-    const unassigned = (sourceIngredients.lines ?? []).filter(line => !used.has(line.lineKey));
-    if (unassigned.length) {
-        doc.heading('INGRÉDIENTS NON AFFECTÉS');
-        doc.paragraph('Ces ingrédients figurent dans la composition source, sans affectation à une phase ou étape.',
-            { size: 9 });
-        for (const line of unassigned) {
-            doc.paragraph('- ' + (line.productVariantName ?? 'Référence indisponible'),
-                { indent: 12, size: 9, gap: 2 });
         }
     }
     doc.footer();

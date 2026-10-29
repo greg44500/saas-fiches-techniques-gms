@@ -7,6 +7,20 @@
 
 > Ce document ne valide pas à lui seul de nouvelles permissions, politiques commerciales ou présentations PDF. Les décisions indiquées « à arbitrer » sont proposées au propriétaire. Ne pas implémenter leurs conséquences avant validation. Les contrats M-006 antérieurs prévalent sur les propositions non validées ici.
 
+## Amendement de présentation PDF validé — 2026-10-29
+
+**Décision UX récente et prioritaire sur les propositions historiques de la section 3.1 :**
+
+- Le PDF imprime le titre de la Fiche process, les phases et les étapes, sans sous-titre Fiche technique / Dossier, bandeau « FICHE VALIDÉE », date de validation, compteurs de phases/étapes ou récapitulatif des ingrédients non affectés.
+- Les ingrédients affectés figurent **dans la même consigne**, après deux-points : « Décongeler les produits : Aubergines en rondelles ». Lorsque la consigne est vide et que des ingrédients sont affectés, afficher « Ingrédients : … » plutôt que les omettre ; conserver les occurrences multiples.
+- Les étapes, leurs consignes et leurs contrôles ont un **retrait d'environ 12 mm** à l'intérieur de chaque phase. Les phases restent sur la marge principale ; la pagination évite les en-têtes isolés.
+- Pour un document validé, aucun statut « Validée » n'est imprimé. Pour un brouillon, garder un avertissement discret **sur chaque page** afin de respecter la décision métier antérieure qui interdit toute confusion avec une fiche validée ; signaler également une archive lisible, si applicable.
+- En-tête et pied de page sobres, sans informations de gestion inutiles. Les listes d'ingrédients non affectés restent conservées dans l'application et dans la DB, mais ne figurent pas dans l'export PDF.
+
+**Validation :** arbitrage explicite du propriétaire ; le présent amendement remplace les variantes de mise en page détaillées antérieurement, sans modifier les droits, les quotas ou la règle de suppression.
+
+---
+
 ## 1. Analyse du code existant (constat)
 
 - `ProcessSheet` garde l'identité 1:1 de la Fiche technique, l'ownership Workspace/Dossier, l'état éditorial `DRAFT/VALIDATED`, une révision technique et les dates/auteurs de validation.

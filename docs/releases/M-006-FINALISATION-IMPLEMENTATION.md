@@ -35,3 +35,10 @@ Le frontend distingue désormais `ProcessSheet.revision` du jeton de contenu `Pr
 **Suppression :** le menu indique désormais la condition qui rend l'action indisponible. Le rôle système Owner existant doit recevoir `process-sheet:delete` par `npm run migration:m006-process-finalization-permissions` sur la seule base de développement concernée ; vérifier préalablement `MONGODB_URI`, puis recharger les permissions frontend. Ne jamais contourner le RBAC.
 
 **Preuves requises :** relancer les tests HTTP/RTL ciblés et le parcours utilisateur sur la base locale, puis le lint, le build et la gate globale. Ne pas considérer la régression corrigée sans preuve de validation réellement réussie.
+
+
+## Ajustement PDF de la fiche atelier — 2026-10-29
+
+Le propriétaire a validé un PDF centré sur l'utilisation en atelier : retrait des sous-titres M-004/Dossier, du bandeau de validation, de la date de validation, des compteurs et de la liste des ingrédients non affectés. Les ingrédients apparaissent maintenant directement après la consigne de chaque phase ou étape. Les blocs « Étape » et toutes leurs données associées sont décalés d'environ 12 mm sous leur phase ; les sauts de page réservent une place pour le titre et le début de la consigne. Un brouillon reste clairement identifié comme non validé, sans restaurer le bandeau « Validée ».
+
+**Vérification à obtenir :** tests du générateur PDF, contrôle du texte/positions, cas instructions vides et ingrédients dupliqués, pagination sur PDF multipage réellement ouvert et rendu visuel par l'utilisateur. La présente modification ne vaut pas gate verte.
