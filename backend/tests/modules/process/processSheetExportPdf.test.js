@@ -76,8 +76,9 @@ describe('M-006 — génération PDF multi-pages', () => {
         expect(raw).toContain(encodeWinAnsiHex(phaseText));
         expect(raw).toContain(encodeWinAnsiHex(stepText));
         expect(raw).not.toContain(encodeWinAnsiHex('Ingrédients de la phase'));
-        const phaseHeading = inlineTextAt(raw, 'PHASE 01  |  Préparation');
-        const stepHeading = inlineTextAt(raw, 'ÉTAPE 01.01  |  Cuisson et contrôle');
+        // wrapText normalise les espaces des titres avant leur encodage PDF.
+        const phaseHeading = inlineTextAt(raw, 'PHASE 01 | Préparation');
+        const stepHeading = inlineTextAt(raw, 'ÉTAPE 01.01 | Cuisson et contrôle');
         const phaseInstruction = inlineTextAt(raw, phaseText);
         const stepInstruction = inlineTextAt(raw, stepText);
         expect(phaseHeading).toBeTruthy();
