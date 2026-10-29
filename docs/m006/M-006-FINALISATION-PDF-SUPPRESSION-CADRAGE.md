@@ -1,6 +1,6 @@
 # M-006 — Finalisation : export PDF professionnel et suppression autonome
 
-**Statut : PROPOSITION TECHNIQUE ET UX À VALIDER AVANT CODAGE**  
+**Statut : CINQ ARBITRAGES VALIDÉS LE 2026-10-29 ; IMPLÉMENTATION EN BRANCHE, NON TESTÉE**  
 **Date : 2026-10-29**  
 **Branche :** `feature/m006-finalisation-ui-ux-global`  
 **Base :** `main` au commit `6dad4e9d8656db4d9fa6d76f1191f6d8ce0d7fa0` ; Core `v1.2.1` / `42beaff67200ca4e956378e2273b4eae440f47bc`.
@@ -112,7 +112,7 @@
 - Revue manuelle : document PDF multipage depuis une vraie Fiche process, caractères accentués, longues instructions, imprimabilité, thème UI, clavier, mobile, confirmation destruction, erreurs réseau et droits.
 - Une branche `feature/m006-finalisation-ui-ux-global`, une PR cohérente et merge exclusivement après accord explicite du propriétaire ; documentation canonique et aide M-006 mises à jour seulement lorsque les fonctionnalités sont réellement livrées.
 
-## 6. Décisions requises avant code
+## 6. Arbitrages validés pour le code
 
 | Décision | Choix proposé | Alternative |
 | --- | --- | --- |
@@ -122,4 +122,4 @@
 | D — Permission de suppression | `process-sheet:delete` dédiée | Autre clé à valider, sans réutiliser celle de M-004 |
 | E — Format PDF | A4 portrait, multipage, fiche atelier détaillée, source persistée et statut sur chaque page | Autre format/présentation à spécifier |
 
-**Aucun de ces choix proposés n'est réputé validé par la création du présent document.** Les points déjà approuvés dans le cadrage initial (brouillon imprimable, suppression physique, parent ACTIVE, pas de stockage PDF) restent inchangés.
+**Les choix A à E ont été validés explicitement le 2026-10-29.** Les nouveaux tests, la QA PDF et la gate de cette branche restent à exécuter avant PR. Les points déjà approuvés dans le cadrage initial (brouillon imprimable, suppression physique, parent ACTIVE, pas de stockage PDF) restent inchangés.
