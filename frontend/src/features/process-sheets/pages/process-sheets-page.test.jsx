@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   dossier: vi.fn(),
   navigate: vi.fn(),
   can: vi.fn(),
+  remove: vi.fn(),
 }));
 
 vi.mock('react-router', async (original) => ({
@@ -24,6 +25,7 @@ vi.mock('react-router', async (original) => ({
 vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useListProcessSheetsQuery: mocks.list,
   useGetProcessSheetQuery: mocks.get,
+  useDeleteProcessSheetMutation: () => [mocks.remove, { isLoading: false }],
 }));
 
 vi.mock('@/features/dossiers/api/dossiers-api', () => ({
