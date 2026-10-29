@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router';
 
 import { InfoTooltip } from '@/components/shared/info-tooltip';
+import { downloadBlob } from '@/features/files/lib/download-blob';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,7 +12,7 @@ import {
   DialogOverlay, DialogPortal, DialogRoot, DialogTitle,
 } from '@/components/ui/dialog';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { useSaveProcessSheetDraftMutation, useValidateProcessSheetMutation } from '@/features/process-sheets/api/process-sheets-api';
+import { useExportProcessSheetPdfMutation, useSaveProcessSheetDraftMutation, useValidateProcessSheetMutation } from '@/features/process-sheets/api/process-sheets-api';
 import { ProcessIngredientRail } from '@/features/process-sheets/components/process-ingredient-rail';
 import { ProcessSheetControlPanel } from '@/features/process-sheets/components/process-sheet-control-panel';
 import { ProcessSheetPhaseEditor } from '@/features/process-sheets/components/process-sheet-phase-editor';
@@ -57,7 +58,7 @@ const MOBILE_VIEWS = [
 ];
 
 function ProcessSheetDraftEditor({
-  initialDraft, sourceIngredients, canEdit, canValidate = false,
+  initialDraft, sourceIngredients, canEdit, canValidate = false, canExport = false,
   editorialState = 'DRAFT', compositionOutdated = false, processRevision = 0,
   canReadPhaseLibrary = false,
   dossierId, processSheetId, workspaceId,
@@ -86,6 +87,8 @@ function ProcessSheetDraftEditor({
   const [showPreview, setShowPreview] = useState(false);
   const [saveDraft, saving] = useSaveProcessSheetDraftMutation();
   const [validateSheet, validating] = useValidateProcessSheetMutation();
+  const [exportProcessPdf, exporting] = useExportProcessSheetPdfMutation();
+  const [exportError, setExportError] = useState('');
   const [validationError, setValidationError] = useState('');
   const [validationErrorCode, setValidationErrorCode] = useState('');
   const [confirmValidation, setConfirmValidation] = useState(false);
@@ -99,6 +102,23 @@ function ProcessSheetDraftEditor({
   const documented = form.phases.some((phase) =>
     (phase.steps ?? []).some((step) => step.title?.trim() && step.instructions?.trim()));
   const editable = canEdit && !saving.isLoading;
+  const exportDisabled = !canExport || dirty || conflict || saving.isLoading || exporting.isLoading;
+  const exportHelp = !canExport
+    ? 'Votre rôle ne permet pas l’export PDF'
+    : dirty || conflict
+      ? 'Enregistrez les modifications avant d’exporter'
+      : exporting.isLoading ? 'Génération du PDF…' : 'Télécharger le PDF du contenu enregistré';
+
+  const exportPdf = async () => {
+    if (exportDisabled) return;
+    setExportError('');
+    try {
+      const artifact = await exportProcessPdf({ workspaceId, dossierId, processSheetId }).unwrap();
+      downloadBlob(artifact.blob, artifact.fileName);
+    } catch {
+      setExportError('Le PDF n’a pas pu être généré. Aucun téléchargement n’a été effectué.');
+    }
+  };
 
   useEffect(() => { onDirtyChange?.(dirty); }, [dirty, onDirtyChange]);
 
@@ -440,6 +460,9 @@ function ProcessSheetDraftEditor({
             compositionHelp={compositionHelp}
             saveDisabled={saveDisabled}
             saveHelp={saveHelp}
+            exportDisabled={exportDisabled}
+            exportHelp={exportHelp}
+            onExport={exportPdf}
             validationDisabled={validationDisabled}
             validationHelp={validationHelp}
             onPreview={() => setShowPreview((value) => !value)}
@@ -452,6 +475,7 @@ function ProcessSheetDraftEditor({
           />
         </div>
       </header>
+      {exportError && <p role="alert" className="text-sm text-destructive">{exportError}</p>}
       <div className="flex items-center gap-2">
         <h2 className="text-base font-semibold">Déroulement de fabrication</h2>
         <InfoTooltip label="À propos du brouillon process"
