@@ -23,6 +23,7 @@ vi.mock('@/features/process-sheets/api/process-sheets-api', () => ({
   useReconcileProcessSheetMutation: () => [mocks.reconcile, { isLoading: false }],
   useSaveProcessSheetDraftMutation: () => [mocks.save, { isLoading: false }],
   useValidateProcessSheetMutation: () => [mocks.validate, { isLoading: false }],
+  useExportProcessSheetPdfMutation: () => [mocks.validate, { isLoading: false }],
   useListProcessPhaseTitlesQuery: (...args) => mocks.phaseTitles(...args),
   useCreateProcessPhaseTitleMutation: () => [mocks.createTitle, { isLoading: false }],
 }));
