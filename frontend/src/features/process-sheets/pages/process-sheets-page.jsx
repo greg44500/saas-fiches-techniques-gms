@@ -83,6 +83,8 @@ function ProcessSheetsPage() {
       header: 'Actions',
       cell: (process) => (
         <ProcessSheetRowActions
+          canDelete={can(PROCESS_SHEET_PERMISSION.DELETE)
+            && process.status === 'ACTIVE' && dossier.data?.status === 'ACTIVE'}
           dossierId={dossierId}
           onOpen={() => navigate(
             '/workspaces/' + workspace.id + '/dossiers/' + dossierId
