@@ -54,10 +54,25 @@ test('D-020 : mauvais bénéficiaire refusé, offre privée acceptée une fois v
   expect(before.status).toBe('pending');
   expect(before.workspace).toBeNull();
 
-  // Le bénéficiaire correct reprend le lien original ; le token n'est
-  // volontairement ni conservé dans l'URL ni dans un stockage persistant.
-  const recipientToken = await loginWithIdentity(page, context.identity);
-  await page.goto(invitationUrl);
+  // Suivre le vrai changement de compte : un login API direct modifierait
+  // seulement le cookie et laisserait Redux authentifié comme le tiers.
+  // Le flux UI conserve le token uniquement dans le vault JavaScript.
+  await page.getByRole('button', { name: 'Utiliser un autre compte' }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  await page.getByLabel('Email').fill(context.identity.email);
+  await page.getByLabel('Mot de passe').fill(context.identity.password);
+
+  const loginResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && new URL(response.url()).pathname === '/api/auth/login'
+  ));
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  const loginResponse = await loginResponsePromise;
+  expect(loginResponse.status()).toBe(200);
+  const recipientToken = (await loginResponse.json()).data.accessToken;
+  expect(typeof recipientToken).toBe('string');
+
+  await expect(page).toHaveURL(/\/commercial-invitations\/accept$/);
   await expect(page.getByRole('heading', {
     name: 'Votre accès privé est prêt à être activé',
   })).toBeVisible();
