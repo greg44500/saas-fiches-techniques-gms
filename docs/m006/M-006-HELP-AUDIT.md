@@ -1,3 +1,5 @@
+> **Actualisation de statut — 2026-11-01.** Le centre d'aide M-006 décrit ci-dessous a été livré avant la PR #56. Les mentions selon lesquelles le PDF et la suppression autonome sont désactivés ou non livrés sont **historiques** : leurs routes et services ont depuis été fusionnés dans `main` au commit `70d3e22d9f158a9582e5e80a4ee11f014e06ab93` (2026-10-29), avec [gate post-merge réussie](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40902305191). Leur **QA visuelle et E2E dédiée** restent à confirmer. Voir [`PRE-BETA-READINESS.md`](../audits/PRE-BETA-READINESS.md).
+
 # M-006 — Audit du centre d’aide utilisateur
 
 **Audit initial :** 2026-10-28 ; **statut de livraison vérifié :** 2026-10-29.  

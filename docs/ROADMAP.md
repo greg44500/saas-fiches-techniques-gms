@@ -1,3 +1,13 @@
+## PRE-BETA-001 — État vérifié au 2026-11-01
+
+Le prochain lot est l'**audit de préparation à la bêta privée**, documenté dans [`docs/audits/PRE-BETA-READINESS.md`](audits/PRE-BETA-READINESS.md). Il n'autorise aucun déploiement ni correctif non cadré.
+
+**Réconciliation factuelle :** le PDF A4 multipage et la suppression autonome des Fiches process M-006 sont **intégrés à `main`** par la [PR #56](https://github.com/greg44500/saas-fiches-techniques-gms/pull/56), merge `70d3e22d9f158a9582e5e80a4ee11f014e06ab93` du 2026-10-29 ; la [Core Gate post-merge](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40902305191) a réussi. La recette locale PDF multipage, les migrations dans les bases cibles et la QA des droits ne sont **pas** démontrées par cette gate. Les statuts « non fusionné / PDF et suppression non livrés » figurant ci-dessous décrivent des **états historiques antérieurs** et ne doivent plus piloter le prochain lot.
+
+**Priorités réelles :** protection Git, audit sécurité/tenancy et exploitation, compléments E2E M-006 et D-020/offre bêta, offre privée gratuite et rôle invité, données pilotes isolées, conformité minimale, sauvegardes/rollback. Les améliorations différées M-003, M-004, IA/OCR et facturation payante ne deviennent pas des blockers sans justification liée à la bêta.
+
+---
+
 ## Finalisation M-006 — PDF et suppression en branche (2026-10-29)
 
 Les cinq décisions commerciales/techniques ont été validées. Les deux fonctionnalités sont **implémentées sur `feature/m006-finalisation-ui-ux-global` mais non fusionnées** : PDF A4 multipage depuis le contenu enregistré (Brouillon ou Validée, archives consultables) ; suppression définitive de M-006 en transaction sans modification du contenu M-004. Permissions spécifiques, migration de rôles système, UI, audit et tests ajoutés.
