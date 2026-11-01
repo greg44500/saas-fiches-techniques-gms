@@ -1,3 +1,13 @@
+# Reprise — PRE-BETA-003 / cadrage déploiement (2026-11-01)
+
+**Code source contrôlé :** produit `main` = `1e47178ffd9abfa67011ba075bcc13a6a607b481` (PR #58 PRE-BETA-002 fusionnée), Core `v1.2.1` au commit `42beaff67200ca4e956378e2273b4eae440f47bc` ; `main` est protégé. La Core Gate #250 de PR a réussi ; la Core Gate post-fusion était encore en cours lors du dernier contrôle et son succès n'est pas présumé.
+
+**Lot courant :** `docs/pre-beta-003-deployment-cadrage`, cadrage documentaire, sans modification du runtime ni lancement d'infrastructure. Document de travail : [architecture cible et décisions ouvertes](deployment/PRE-BETA-003-DEPLOYMENT-CADRAGE.md). Les choix de prestataire, de budget, de RPO/RTO, de domaine, de stockage, de SMTP et de dispositif de supervision ne sont **pas validés**. Risques à évaluer : proxy et `req.ip`, readiness, ClamAV opérationnel et signatures, volume persistant, scheduler, restoration MongoDB/fichiers, conformité et recette PDF humaine.
+
+**Suite :** revoir et valider l'architecture avant toute PR de code d'infrastructure, compte ou facture de prestataire, migration sur base distante ou ouverture de bêta. Aucune donnée `_dev` n'a été touchée. Les sections PRE-BETA-002 ci-dessous restent des états historiques.
+
+---
+
 # Reprise — PRE-BETA-002 / consolidation métier globale (2026-11-01)
 
 **Référence :** [plan de couverture QA PRE-BETA-002](audits/PRE-BETA-002-QUALITY-COVERAGE.md) ; annexe historique [E2E M-006](audits/PRE-BETA-002-M006-E2E.md).
