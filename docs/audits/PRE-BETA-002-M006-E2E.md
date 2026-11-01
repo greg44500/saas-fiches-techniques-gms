@@ -1,7 +1,7 @@
 # PRE-BETA-002 — Couverture E2E critique des Fiches process M-006
 
-**Date :** 2026-11-01  
-**Statut :** IMPLÉMENTATION PROPOSÉE — À TESTER EN LOCAL ; aucune gate verte revendiquée  
+**Date :** 2026-11-01
+**Statut :** IMPLÉMENTATION PROPOSÉE — À TESTER EN LOCAL ; aucune gate verte revendiquée
 **Périmètre :** tests Playwright métier du SaaS GMS, pas de changement du Core ni du comportement applicatif.
 
 ## 1. Pourquoi ce lot
