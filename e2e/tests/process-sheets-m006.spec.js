@@ -154,11 +154,11 @@ test('M-006 droits : lecture seule autorisée, export/suppression refusés, Work
   });
   const memberToken = await loginWithIdentity(page, member.identity);
 
-  // Une permission Workspace process-sheet:read ne donne pas accès à un
-  // Dossier sans affectation : refuser avant le grant, puis autoriser après.
+  // Le 404 avant affectation masque l'existence du Dossier à ce membre
+  // Workspace ; le même endpoint doit répondre 200 après le grant.
   expect((await page.request.get(processApiBase(context) + '/' + id, {
     headers: bearer(memberToken),
-  })).status()).toBe(403);
+  })).status()).toBe(404);
 
   await withE2eDatabase(async () => {
     const workspace = await Workspace.findById(context.workspaceId);
