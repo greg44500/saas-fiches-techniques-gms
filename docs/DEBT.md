@@ -2,7 +2,7 @@
 
 **Décision validée, dette d'implémentation toujours ouverte (Production / D-007 et D-013).** Pour la bêta privée : un VPS **OVHcloud** avec sa sauvegarde automatique Standard quotidienne incluse et un **second mécanisme automatique indépendant** exportant MongoDB et les fichiers persistants vers un emplacement **hors VPS**, avec conservation sur plusieurs dates. L'offre VPS-2 / 8 Go est proposée mais non commandée ; la sauvegarde OVHcloud (rétention de 24 h et disque système uniquement) ne couvre pas MongoDB Atlas externe ni un disque additionnel. Voir [PRE-BETA-003 — architecture et sauvegardes](deployment/PRE-BETA-003-DEPLOYMENT-CADRAGE.md).
 
-**À réaliser avant GO :** arbitrer l'emplacement et le coût des copies hors VPS, leur chiffrement, leurs permissions, leur durée et cadence, RPO/RTO, l'automatisation et les alertes ; tester la restauration **MongoDB + fichiers sur une cible isolée** et vérifier la cohérence des données restaurées. Ce cadrage ne prouve aucun backup existant, n'autorise aucun achat ni changement Core et ne touche aucune base de développement.
+**À réaliser avant GO :** le stockage hors VPS **doit coûter 0 € en supplément du VPS** ; vérifier **Backblaze B2 Free 10 Go EU Central/Amsterdam** avec restic ou une autre destination gratuite acceptée, sans activation de facturation. Valider l'emplacement, le volume réel et ses alertes, le chiffrement, les permissions, la durée et cadence, RPO/RTO, l'automatisation ; tester la restauration **MongoDB + fichiers sur une cible isolée** et vérifier la cohérence des données restaurées. Ce cadrage ne prouve aucun backup existant, n'autorise aucun achat ni changement Core et ne touche aucune base de développement.
 
 ---
 
