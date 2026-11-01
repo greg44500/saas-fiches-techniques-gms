@@ -4,6 +4,8 @@
 
 **Lot courant :** `docs/pre-beta-003-deployment-cadrage`, cadrage documentaire, sans modification du runtime ni lancement d'infrastructure. Document de travail : [architecture cible et décisions ouvertes](deployment/PRE-BETA-003-DEPLOYMENT-CADRAGE.md). Les choix de prestataire, de budget, de RPO/RTO, de domaine, de stockage, de SMTP et de dispositif de supervision ne sont **pas validés**. Risques à évaluer : proxy et `req.ip`, readiness, ClamAV opérationnel et signatures, volume persistant, scheduler, restoration MongoDB/fichiers, conformité et recette PDF humaine.
 
+**Contrainte financière validée le 2026-11-01 : 0 € de dépenses récurrentes pour la bêta privée.** La piste principale est Oracle Always Free A1 + Atlas Free M0 + relais SMTP gratuit, avec DNS et TLS gratuits. Aucun fournisseur ni service n'est sélectionné. Points bloquants à prouver : instance A1 réellement disponible, Atlas M0 (0,5 Go index compris, transactions et migrations), backups chiffrés et restauration hors VM, SMTP transactionnel avec domaine d'envoi admissible et authentifié sans achat, RGPD et supervision. Les solutions payantes présentées dans les anciens comparatifs sont désormais **hors périmètre pour cette bêta**. Voir [le cadrage](deployment/PRE-BETA-003-DEPLOYMENT-CADRAGE.md).
+
 **Suite :** revoir et valider l'architecture avant toute PR de code d'infrastructure, compte ou facture de prestataire, migration sur base distante ou ouverture de bêta. Aucune donnée `_dev` n'a été touchée. Les sections PRE-BETA-002 ci-dessous restent des états historiques.
 
 ---
