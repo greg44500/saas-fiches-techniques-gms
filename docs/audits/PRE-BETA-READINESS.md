@@ -11,7 +11,7 @@
 
 ## 1. Méthode, autorité et périmètre
 
-Sources vérifiées : HEAD GitHub, Core Gate sur ce HEAD et ses étapes, code backend/frontend et routes ciblées, ``docs/ROADMAP.md`, ``docs/DEBT.md`, ``docs/REPRISE-CURRENT.md`, `docs/PRODUCT-SCOPE.md`, `docs/domain/DOMAIN-MODEL.md`, `docs/operations/OPERATIONS.md`, `docs/security/SECURITY.md`, `docs/compliance/COMPLIANCE.md`, `docs/compliance/rgpd-data-tracker-inventory.md`, `docs/releases/migration-manifest.json` et `AGENTS.md`, ainsi que contrats Core v1.2.1. Les mentions antérieures à la PR #56 sont historiques ; le code et les gates priment.
+Sources vérifiées : HEAD GitHub, Core Gate sur ce HEAD et ses étapes, code backend/frontend et routes ciblées, `docs/ROADMAP.md`, `docs/DEBT.md`, `docs/REPRISE-CURRENT.md`, `docs/PRODUCT-SCOPE.md`, `docs/domain/DOMAIN-MODEL.md`, `docs/operations/OPERATIONS.md`, `docs/security/SECURITY.md`, `docs/compliance/COMPLIANCE.md`, `docs/compliance/rgpd-data-tracker-inventory.md`, `docs/releases/migration-manifest.json` et `AGENTS.md`, ainsi que contrats Core v1.2.1. Les mentions antérieures à la PR #56 sont historiques ; le code et les gates priment.
 
 **Hors périmètre de ce lot :** modification de code, migrations exécutées, nettoyage de MongoDB locale, déploiement, achat d'infrastructure, ouverture des inscriptions publiques, création de compte réel, correction de dette Core dans le produit.
 
@@ -55,7 +55,7 @@ Sources vérifiées : HEAD GitHub, Core Gate sur ce HEAD et ses étapes, code ba
 | QA-01 | E2E des modules | 13 fichiers `e2e/tests/*.spec.js` inventoriés, M-001 à M-005 couverts. Aucun fichier de scénario `process-sheet` M-006 ni scénario commercial D-020 explicite identifié. | À CORRIGER AVANT BÊTA pour les parcours exposés | Ajouter E2E M-006 (brouillon, validation, conflit, export, suppression, accès interdit) et D-020/offre bêta + invitation membre/import contrôlé, puis exécuter gate. |
 | QA-02 | PDF et ergonomie | Routes et services PDF/suppression M-006 présents sur `main` ; aucune recette humaine A4 multipage, clavier, mobile, thème attestée par cette revue. | À VÉRIFIER | Ouvrir PDF réel, pages longues, accents, ingrédients répétés, brouillon/validée/archive, permissions ; vérifier erreurs et UI. |
 | QA-03 | Charge et concurrence | Aucun résultat de test de volumétrie / endurance / charge de l'environnement futur obtenu. | À VÉRIFIER | Choisir scénarios représentatifs (imports, recherche, fiches, multi-tenant, PDFs), seuils raisonnés selon infrastructure et mesurer. |
-| DATA-01 | Données de tests et dataset pilote | Workspace de développement et imports locaux signalés par le propriétaire ; contenu effectif de MongoDB non accessible à l'audit. | À CADRER | **Conserver** le Workspace local comme fixture ; préparer des données synthétiques/autoriséés pour la base bêta séparée. Aucun reset destructif ni copie brute de la DB locale. |
+| DATA-01 | Données de tests et dataset pilote | Workspace de développement et imports locaux signalés par le propriétaire ; contenu effectif de MongoDB non accessible à l'audit. | À CADRER | **Conserver** le Workspace local comme fixture ; préparer des données synthétiques/autorisées pour la base bêta séparée. Aucun reset destructif ni copie brute de la DB locale. |
 
 ### Détail des parcours métier d'ouverture bêta (non déclarés validés)
 
