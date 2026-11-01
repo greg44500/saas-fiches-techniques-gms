@@ -8,7 +8,32 @@
 
 ## 0. Contrainte révisée : petit budget pour un hébergement disponible (2026-11-01)
 
-**Dernier arbitrage du propriétaire :** une petite dépense récurrente est acceptable **pour un hébergement effectivement disponible**, notamment chez Infomaniak, OVHcloud ou Hostinger. Cette décision **remplace** la consigne antérieure de 0 € absolu. Elle n'autorise pas l'achat, ne fixe aucun plafond chiffré et ne valide aucun fournisseur. Pour MongoDB, SMTP, certificats et outils, rechercher d'abord des solutions gratuites, **sans compromettre les conditions techniques et la récupération des données**.
+**Dernier arbitrage du propriétaire :** une petite dépense récurrente est acceptable pour un hébergement effectivement disponible. **OVHcloud est désormais retenu comme fournisseur VPS de principe**, avec sauvegarde quotidienne incluse et **copie indépendante de MongoDB + fichiers hors VPS** ; voir décision DEP-02 / DEP-04 ci-dessous. Cela remplace la consigne antérieure de 0 € absolu. Cette décision **n'autorise pas l'achat**, ne fixe aucun plafond chiffré et ne valide ni la configuration exacte ni le stockage externe. Pour MongoDB, SMTP, certificats et outils, rechercher d'abord des solutions gratuites, **sans compromettre les conditions techniques et la récupération des données**.
+
+### Décision DEP-02 / DEP-04 confirmée — OVHcloud et sauvegarde indépendante (2026-11-01)
+
+**VALIDÉ — architecture de principe :** retenir **un VPS OVHcloud pour la bêta privée**, avec la **sauvegarde automatique Standard quotidienne incluse**, **ET** un mécanisme distinct de **sauvegarde automatique de MongoDB et des fichiers applicatifs**, transmis vers un stockage hors VPS et conservé sur **plusieurs points de restauration datés**. Ce second mécanisme fait partie du périmètre obligatoire de préparation à la bêta, et non d'une option future facultative.
+
+**Non encore décidés :** souscription et région du VPS ; offre exacte (**VPS-2 8 Go reste la configuration recommandée à valider**), prix au panier, domaine ; emplacement/prestataire et éventuel coût du stockage externe ; durée de rétention exacte ; fréquence et plage de sauvegarde ; RPO/RTO ; automatisation/outil de sauvegarde ; MongoDB Atlas Free vs autre offre après essais. **Aucun serveur n'est commandé ou provisionné.**
+
+#### Deux couches de protection indépendantes
+
+1. **Sauvegarde OVHcloud Standard :** sauvegarde quotidienne du **disque système du VPS**, avec **24 heures de rétention** pour les VPS de la gamme concernée. Sert notamment à remettre le système en service à la suite d'une panne ou d'une mauvaise configuration récente. **N'inclut pas les disques additionnels**. **N'inclut pas une base MongoDB Atlas distante**, même si l'application y est connectée. Ce n'est pas une archive historique.
+2. **Sauvegarde métier et technique hors VPS :** exporter de manière automatisée la base MongoDB **de la bêta uniquement** (données et métadonnées de l'application : utilisateurs, espaces, produits, tarifs, fiches, permissions, journaux selon politique de rétention), puis copier le **répertoire de fichiers persistants** utilisé par `LOCAL_STORAGE_ROOT_DIR` et les éléments de configuration nécessaires à la reprise **par un circuit de secrets sécurisé distinct**. Les fichiers de quarantaine `UPLOAD_TEMP_DIR` ne sont **pas** à restaurer comme fichiers validés. Conserver les copies **dans un autre espace de stockage** que le disque et le compte d'exploitation courant, de préférence dans une zone/fournisseur indépendant, avec accès strictement limité.
+
+**Proposition d'implémentation future (non exécutée) :** `mongodump` / `mongorestore` et outil de sauvegarde de fichiers compatible avec le stockage choisi, sous un planificateur Linux non chevauchant (cron/systemd). Les exports doivent être chiffrés **avant** transfert, transmis avec TLS, stockés chiffrés, contrôlés par checksum/inventaire et protégés des suppressions malveillantes ; les clés doivent être récupérables hors du VPS. Le mécanisme ne doit jamais afficher d'identifiants Atlas ou d'archives sensibles dans les logs. Il relève de l'**infrastructure/exploitation**, pas d'un nouveau module métier ni d'un patch implicite au Core.
+
+**Historique :** le propriétaire valide « plusieurs jours » ; à ce stade, **7 copies quotidiennes et 4 copies hebdomadaires** sont uniquement une **proposition** à confronter au budget, au volume, aux délais de récupération acceptables et au stockage disponible. Une copie quotidienne correspond, à titre indicatif, à une perte potentielle pouvant approcher 24 heures de modifications en cas d'incident. **Aucun RPO/RTO n'est encore accepté formellement.**
+
+**Cohérence et sécurité :** MongoDB et les fichiers sont deux ressources distinctes ; une copie prise à des instants arbitraires ne garantit pas une photographie métier atomique. Définir une procédure de génération d'un ensemble **identifiable et cohérent** (fenêtre contrôlée, manifestes/horodatages et vérifications d'intégrité adaptées), puis tester la restauration du **couple base + fichiers** sur **une infrastructure isolée**, sans écraser la base de développement, la base E2E ni celle de la bêta. Vérifier aussi qu'une sauvegarde ancienne peut être restaurée avec une version compatible du code et des migrations ; pas de rollback de données implicite après `git revert`.
+
+**Critère de GO bloquant :** démontrer au moins un cycle complet `sauvegarde -> conservation hors VPS -> restauration isolée -> vérification de données et fichiers`, plus détection/alerte d'un job en échec. La disponibilité du backup OVHcloud seule ne satisfait pas cette preuve.
+
+**Sources spécifiques :**
+- OVHcloud. *VPS Backup : Solution de Sauvegarde Automatique VPS*. s.d. https://www.ovhcloud.com/fr/vps/vps-backup/
+- OVHcloud. *Comment utiliser les sauvegardes automatisées sur un VPS*. s.d. https://docs.ovhcloud.com/fr/guides/bare-metal-cloud/virtual-private-servers/using-automated-backups-on-a-vps
+- MongoDB. *mongodump Behavior, Access, and Usage*. s.d. https://www.mongodb.com/docs/database-tools/mongodump/mongodump-behavior/
+- CNIL. *Sécurité : Sauvegarder*. 2024-03-14. https://www.cnil.fr/fr/securite-sauvegarder
 
 ### Comparaison officielle des VPS adaptés à l'application
 
@@ -16,7 +41,7 @@ Prix publics consultés le 2026-11-01 ; disponibilité effective, contrat, mensu
 
 | Hébergeur / offre | CPU, RAM, stockage | Prix affiché | Sauvegarde incluse / restriction | Évaluation |
 | --- | --- | --- | --- | --- |
-| **OVHcloud VPS-2 (gamme « VPS 2027 »)** | 4 vCore, **8 Go RAM**, 75 Go NVMe | **dès 7,21 € HT / 8,65 € TTC par mois** | Sauvegarde quotidienne incluse, **rétention de 24 h seulement** ; copie indépendante impérative | **Premier candidat** pour disponibilité à contrôler et coût maîtrisé |
+| **OVHcloud VPS-2 (gamme « VPS 2027 »)** | 4 vCore, **8 Go RAM**, 75 Go NVMe | **dès 7,21 € HT / 8,65 € TTC par mois** | Sauvegarde Standard quotidienne incluse sur **disque système**, rétention **24 h** ; backup MongoDB + fichiers hors VPS obligatoire | **Fournisseur VPS validé, offre exacte à confirmer au panier** |
 | **Hostinger KVM 2** | 2 vCPU, **8 Go RAM**, 100 Go NVMe | **7,99 € HT/mois promotionnel**, renouvellement annoncé à **14,99 € HT/mois** pour 2 ans | Sauvegardes hebdomadaires ; tarifs mensualisés **facturés d'avance pour la durée du forfait** | Alternative, seulement après vérification du paiement initial et de la durée |
 | **Infomaniak VPS Lite (8 Go)** | 4 vCPU, **8 Go RAM**, 160 Go NVMe | **18 CHF HT/mois** affichés ; option mensuelle/annuelle à vérifier | **Pas de snapshot inclus, pas de SLA de disponibilité** sur VPS Lite ; localisation Suisse | Alternative si préférence fournisseur/souveraineté ; coût supérieur |
 | VPS 4 Go (toutes marques) | Mémoire totale 4 Go | Prix plus faible | ClamAV recommande **3 Gio+ pour son seul processus**, avant l'API/OS | **Déconseillé par défaut** sans mesure de mémoire et test de charge |
@@ -46,7 +71,7 @@ HTTPS / domaine ou sous-domaine réellement contrôlé
 
 **SMTP et domaine :** Brevo Free ou autre SMTP gratuit peut être évalué sans changement API ; l'adresse expéditrice, le contrôle DNS DKIM/SPF/DMARC et l'envoi de liens réels sont à prouver. Un sous-domaine gratuit de test ne garantit pas le contrôle DNS de l'expéditeur. Un achat de domaine éventuel est **un coût séparé nécessitant accord**.
 
-**Sauvegardes :** la sauvegarde OVH quotidienne (un jour) ou Hostinger hebdomadaire ne constitue pas un plan de récupération suffisant à elle seule. Atlas Free et les fichiers persistés doivent pouvoir être **restaurés sur une cible isolée** depuis une copie chiffrée hors VPS. Aucune solution à 0 € n'est réputée correcte avant restauration éprouvée.
+**Sauvegardes — décision validée :** conserver la sauvegarde OVHcloud Standard quotidienne incluse **et** construire un deuxième mécanisme automatique de sauvegarde MongoDB + fichiers vers un stockage hors VPS, avec historique de plusieurs jours. Un test de restauration isolé des deux types de ressources et une alerte d'échec sont bloquants avant ouverture. L'emplacement externe, son coût, la rétention exacte et le RPO/RTO restent à arbitrer.
 
 ### Critères de choix avant commande
 
@@ -117,7 +142,7 @@ Utilisateurs invités
             supervision, sauvegardes hors serveur
 ```
 
-**Hypothèses de conception, non validées** : faible nombre d'utilisateurs invités, une seule instance API initiale, absence de haute disponibilité garantie, fenêtre de maintenance acceptable. **Le propriétaire autorise désormais un hébergement VPS peu coûteux**, sous réserve de disponibilité et de conditions contractuelles vérifiées. OVHcloud, Hostinger et Infomaniak sont les trois candidats évalués ci-dessus ; les autres services restent gratuits dans la mesure du possible. Le besoin de capacité et la criticité réelle des données doivent être arbitrés avant dimensionnement.
+**Hypothèses de conception, non validées** : faible nombre d'utilisateurs invités, une seule instance API initiale, absence de haute disponibilité garantie, fenêtre de maintenance acceptable. **Le propriétaire a validé OVHcloud comme fournisseur de VPS pour la bêta**, sous réserve de disponibilité et de vérification du contrat et de la configuration (VPS-2 8 Go proposé). Les autres offres restent un historique comparatif ; les autres services restent gratuits dans la mesure du possible. La sauvegarde indépendante MongoDB + fichiers et la restauration éprouvée sont retenues. Le besoin de capacité et la criticité réelle des données doivent être arbitrés avant dimensionnement.
 
 La proposition `app.domaine.tld` est illustrative, pas un nom de domaine réservé. Les ports internes HTTP ne doivent pas être exposés au public. La terminaison TLS sur reverse proxy reste une frontière de confiance à tester (headers, véritable IP source, cookies, protections).
 
@@ -193,10 +218,10 @@ Le choix de la cadence des jobs et de rétention dépend des usages et contrats.
 | ID | Arbitrage nécessaire | Proposition de travail |
 | --- | --- | --- |
 | DEP-01 | Population et exposition | Bêta privée nominative, sans inscriptions publiques ouvertes par défaut, à valider contre le fonctionnement actuel. |
-| DEP-02 | **Petit budget d'hébergement autorisé ; pas de plafond chiffré ni de fournisseur retenu** | Prioriser OVHcloud VPS-2 8 Go, comparer Hostinger KVM 2 et Infomaniak VPS Lite 8 Go ; valider le tarif réel, les taxes, le paiement initial et la disponibilité. |
+| DEP-02 | **VALIDÉ — hébergeur OVHcloud VPS + backup Standard inclus** | Configuration VPS-2 8 Go proposée mais **non commandée** ; confirmer région, prix réel, taxes, durée et disponibilité au panier avant achat. |
 | DEP-03 | Administration du serveur | Décider si l'exploitation Linux/Docker et ses correctifs peuvent être assurés. |
-| DEP-04 | Sauvegarde MongoDB et fichiers | Explorer Atlas Free + mongodump + backup externe chiffré, mais ne pas exclure une solution payante si la sécurité de reprise requise l'impose ; valider toute dépense complémentaire avant souscription. |
-| DEP-05 | Stockage et fichiers | Local persistant et sauvegarde externe pour une instance, **ou** demande d'évolution Core S3 si besoin multi-instance. |
+| DEP-04 | **VALIDÉ — double protection : backup OVHcloud + copies automatiques MongoDB/fichiers hors VPS avec historique de plusieurs jours** | **À ARBITRER** : service de stockage externe, chiffrement/accès, rythme et rétention exacts, RPO/RTO, outil, coût ; effectuer restauration isolée et alerte sur échec avant GO. |
+| DEP-05 | **VALIDÉ pour une seule instance : fichiers persistants sur VPS + copie indépendante hors VPS** | Emplacement du volume (disque système ou additionnel), capacité, droits et restauration à confirmer ; S3 Core seulement si le besoin multi-instance est démontré. |
 | DEP-06 | SMTP et domaine | Comparer offres transactionnelles, domaine d'envoi, DNS et limites. |
 | DEP-07 | Confiance proxy/IP et health | Exiger preuve derrière proxy ; ouvrir changement Core isolé si primitive générique incorrecte. |
 | DEP-08 | Protocole RGPD et hébergement | Région effective, sous-traitants, DPA, finalités, durées, documents d'information et droits. |
