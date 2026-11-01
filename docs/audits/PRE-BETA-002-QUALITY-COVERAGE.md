@@ -34,7 +34,7 @@ Inventaire effectué sur `a693247bcccfed32870c6f34c92db1b9f49d5ad4` : 39 scénar
 | ID | Lacune / risque | Complément minimal | Critère de réussite |
 | --- | --- | --- | --- |
 | PB2-01 | D-020 n'a pas de preuve navigateur intégrée à la validation d'une identité Auth et à la création d'un premier tenant | Un destinataire avec compte Auth existant mais sans Workspace reçoit une invitation privée créée par le service réel ; un compte étranger ne peut pas l'accepter ; le bon compte l'accepte via UI | Refus HTTP 403 et UI sans bouton d'acceptation au mauvais compte ; création d'un Workspace, d'une Subscription `commercial/open_ended/active` et une seule appartenance Owner ; réutilisation refusée |
-| PB2-02 | M-006 E2E prouve la lecture après grant, sans preuve du refus préalable **dans le même Workspace** | Dans le test existant, vérifier 403 sur la lecture M-006 avant `grantDossierAccess`, puis 200 après | Le grant Dossier constitue réellement la frontière d'accès ; aucune fuite |
+| PB2-02 | M-006 E2E prouve la lecture après grant, sans preuve du refus préalable **dans le même Workspace** | Dans le test existant, vérifier 404 sur la lecture M-006 avant `grantDossierAccess`, puis 200 après | Le grant Dossier constitue réellement la frontière d'accès ; aucune fuite |
 | PB2-03 | La documentation de branche est encore présentée comme « M-006 seulement » | Présent document, addenda ROADMAP/REPRISE et maintien du cadrage M-006 comme annexe | Lot et preuves cohérents, sans transformer la préparation en faux GO bêta |
 
 Les scénarios additionnels sont sélectionnés après comparaison avec les tests déjà présents. Aucun nouveau CRUD, rôle, plan commercial de production, modèle MongoDB ou privilège global n'est introduit.
