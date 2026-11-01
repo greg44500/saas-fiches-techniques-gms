@@ -1,3 +1,15 @@
+# Reprise — PRE-BETA-002 / E2E M-006 en validation (2026-11-01)
+
+**Base Git vérifiée :** `main` = `8141427abc63e0ae2a41546d2eba6538d023c78d` ; PRE-BETA-001 PR #57 fusionnée et [Core Gate après merge verte](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/41289843285). La branche `main` est protégée et exige le statut `Core Gate` pour tous, vérifié dans l'API GitHub. Core `v1.2.1` inchangé.
+
+**Lot actif :** `test/pre-beta-002-m006-e2e`. Deux scénarios Playwright M-006, fixture M-004 sur base `_e2e_test`. [Cadrage et commande de vérification](audits/PRE-BETA-002-M006-E2E.md).
+
+**État des preuves :** code préparé, **aucune exécution locale ni GitHub de cette branche affirmée**. Ne pas ouvrir de PR avant résultats locaux communiqués par le propriétaire. Pas de migration, reset de DB `_dev`, changement métier, Core ou infrastructure. Le parcours commercial D-020/invitation/import est déclaré fonctionnel par le propriétaire et n'est pas redéveloppé dans ce lot.
+
+> Les reprises historiques des lots précédents restent ci-dessous et ne remplacent pas l'état présent.
+
+---
+
 # Reprise courante — PRE-BETA-001 (2026-11-01)
 
 **Lot actif :** audit initial de préparation à la bêta privée, **documentation et qualification uniquement** ; voir [`docs/audits/PRE-BETA-READINESS.md`](audits/PRE-BETA-READINESS.md).

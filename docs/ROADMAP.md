@@ -1,3 +1,11 @@
+## PRE-BETA-002 — Tests E2E M-006 en cours (2026-11-01)
+
+Après clôture de [PRE-BETA-001](audits/PRE-BETA-READINESS.md) (PR #57, commit `8141427`, Core Gate post-merge verte), le premier lot de PRE-BETA-002 porte sur la **preuve Playwright des parcours M-006**. Voir [plan et critères de validation](audits/PRE-BETA-002-M006-E2E.md).
+
+Statut : **branche de tests préparée, validation locale et gate complète en attente**. Aucun nouveau comportement métier ni évolution Core. Le parcours commercial privé/invitation/gestionnaire/import a été **confirmé fonctionnel manuellement par le propriétaire** ; l'automatisation D-020 reste un sujet de couverture à traiter séparément. Aucune migration et aucun déploiement.
+
+---
+
 ## PRE-BETA-001 — État vérifié au 2026-11-01
 
 Le prochain lot est l'**audit de préparation à la bêta privée**, documenté dans [`docs/audits/PRE-BETA-READINESS.md`](audits/PRE-BETA-READINESS.md). Il n'autorise aucun déploiement ni correctif non cadré.
