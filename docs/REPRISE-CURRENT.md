@@ -1,3 +1,19 @@
+# Reprise — PRE-BETA-002 / consolidation métier globale (2026-11-01)
+
+**Référence :** [plan de couverture QA PRE-BETA-002](audits/PRE-BETA-002-QUALITY-COVERAGE.md) ; annexe historique [E2E M-006](audits/PRE-BETA-002-M006-E2E.md).
+
+**GitHub contrôlé à l'ouverture :** produit `main` = `8141427abc63e0ae2a41546d2eba6538d023c78d`, protégé ; Core `v1.2.1` / `42beaff67200ca4e956378e2273b4eae440f47bc`, inchangé ; branche de travail conservée `test/pre-beta-002-m006-e2e`, sans PR ouverte à l'ouverture.
+
+**Périmètre effectivement retenu :** consolider les preuves des parcours critiques M-001 à M-006 et de l'onboarding commercial D-020 sans refaire les fonctionnalités déjà opérationnelles. Inventaire initial : 39 scénarios Playwright sur 14 fichiers, avec de nombreuses preuves backend et RTL complémentaires. Ajout dans **la même branche** d'une fixture et d'un E2E D-020 (mauvais bénéficiaire, acceptation réelle, Subscription privée, anti-rejeu), et renforcement M-006 par le refus d'accès au Dossier avant affectation. Documentation de couverture globale en place. Aucun changement Core, modèle, migration ou données `_dev`.
+
+**Preuves à distinguer :** le propriétaire a confirmé une `npm run release:check` entièrement verte localement sur l'état **antérieur aux nouveaux compléments**. Les changements complémentaires nécessitent encore E2E ciblés, `release:check` finale et retour utilisateur ; aucune réussite n'est présumée. La QA réelle des PDF A4 multipages, responsive et clavier reste une recette manuelle distincte.
+
+**Suite immédiate :** synchroniser la branche, exécuter les tests locaux de [la matrice](audits/PRE-BETA-002-QUALITY-COVERAGE.md), corriger tout défaut dans cette branche, documenter les limites de recette, puis préparer une **PR unique** après validation. Ne pas ouvrir de chantier hébergement/déploiement avant clôture du lot qualité. Ne pas lancer de migration ni de reset `_dev`.
+
+> La reprise historique « PRE-BETA-002 / E2E M-006 en validation » ci-dessous reste datée et ne réduit plus le périmètre.
+
+---
+
 # Reprise — PRE-BETA-002 / E2E M-006 en validation (2026-11-01)
 
 **Base Git vérifiée :** `main` = `8141427abc63e0ae2a41546d2eba6538d023c78d` ; PRE-BETA-001 PR #57 fusionnée et [Core Gate après merge verte](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/41289843285). La branche `main` est protégée et exige le statut `Core Gate` pour tous, vérifié dans l'API GitHub. Core `v1.2.1` inchangé.
