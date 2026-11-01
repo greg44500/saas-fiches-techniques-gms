@@ -37,7 +37,9 @@ async function createProcessFromUi(page, context, title) {
 
 async function expectDownloadedPdf(page) {
   const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Exporter', exact: true }).click();
+  const exportButton = page.getByRole('button', { name: 'Exporter', exact: true });
+  await expect(exportButton).not.toHaveAttribute('aria-disabled', 'true');
+  await exportButton.click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^fiche-process-.*\.pdf$/i);
   const content = await readFile(await download.path());
@@ -81,7 +83,9 @@ test('M-006 propriétaire : brouillon, validation, PDF, suppression et recréati
   // Le brouillon produit lui aussi un PDF imprimable.
   await expectDownloadedPdf(page);
 
-  await page.getByRole('button', { name: 'Valider la Fiche process' }).click();
+  const validateButton = page.getByRole('button', { name: 'Valider la Fiche process' });
+  await expect(validateButton).not.toHaveAttribute('aria-disabled', 'true');
+  await validateButton.click();
   const confirm = page.getByRole('dialog', {
     name: 'Valider avec des ingrédients non affectés ?',
   });
@@ -160,6 +164,12 @@ test('M-006 droits : lecture seule autorisée, export/suppression refusés, Work
   expect((await page.request.get(processApiBase(context) + '/' + id, {
     headers: bearer(memberToken),
   })).status()).toBe(200);
+  await page.goto(context.processSheetsUrl + '/' + id);
+  await expect(page.getByRole('button', { name: 'Exporter', exact: true }))
+    .toHaveAttribute('aria-disabled', 'true');
+  await expect(page.getByRole('button', { name: 'Valider la Fiche process' }))
+    .toHaveAttribute('aria-disabled', 'true');
+
   expect((await page.request.get(processApiBase(context) + '/' + id + '/export/pdf', {
     headers: bearer(memberToken),
   })).status()).toBe(403);
