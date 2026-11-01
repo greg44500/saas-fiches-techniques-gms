@@ -1,3 +1,21 @@
+## PRE-BETA-002 — Consolidation QA métier pré-bêta (2026-11-01, état de branche)
+
+**Décision courante :** PRE-BETA-002 couvre la non-régression critique **M-001 à M-006 et D-020**, et non deux seuls tests E2E M-006. [Matrice, scénarios et critères de clôture](audits/PRE-BETA-002-QUALITY-COVERAGE.md). Conserver **une seule branche et une seule PR produit** pour les contrôles cohérents, sans modification du Core, des données de développement ni de l'infrastructure.
+
+**État vérifié :** 39 scénarios Playwright préexistants, dont deux M-006 préparés sur la branche ; couverture backend/front identifiée avant ajout. Des contrôles E2E complémentaires D-020 (bénéficiaire, offre privée, anti-rejeu) et Dossier M-006 ont été écrits sur la branche. Le propriétaire a confirmé une `release:check` locale verte **avant ces nouveaux commits** : une nouvelle exécution ciblée et globale sur le HEAD final reste obligatoire. La QA visuelle PDF multipage et la recette bêta ne sont pas automatiquement validées par cette gate. Ne pas ouvrir de PR avant preuve finale et revue.
+
+> La section historique « PRE-BETA-002 — Tests E2E M-006 en cours » plus bas décrit la première proposition de périmètre, remplacée par la décision ci-dessus.
+
+---
+
+## PRE-BETA-002 — Tests E2E M-006 en cours (2026-11-01)
+
+Après clôture de [PRE-BETA-001](audits/PRE-BETA-READINESS.md) (PR #57, commit `8141427`, Core Gate post-merge verte), le premier lot de PRE-BETA-002 porte sur la **preuve Playwright des parcours M-006**. Voir [plan et critères de validation](audits/PRE-BETA-002-M006-E2E.md).
+
+Statut : **branche de tests préparée, validation locale et gate complète en attente**. Aucun nouveau comportement métier ni évolution Core. Le parcours commercial privé/invitation/gestionnaire/import a été **confirmé fonctionnel manuellement par le propriétaire** ; l'automatisation D-020 reste un sujet de couverture à traiter séparément. Aucune migration et aucun déploiement.
+
+---
+
 ## PRE-BETA-001 — État vérifié au 2026-11-01
 
 Le prochain lot est l'**audit de préparation à la bêta privée**, documenté dans [`docs/audits/PRE-BETA-READINESS.md`](audits/PRE-BETA-READINESS.md). Il n'autorise aucun déploiement ni correctif non cadré.
