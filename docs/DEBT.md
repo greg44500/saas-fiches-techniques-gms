@@ -1,3 +1,11 @@
+## PRE-BETA-003 — Décision d'exploitation OVHcloud et sauvegardes (2026-11-01)
+
+**Décision validée, dette d'implémentation toujours ouverte (Production / D-007 et D-013).** Pour la bêta privée : un VPS **OVHcloud** avec sa sauvegarde automatique Standard quotidienne incluse et un **second mécanisme automatique indépendant** exportant MongoDB et les fichiers persistants vers un emplacement **hors VPS**, avec conservation sur plusieurs dates. L'offre VPS-2 / 8 Go est proposée mais non commandée ; la sauvegarde OVHcloud (rétention de 24 h et disque système uniquement) ne couvre pas MongoDB Atlas externe ni un disque additionnel. Voir [PRE-BETA-003 — architecture et sauvegardes](deployment/PRE-BETA-003-DEPLOYMENT-CADRAGE.md).
+
+**À réaliser avant GO :** arbitrer l'emplacement et le coût des copies hors VPS, leur chiffrement, leurs permissions, leur durée et cadence, RPO/RTO, l'automatisation et les alertes ; tester la restauration **MongoDB + fichiers sur une cible isolée** et vérifier la cohérence des données restaurées. Ce cadrage ne prouve aucun backup existant, n'autorise aucun achat ni changement Core et ne touche aucune base de développement.
+
+---
+
 ## PRE-BETA-002 — État de D-012 / assurance qualité métier (2026-11-01)
 
 [Plan consolidé de vérification](audits/PRE-BETA-002-QUALITY-COVERAGE.md) : les E2E déjà présents couvrent M-001 à M-005, deux tests M-006 ont été préparés, et un scénario D-020 d'acceptation commerciale avec identité incorrecte a été ajouté. Les protections backend (tenant, rôles, capabilities, quotas, conflits) et les tests de rendu PDF existants sont inventoriés avant tout ajout. Cette démarche ne rouvre pas les anciennes fonctionnalités livrées.
