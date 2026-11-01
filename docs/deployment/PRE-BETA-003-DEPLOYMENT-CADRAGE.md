@@ -6,6 +6,55 @@
 **Base Git vérifiée :** `main` au commit `1e47178ffd9abfa67011ba075bcc13a6a607b481` (PR #58 fusionnée) ; `core-origin.json` = Core `v1.2.1` / `42beaff67200ca4e956378e2273b4eae440f47bc`.  
 **Preuve CI :** Core Gate #250 verte sur la PR #58 ; la gate du commit de fusion `1e47178` était encore `in_progress` à la dernière lecture. Ne pas transposer le succès de la PR à la gate post-fusion.
 
+## 0. Contrainte du propriétaire — bêta à coût récurrent nul (2026-11-01)
+
+**Décision de cadrage confirmée : aucun service facturé et aucun abonnement pendant le bêta testing.** Le document ci-dessous décrivait initialement des options VPS/PaaS/Atlas payants : ces options ne sont **plus des candidats pour la phase bêta à 0 €**. Leur présence éventuelle comme comparaison ne vaut pas accord de dépense. Les essais promotionnels (crédits temporaires, parrainage, 30 jours) **ne sont pas** une base de déploiement durable. Ne créer ni ressource hors quotas gratuits, ni abonnement, ni upgrade automatique, ni fournisseur avec facturation activée sans accord explicite.
+
+### Pile gratuite candidate, pas encore validée
+
+| Couche | Candidat à 0 € | Conditions et risques à vérifier |
+| --- | --- | --- |
+| Backend/API et frontend compilé | **Oracle Cloud Always Free**, une VM Arm Ampere A1 | Documentation officielle actuelle : **2 OCPU, 12 Go RAM au total** ; forme A1 soumise à disponibilité de capacité et aux règles de récupération d'instances inactives ; aucun SLA. Carte de paiement demandée pour vérification d'identité, sans achat automatique. Pas de VM micro 1 Go pour `clamscan`. |
+| Stockage API/ClamAV | **Volumes Always Free Oracle**, dans la région d'origine | 200 Go au total incluant les volumes de démarrage ; séparer stockage permanent et temporaire et limiter l'accès ; sauvegarder ailleurs que sur le même volume. L'espace n'est pas une promesse de récupération après perte de VM. |
+| Base de données externe | **MongoDB Atlas Free (M0)**, MongoDB 8.0 | 0,5 Go **documents et index inclus**, 100 opérations/s, pas de garantie de performance. Replica set 3 nœuds documenté ; **transactions Mongoose à tester effectivement**. Vérifier que les collections/indexes et jeux d'essai métier tiennent sous 0,5 Go. |
+| Sauvegardes MongoDB | **`mongodump` manuel/automatisé + sauvegarde chiffrée indépendante**, restauration de test | Les sauvegardes automatiques facultatives Atlas M0 sont **payantes : 0,10 $/jour, maximum 3 $/mois**, en préversion non garantie. Elles sont exclues de la cible à 0 €. Établir la périodicité, la preuve de restauration et la conservation de plusieurs générations. |
+| Copie de sauvegarde hors VM | **Oracle Object Storage Always Free**, à comparer à un stockage personnel hors fournisseur | Jusqu'à **20 Go** de stockage objet gratuit ; prévoir chiffrement, limites d'usage, protection des clés et politique de purge. Sauvegardes de Mongo et fichiers à restaurer ensemble en cas d'incident. La même organisation Oracle ne garantit pas la résilience à toute défaillance de compte. |
+| Antivirus | **ClamAV** sur la VM Arm | Code actuel utilise `clamscan` local. Documentation ClamAV : RAM recommandée 3 Gio+ **pour ClamAV seul**, CPU et 5 Gio de libre, en plus de l'API. Tester les images ARM64, mises à jour de signatures et temps de scan. |
+| Emails | **Brevo Free** (300/jour) ; **Resend Free** (3 000/mois, 100/jour) en alternative | SMTP compatible avec Nodemailer. **Point bloquant possible** : configuration de domaine d'envoi vérifié et DNS DKIM/DMARC. Brevo peut réécrire les expéditeurs gratuits : délivrabilité à démontrer avant invitation réelle. Ne pas supposer que Duck DNS permet d'authentifier un domaine d'expédition tiers. |
+| DNS public | **Duck DNS**, sous-domaine gratuit | Suffisant comme candidat pour l'URL de test si le DNS et la gestion du certificat fonctionnent ; **pas une preuve de contrôle DNS requis par le SMTP**. Domaine de marque éventuel déjà possédé : vérifier si son usage n'implique aucune dépense nouvelle. |
+| HTTPS | **Let's Encrypt** + Caddy ou autre proxy libre | Certificats gratuits, prouver le contrôle du nom, l'auto-renouvellement et le fonctionnement des cookies de session. |
+| Planification/CI/logs | Cron/systemd, scripts existants, GitHub Actions dans les limites gratuites disponibles | Définir jobs nécessaires, alertes simples, échecs, limites de durée de vie des journaux. Aucun outil payant présumé. |
+
+**Exclusions explicites pour la bêta à 0 € :** VPS traditionnel facturé, PaaS à volume persistant payant, Atlas Flex/M10+, backup M0 payant, domaine nouvellement acheté, offre SMTP payante, stockage S3 payant, crédits de bienvenue temporaires et conversion implicite vers Pay As You Go. Ne pas proposer Render Free comme hôte de fichiers : son système de fichiers est éphémère et il ne fournit pas de disque persistant sur l'instance gratuite.
+
+**Faisabilité non démontrée** : création effective d'une VM A1 gratuite dans une région adéquate ; acceptation du compte Oracle ; espace Mongo M0 suffisant ; compatibilité transactionnelle et de migrations vérifiée ; SMTP avec expéditeur authentifié **sans nom de domaine acheté** ; chiffrement et restauration des backups ; données personnelles et sous-traitance dans des régions acceptables. Si un point échoue, il faut le rendre visible et **reconcevoir la bêta** (notamment environnement de démonstration avec données fictives), pas activer une option payante silencieusement.
+
+### Critères de sortie propres au budget zéro
+
+1. Une **matrice de coût 0 € vérifiée dans les tableaux de bord des fournisseurs** : toute ressource `Always Free` identifiée et consommation sous les plafonds ; aucune ligne facturée, aucune carte ou conversion payante acceptée à l'insu du propriétaire.
+2. Une VM accessible et des services gratuits effectivement activables, pas seulement annoncés sur un site marketing.
+3. Une restauration de test chiffrée depuis les sauvegardes gratuites MongoDB **et** fichiers, avec preuve et contrôle d'intégrité.
+4. Un email d'invitation reçu par un véritable tiers depuis une identité d'expédition admissible sans achat de domaine. Si cette preuve n'existe pas, l'ouverture de la bêta par email reste **NO-GO**.
+5. Une preuve des E2E métier, de ClamAV, des cookies HTTPS, de la confiance proxy et de la QA visuelle dans cet environnement précis.
+6. Une analyse de données personnelles et de localisation des prestataires ; gratuité ne dispense pas de RGPD.
+
+**Sources externes officielles consultées le 2026-11-01 :**
+- Oracle. *Ressources Toujours gratuit*. s.d. https://docs.oracle.com/fr-fr/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm
+- Oracle. *FAQ sur Oracle Cloud Free Tier*. s.d. https://www.oracle.com/fr/cloud/free/faq/
+- MongoDB. *Atlas Free Cluster Limits*. s.d. https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/
+- MongoDB. *Free Cluster Backups*. s.d. https://www.mongodb.com/docs/atlas/backup/cloud-backup/free-cluster-backup/
+- ClamAV. *Recommended System Requirements*. s.d. https://docs.clamav.net/
+- Brevo. *FAQ — limites de l'offre Gratuit*. s.d. https://help.brevo.com/hc/fr/articles/208580669-FAQ-Quels-sont-les-limites-de-l-offre-Gratuit
+- Brevo. *Authentifier votre domaine dans Brevo*. s.d. https://help.brevo.com/hc/fr/articles/12163873383186-Authentifier-votre-domaine-dans-Brevo-code-Brevo-enregistrement-DKIM-enregistrement-DMARC
+- Brevo. *Se conformer aux exigences de Gmail, Yahoo, Microsoft*. s.d. https://help.brevo.com/hc/en-us/articles/14925263522578-Comply-with-Gmail-Yahoo-and-Microsoft-s-requirements-for-email-senders
+- Resend. *Pricing*. s.d. https://resend.com/pricing
+- Resend. *SMTP Service*. 2023-08-08. https://resend.com/changelog/smtp-service
+- Duck DNS. *Accueil*. s.d. https://www.duckdns.org/
+- Let's Encrypt. *Certificats TLS gratuits*. s.d. https://letsencrypt.org/fr/
+- Render. *Deploy for Free*. s.d. https://render.com/docs/free
+
+---
+
 ## 1. Objet et limites
 
 Ce lot établit **l'architecture cible, les dépendances d'exploitation, les options d'hébergement, les décisions à prendre et les critères de sortie**. Il ne crée aucun serveur, compte prestataire, secret, domaine, base ni pipeline de déploiement. Il ne change ni le runtime ni les fonctionnalités et n'exécute pas de migration.
@@ -53,11 +102,11 @@ Utilisateurs invités
             supervision, sauvegardes hors serveur
 ```
 
-**Hypothèses de conception, non validées** : faible nombre d'utilisateurs invités, une seule instance API initiale, absence de haute disponibilité garantie, fenêtre de maintenance acceptable. Le besoin de capacité et la criticité réelle des données doivent être arbitré avant dimensionnement.
+**Hypothèses de conception, non validées** : faible nombre d'utilisateurs invités, une seule instance API initiale, absence de haute disponibilité garantie, fenêtre de maintenance acceptable. **La contrainte de coût récurrent nul impose en priorité la vérification de la faisabilité Oracle Always Free + Atlas Free** ; les options payantes du comparatif ci-dessous sont désormais hors périmètre de la bêta. Le besoin de capacité et la criticité réelle des données doivent être arbitrés avant dimensionnement.
 
 La proposition `app.domaine.tld` est illustrative, pas un nom de domaine réservé. Les ports internes HTTP ne doivent pas être exposés au public. La terminaison TLS sur reverse proxy reste une frontière de confiance à tester (headers, véritable IP source, cookies, protections).
 
-## 4. Deux stratégies d'hébergement à comparer
+## 4. Options d'hébergement : priorité 0 €, alternatives payantes exclues de la bêta
 
 | Critère | Option A : VM/VPS UE + Docker Compose + MongoDB Atlas | Option B : PaaS managé + MongoDB Atlas |
 | --- | --- | --- |
@@ -129,9 +178,9 @@ Le choix de la cadence des jobs et de rétention dépend des usages et contrats.
 | ID | Arbitrage nécessaire | Proposition de travail |
 | --- | --- | --- |
 | DEP-01 | Population et exposition | Bêta privée nominative, sans inscriptions publiques ouvertes par défaut, à valider contre le fonctionnement actuel. |
-| DEP-02 | Budget plafond et hébergement | Comparer un VPS UE administré avec une offre PaaS persistante. |
+| DEP-02 | **Budget fixé à 0 € de coût récurrent** | Vérifier Oracle Always Free A1 en premier ; n'envisager aucune option facturée pendant la bêta sans nouvelle décision explicite. |
 | DEP-03 | Administration du serveur | Décider si l'exploitation Linux/Docker et ses correctifs peuvent être assurés. |
-| DEP-04 | Niveau de sauvegarde MongoDB | Choisir RPO/RTO : Flex quotidien ou M10+ selon risque, jamais uniquement selon tarif. |
+| DEP-04 | Sauvegarde MongoDB sans coût récurrent | Atlas Free sans sauvegarde payante ; tester mongodump/restauration + copie chiffrée indépendante et déterminer RPO/RTO acceptables. |
 | DEP-05 | Stockage et fichiers | Local persistant et sauvegarde externe pour une instance, **ou** demande d'évolution Core S3 si besoin multi-instance. |
 | DEP-06 | SMTP et domaine | Comparer offres transactionnelles, domaine d'envoi, DNS et limites. |
 | DEP-07 | Confiance proxy/IP et health | Exiger preuve derrière proxy ; ouvrir changement Core isolé si primitive générique incorrecte. |
