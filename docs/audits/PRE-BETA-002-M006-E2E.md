@@ -1,3 +1,7 @@
+> **Précision de périmètre (2026-11-01) :** ce document est l'annexe technique des deux scénarios M-006 initialement préparés. Le propriétaire a élargi PRE-BETA-002 à la consolidation QA critique M-001 à M-006 et D-020, sans micro-PR. Voir [le cadrage de couverture global, désormais prioritaire](PRE-BETA-002-QUALITY-COVERAGE.md). Le résultat `release:check` local communiqué avant les nouveaux compléments ne constitue pas une gate sur leur HEAD final. Toute référence historique ci-dessous à « M-006 uniquement » ou à « pas de test réalisé » doit être relue en conséquence.
+
+---
+
 # PRE-BETA-002 — Couverture E2E critique des Fiches process M-006
 
 **Date :** 2026-11-01
