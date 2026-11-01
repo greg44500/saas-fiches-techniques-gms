@@ -1,3 +1,17 @@
+# Reprise courante — PRE-BETA-001 (2026-11-01)
+
+**Lot actif :** audit initial de préparation à la bêta privée, **documentation et qualification uniquement** ; voir [`docs/audits/PRE-BETA-READINESS.md`](audits/PRE-BETA-READINESS.md).
+
+**Autorité Git vérifiée :** produit `main` à `70d3e22d9f158a9582e5e80a4ee11f014e06ab93`, PR #56 M-006 PDF/suppression fusionnée le 2026-10-29 ; [Core Gate post-merge `success`](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40902305191). Core intégré `v1.2.1` au commit `42beaff67200ca4e956378e2273b4eae440f47bc` ; produit `0.1.0-development`. Il n'y avait aucune PR ouverte au contrôle du 2026-11-01. Le `main` produit indiquait `protected: false`.
+
+**Statut métier M-001 à M-006 :** livré au niveau du code ; M-006 export PDF A4 et suppression autonome inclus depuis la PR #56. Les tests/QA locaux et la préparation d'un déploiement réel restent distincts de la preuve CI. Aucun environnement bêta n'a été déployé ni audité physiquement par ce lot.
+
+**Prochaine action :** revue du rapport PRE-BETA-001, réalisation de preuves locales et arbitrages d'infrastructure. Ne pas exécuter de migration sur base existante, supprimer le Workspace de test ni intervenir sur Core sans le lot/contrat correspondant. Aucun changement du code, de la DB, de la version Core ou du runtime dans la branche documentaire.
+
+> Les reprises datées antérieures ci-dessous sont préservées comme historique ; leurs mentions M-006 « non fusionné / PDF désactivé / suppression absente » ne sont pas le statut actuel.
+
+---
+
 # Reprise M-006 — finalisation PDF et suppression (2026-10-29)
 
 **Branche de travail :** `feature/m006-finalisation-ui-ux-global` (issue du `main` au commit `6dad4e9d`). Le propriétaire a validé les cinq choix du contrat PDF/suppression. Les services backend, routes, permissions, migration, interface, aide et tests associés sont committés sur cette branche, **pas sur `main`**.

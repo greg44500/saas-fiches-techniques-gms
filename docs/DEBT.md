@@ -1,3 +1,13 @@
+## PRE-BETA-001 — Requalification au 2026-11-01
+
+Le registre est maintenant accompagné de l'[audit initial de préparation à la bêta](audits/PRE-BETA-READINESS.md), qui classe chaque point selon preuve, risque et critère de sortie. **Statut technique vérifié :** PR M-006 [#56](https://github.com/greg44500/saas-fiches-techniques-gms/pull/56) fusionnée dans `main` au SHA `70d3e22d9f158a9582e5e80a4ee11f014e06ab93` ; [gate post-merge](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40902305191) réussie le 2026-10-29.
+
+**Dettes historiques M-006 :** les affirmations ci-dessous « PDF/suppression non implémentés », « branche non fusionnée », « gate du HEAD manquante » ne décrivent plus le HEAD actuel. Les **preuves de QA manuelle, d'E2E M-006 dédié et d'application effective de migrations** restent à obtenir : ne pas confondre correction documentaire et clôture de ces vérifications.
+
+**Avant bêta privée :** requalifier D-003, D-005, D-006, D-007, D-012 et D-013 ; valider D-020 sur le terrain ; protéger `main` produit ; définir offre privée et accès membre, environnement isolé, backups, SMTP, antivirus et supervision. **D-004 paiement** reste différable pour une bêta gratuite sans facturation. Les dettes Core génériques ne sont jamais corrigées directement dans le dérivé.
+
+---
+
 ## M-006 — Preuves manquantes de finalisation (2026-10-29)
 
 Les services PDF et suppression ont été développés sur `feature/m006-finalisation-ui-ux-global`. La présence de code et de tests **ne prouve pas leur réussite**. Les notes historiques ci-dessous qui indiquent « non implémenté » restent vraies pour `main` tant que la PR n'est pas fusionnée.
