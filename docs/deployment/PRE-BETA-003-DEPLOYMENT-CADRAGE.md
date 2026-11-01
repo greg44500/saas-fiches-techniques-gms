@@ -6,52 +6,67 @@
 **Base Git vérifiée :** `main` au commit `1e47178ffd9abfa67011ba075bcc13a6a607b481` (PR #58 fusionnée) ; `core-origin.json` = Core `v1.2.1` / `42beaff67200ca4e956378e2273b4eae440f47bc`.  
 **Preuve CI :** Core Gate #250 verte sur la PR #58 ; la gate du commit de fusion `1e47178` était encore `in_progress` à la dernière lecture. Ne pas transposer le succès de la PR à la gate post-fusion.
 
-## 0. Contrainte du propriétaire — bêta à coût récurrent nul (2026-11-01)
+## 0. Contrainte révisée : petit budget pour un hébergement disponible (2026-11-01)
 
-**Décision de cadrage confirmée : aucun service facturé et aucun abonnement pendant le bêta testing.** Le document ci-dessous décrivait initialement des options VPS/PaaS/Atlas payants : ces options ne sont **plus des candidats pour la phase bêta à 0 €**. Leur présence éventuelle comme comparaison ne vaut pas accord de dépense. Les essais promotionnels (crédits temporaires, parrainage, 30 jours) **ne sont pas** une base de déploiement durable. Ne créer ni ressource hors quotas gratuits, ni abonnement, ni upgrade automatique, ni fournisseur avec facturation activée sans accord explicite.
+**Dernier arbitrage du propriétaire :** une petite dépense récurrente est acceptable **pour un hébergement effectivement disponible**, notamment chez Infomaniak, OVHcloud ou Hostinger. Cette décision **remplace** la consigne antérieure de 0 € absolu. Elle n'autorise pas l'achat, ne fixe aucun plafond chiffré et ne valide aucun fournisseur. Pour MongoDB, SMTP, certificats et outils, rechercher d'abord des solutions gratuites, **sans compromettre les conditions techniques et la récupération des données**.
 
-### Pile gratuite candidate, pas encore validée
+### Comparaison officielle des VPS adaptés à l'application
 
-| Couche | Candidat à 0 € | Conditions et risques à vérifier |
-| --- | --- | --- |
-| Backend/API et frontend compilé | **Oracle Cloud Always Free**, une VM Arm Ampere A1 | Documentation officielle actuelle : **2 OCPU, 12 Go RAM au total** ; forme A1 soumise à disponibilité de capacité et aux règles de récupération d'instances inactives ; aucun SLA. Carte de paiement demandée pour vérification d'identité, sans achat automatique. Pas de VM micro 1 Go pour `clamscan`. |
-| Stockage API/ClamAV | **Volumes Always Free Oracle**, dans la région d'origine | 200 Go au total incluant les volumes de démarrage ; séparer stockage permanent et temporaire et limiter l'accès ; sauvegarder ailleurs que sur le même volume. L'espace n'est pas une promesse de récupération après perte de VM. |
-| Base de données externe | **MongoDB Atlas Free (M0)**, MongoDB 8.0 | 0,5 Go **documents et index inclus**, 100 opérations/s, pas de garantie de performance. Replica set 3 nœuds documenté ; **transactions Mongoose à tester effectivement**. Vérifier que les collections/indexes et jeux d'essai métier tiennent sous 0,5 Go. |
-| Sauvegardes MongoDB | **`mongodump` manuel/automatisé + sauvegarde chiffrée indépendante**, restauration de test | Les sauvegardes automatiques facultatives Atlas M0 sont **payantes : 0,10 $/jour, maximum 3 $/mois**, en préversion non garantie. Elles sont exclues de la cible à 0 €. Établir la périodicité, la preuve de restauration et la conservation de plusieurs générations. |
-| Copie de sauvegarde hors VM | **Oracle Object Storage Always Free**, à comparer à un stockage personnel hors fournisseur | Jusqu'à **20 Go** de stockage objet gratuit ; prévoir chiffrement, limites d'usage, protection des clés et politique de purge. Sauvegardes de Mongo et fichiers à restaurer ensemble en cas d'incident. La même organisation Oracle ne garantit pas la résilience à toute défaillance de compte. |
-| Antivirus | **ClamAV** sur la VM Arm | Code actuel utilise `clamscan` local. Documentation ClamAV : RAM recommandée 3 Gio+ **pour ClamAV seul**, CPU et 5 Gio de libre, en plus de l'API. Tester les images ARM64, mises à jour de signatures et temps de scan. |
-| Emails | **Brevo Free** (300/jour) ; **Resend Free** (3 000/mois, 100/jour) en alternative | SMTP compatible avec Nodemailer. **Point bloquant possible** : configuration de domaine d'envoi vérifié et DNS DKIM/DMARC. Brevo peut réécrire les expéditeurs gratuits : délivrabilité à démontrer avant invitation réelle. Ne pas supposer que Duck DNS permet d'authentifier un domaine d'expédition tiers. |
-| DNS public | **Duck DNS**, sous-domaine gratuit | Suffisant comme candidat pour l'URL de test si le DNS et la gestion du certificat fonctionnent ; **pas une preuve de contrôle DNS requis par le SMTP**. Domaine de marque éventuel déjà possédé : vérifier si son usage n'implique aucune dépense nouvelle. |
-| HTTPS | **Let's Encrypt** + Caddy ou autre proxy libre | Certificats gratuits, prouver le contrôle du nom, l'auto-renouvellement et le fonctionnement des cookies de session. |
-| Planification/CI/logs | Cron/systemd, scripts existants, GitHub Actions dans les limites gratuites disponibles | Définir jobs nécessaires, alertes simples, échecs, limites de durée de vie des journaux. Aucun outil payant présumé. |
+Prix publics consultés le 2026-11-01 ; disponibilité effective, contrat, mensualité réelle, taxe, région et commande à confirmer au panier. Les tarifs « à partir de » et promotionnels ne sont pas des prix garantis au renouvellement.
 
-**Exclusions explicites pour la bêta à 0 € :** VPS traditionnel facturé, PaaS à volume persistant payant, Atlas Flex/M10+, backup M0 payant, domaine nouvellement acheté, offre SMTP payante, stockage S3 payant, crédits de bienvenue temporaires et conversion implicite vers Pay As You Go. Ne pas proposer Render Free comme hôte de fichiers : son système de fichiers est éphémère et il ne fournit pas de disque persistant sur l'instance gratuite.
+| Hébergeur / offre | CPU, RAM, stockage | Prix affiché | Sauvegarde incluse / restriction | Évaluation |
+| --- | --- | --- | --- | --- |
+| **OVHcloud VPS-2 (gamme « VPS 2027 »)** | 4 vCore, **8 Go RAM**, 75 Go NVMe | **dès 7,21 € HT / 8,65 € TTC par mois** | Sauvegarde quotidienne incluse, **rétention de 24 h seulement** ; copie indépendante impérative | **Premier candidat** pour disponibilité à contrôler et coût maîtrisé |
+| **Hostinger KVM 2** | 2 vCPU, **8 Go RAM**, 100 Go NVMe | **7,99 € HT/mois promotionnel**, renouvellement annoncé à **14,99 € HT/mois** pour 2 ans | Sauvegardes hebdomadaires ; tarifs mensualisés **facturés d'avance pour la durée du forfait** | Alternative, seulement après vérification du paiement initial et de la durée |
+| **Infomaniak VPS Lite (8 Go)** | 4 vCPU, **8 Go RAM**, 160 Go NVMe | **18 CHF HT/mois** affichés ; option mensuelle/annuelle à vérifier | **Pas de snapshot inclus, pas de SLA de disponibilité** sur VPS Lite ; localisation Suisse | Alternative si préférence fournisseur/souveraineté ; coût supérieur |
+| VPS 4 Go (toutes marques) | Mémoire totale 4 Go | Prix plus faible | ClamAV recommande **3 Gio+ pour son seul processus**, avant l'API/OS | **Déconseillé par défaut** sans mesure de mémoire et test de charge |
 
-**Faisabilité non démontrée** : création effective d'une VM A1 gratuite dans une région adéquate ; acceptation du compte Oracle ; espace Mongo M0 suffisant ; compatibilité transactionnelle et de migrations vérifiée ; SMTP avec expéditeur authentifié **sans nom de domaine acheté** ; chiffrement et restauration des backups ; données personnelles et sous-traitance dans des régions acceptables. Si un point échoue, il faut le rendre visible et **reconcevoir la bêta** (notamment environnement de démonstration avec données fictives), pas activer une option payante silencieusement.
+Le minimum recommandé par l'éditeur ClamAV est 3 Gio de RAM pour ClamAV seul, avec au moins 5 Gio d'espace disque libre en plus du système. **8 Go de RAM est une hypothèse de dimensionnement prudent pour le pilote, pas un résultat de benchmark.** La taille définitive dépendra des scans, imports, PDF, concurrents et des métriques réelles.
 
-### Critères de sortie propres au budget zéro
+**Disponibilité :** ces pages prouvent que les produits sont commercialisés, **pas qu'un serveur 8 Go est commandable aujourd'hui dans la région cible**. Vérifier le panier/stock et la région avant toute transaction. Préférer une facturation mensuelle résiliable plutôt qu'une promotion exigeant 12–24 mois prépayés, sauf décision contraire explicite.
 
-1. Une **matrice de coût 0 € vérifiée dans les tableaux de bord des fournisseurs** : toute ressource `Always Free` identifiée et consommation sous les plafonds ; aucune ligne facturée, aucune carte ou conversion payante acceptée à l'insu du propriétaire.
-2. Une VM accessible et des services gratuits effectivement activables, pas seulement annoncés sur un site marketing.
-3. Une restauration de test chiffrée depuis les sauvegardes gratuites MongoDB **et** fichiers, avec preuve et contrôle d'intégrité.
-4. Un email d'invitation reçu par un véritable tiers depuis une identité d'expédition admissible sans achat de domaine. Si cette preuve n'existe pas, l'ouverture de la bêta par email reste **NO-GO**.
-5. Une preuve des E2E métier, de ClamAV, des cookies HTTPS, de la confiance proxy et de la QA visuelle dans cet environnement précis.
-6. Une analyse de données personnelles et de localisation des prestataires ; gratuité ne dispense pas de RGPD.
+### Architecture candidate : VPS payant et services complémentaires gratuits
 
-**Sources externes officielles consultées le 2026-11-01 :**
-- Oracle. *Ressources Toujours gratuit*. s.d. https://docs.oracle.com/fr-fr/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm
-- Oracle. *FAQ sur Oracle Cloud Free Tier*. s.d. https://www.oracle.com/fr/cloud/free/faq/
+```text
+HTTPS / domaine ou sous-domaine réellement contrôlé
+    -> VPS Linux 8 Go (une instance API)
+       -> Caddy ou reverse proxy (frontend Vite construit + /api)
+       -> Node.js 24 / Express (Core + modules GMS)
+       -> volumes persistants séparés : fichiers / quarantaine
+       -> ClamAV clamscan + signatures mises à jour
+       -> cron/systemd : jobs + surveillance
+    -> MongoDB Atlas Free (base bêta isolée, transactions à éprouver)
+    -> SMTP gratuit compatible Nodemailer, expéditeur DNS authentifié
+    -> sauvegarde externe chiffrée de MongoDB ET des fichiers
+```
+
+**Choix MongoDB non arrêté :** Atlas Free est le candidat initial pour éviter l'administration d'un second service critique sur le VPS ; limite actuelle **0,5 Go données + indexes**, 100 opérations/s, 10 Go entrants et sortants par période de 7 jours, et restrictions de commandes. Les transactions, migrations et jeux de données métier devront être testés sur le tier réel. Une MongoDB auto-hébergée sur le VPS avec replica set `rs0` **serait une autre architecture**, impliquant des ressources supplémentaires, la gestion de la disponibilité et une stratégie de sauvegarde plus exigeante ; ne pas l'adopter silencieusement pour contourner la limite de M0.
+
+**ClamAV :** l'exécutable `clamscan` doit être installé **dans le système/conteneur qui exécute Node**, avec signatures actualisées. Aucun correctif du pipeline Core n'est nécessaire à ce stade, mais les scans réels en panne/timeout doivent être validés.
+
+**SMTP et domaine :** Brevo Free ou autre SMTP gratuit peut être évalué sans changement API ; l'adresse expéditrice, le contrôle DNS DKIM/SPF/DMARC et l'envoi de liens réels sont à prouver. Un sous-domaine gratuit de test ne garantit pas le contrôle DNS de l'expéditeur. Un achat de domaine éventuel est **un coût séparé nécessitant accord**.
+
+**Sauvegardes :** la sauvegarde OVH quotidienne (un jour) ou Hostinger hebdomadaire ne constitue pas un plan de récupération suffisant à elle seule. Atlas Free et les fichiers persistés doivent pouvoir être **restaurés sur une cible isolée** depuis une copie chiffrée hors VPS. Aucune solution à 0 € n'est réputée correcte avant restauration éprouvée.
+
+### Critères de choix avant commande
+
+1. **Prix réel payé maintenant**, prix de renouvellement, TVA, durée minimale, frais annexes et procédure de résiliation.
+2. **Disponibilité immédiate** de la configuration et du datacenter choisi, sans réservation ou crédit temporaire non renouvelable.
+3. **RAM de 8 Go** ou preuve de dimensionnement suffisante pour ClamAV, Express et traitements.
+4. **Accès root Linux**, installation Docker/ClamAV, volume persistant, ports HTTPS, SMTP sortant et tâches cron permis contractuellement.
+5. **Région de traitement** et DPA/RGPD ; responsabilité d'administration/patching clairement attribuée.
+6. **Plan de récupération MongoDB + fichiers** indépendant du serveur, RPO/RTO acceptables et test de restauration.
+7. Pas de création de service ni de paiement avant sélection explicite du propriétaire.
+
+**Sources officielles consultées le 2026-11-01** (date de publication non fournie) :
+- OVHcloud. *VPS — caractéristiques et tarifs*. s.d. https://www.ovhcloud.com/fr/vps/
+- OVHcloud. *VPS Backup*. s.d. https://www.ovhcloud.com/fr/vps/vps-backup/
+- Hostinger. *Hébergement VPS*. s.d. https://www.hostinger.com/fr/vps
+- Infomaniak. *VPS Lite*. s.d. https://www.infomaniak.com/fr/hebergement/vps-lite
+- ClamAV. *Recommended System Requirements*. s.d. https://docs.clamav.net/
 - MongoDB. *Atlas Free Cluster Limits*. s.d. https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/
 - MongoDB. *Free Cluster Backups*. s.d. https://www.mongodb.com/docs/atlas/backup/cloud-backup/free-cluster-backup/
-- ClamAV. *Recommended System Requirements*. s.d. https://docs.clamav.net/
 - Brevo. *FAQ — limites de l'offre Gratuit*. s.d. https://help.brevo.com/hc/fr/articles/208580669-FAQ-Quels-sont-les-limites-de-l-offre-Gratuit
-- Brevo. *Authentifier votre domaine dans Brevo*. s.d. https://help.brevo.com/hc/fr/articles/12163873383186-Authentifier-votre-domaine-dans-Brevo-code-Brevo-enregistrement-DKIM-enregistrement-DMARC
-- Brevo. *Se conformer aux exigences de Gmail, Yahoo, Microsoft*. s.d. https://help.brevo.com/hc/en-us/articles/14925263522578-Comply-with-Gmail-Yahoo-and-Microsoft-s-requirements-for-email-senders
-- Resend. *Pricing*. s.d. https://resend.com/pricing
-- Resend. *SMTP Service*. 2023-08-08. https://resend.com/changelog/smtp-service
-- Duck DNS. *Accueil*. s.d. https://www.duckdns.org/
-- Let's Encrypt. *Certificats TLS gratuits*. s.d. https://letsencrypt.org/fr/
-- Render. *Deploy for Free*. s.d. https://render.com/docs/free
 
 ---
 
@@ -102,11 +117,11 @@ Utilisateurs invités
             supervision, sauvegardes hors serveur
 ```
 
-**Hypothèses de conception, non validées** : faible nombre d'utilisateurs invités, une seule instance API initiale, absence de haute disponibilité garantie, fenêtre de maintenance acceptable. **La contrainte de coût récurrent nul impose en priorité la vérification de la faisabilité Oracle Always Free + Atlas Free** ; les options payantes du comparatif ci-dessous sont désormais hors périmètre de la bêta. Le besoin de capacité et la criticité réelle des données doivent être arbitrés avant dimensionnement.
+**Hypothèses de conception, non validées** : faible nombre d'utilisateurs invités, une seule instance API initiale, absence de haute disponibilité garantie, fenêtre de maintenance acceptable. **Le propriétaire autorise désormais un hébergement VPS peu coûteux**, sous réserve de disponibilité et de conditions contractuelles vérifiées. OVHcloud, Hostinger et Infomaniak sont les trois candidats évalués ci-dessus ; les autres services restent gratuits dans la mesure du possible. Le besoin de capacité et la criticité réelle des données doivent être arbitrés avant dimensionnement.
 
 La proposition `app.domaine.tld` est illustrative, pas un nom de domaine réservé. Les ports internes HTTP ne doivent pas être exposés au public. La terminaison TLS sur reverse proxy reste une frontière de confiance à tester (headers, véritable IP source, cookies, protections).
 
-## 4. Options d'hébergement : priorité 0 €, alternatives payantes exclues de la bêta
+## 4. Stratégies d'hébergement : VPS économique prioritaire, PaaS alternatif
 
 | Critère | Option A : VM/VPS UE + Docker Compose + MongoDB Atlas | Option B : PaaS managé + MongoDB Atlas |
 | --- | --- | --- |
@@ -178,9 +193,9 @@ Le choix de la cadence des jobs et de rétention dépend des usages et contrats.
 | ID | Arbitrage nécessaire | Proposition de travail |
 | --- | --- | --- |
 | DEP-01 | Population et exposition | Bêta privée nominative, sans inscriptions publiques ouvertes par défaut, à valider contre le fonctionnement actuel. |
-| DEP-02 | **Budget fixé à 0 € de coût récurrent** | Vérifier Oracle Always Free A1 en premier ; n'envisager aucune option facturée pendant la bêta sans nouvelle décision explicite. |
+| DEP-02 | **Petit budget d'hébergement autorisé ; pas de plafond chiffré ni de fournisseur retenu** | Prioriser OVHcloud VPS-2 8 Go, comparer Hostinger KVM 2 et Infomaniak VPS Lite 8 Go ; valider le tarif réel, les taxes, le paiement initial et la disponibilité. |
 | DEP-03 | Administration du serveur | Décider si l'exploitation Linux/Docker et ses correctifs peuvent être assurés. |
-| DEP-04 | Sauvegarde MongoDB sans coût récurrent | Atlas Free sans sauvegarde payante ; tester mongodump/restauration + copie chiffrée indépendante et déterminer RPO/RTO acceptables. |
+| DEP-04 | Sauvegarde MongoDB et fichiers | Explorer Atlas Free + mongodump + backup externe chiffré, mais ne pas exclure une solution payante si la sécurité de reprise requise l'impose ; valider toute dépense complémentaire avant souscription. |
 | DEP-05 | Stockage et fichiers | Local persistant et sauvegarde externe pour une instance, **ou** demande d'évolution Core S3 si besoin multi-instance. |
 | DEP-06 | SMTP et domaine | Comparer offres transactionnelles, domaine d'envoi, DNS et limites. |
 | DEP-07 | Confiance proxy/IP et health | Exiger preuve derrière proxy ; ouvrir changement Core isolé si primitive générique incorrecte. |
@@ -189,7 +204,7 @@ Le choix de la cadence des jobs et de rétention dépend des usages et contrats.
 
 ## 8. Critères de clôture du cadrage PRE-BETA-003
 
-- Architecture et prestataires **explicitement validés**, coût estimatif fondé sur leur offre actuelle et localisation des données documentés.
+- Architecture et prestataires **explicitement validés**, devis réel (prix initial, renouvellement, TVA, durée, disponibilités, localisation des données) documenté ; aucune souscription anticipée.
 - Schéma des flux, surface réseau exposée, inventaire secrets et paramètres d'auth/cookies corrigés ou prouvés compatibles.
 - Liste des dépendances qui relèvent de la configuration seule vs évolution Core/Produit ; aucun correctif Core maquillé dans le produit.
 - Plan d'implémentation et de recette d'un **lot cohérent**, avec rollback, responsabilités, critères GO/NO-GO.
