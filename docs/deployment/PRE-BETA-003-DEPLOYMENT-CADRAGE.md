@@ -1,12 +1,14 @@
 # PRE-BETA-003 — Cadrage du premier déploiement (proposition)
 
 **Date :** 2026-11-01  
-**Statut :** PROPOSITION À ARBITRER — ni architecture validée ni autorisation de déploiement  
+**Statut :** CADRAGE EN COURS — OVHcloud VPS et double sauvegarde validés en principe ; SMTP, domaine, offres finales et architecture d'exploitation non encore arrêtés. Aucune autorisation de commande ou déploiement.  
 **Périmètre :** bêta privée de `saas-fiches-techniques-gms`, pas une mise en production publique ou un refactoring métier  
 **Base Git vérifiée :** `main` au commit `1e47178ffd9abfa67011ba075bcc13a6a607b481` (PR #58 fusionnée) ; `core-origin.json` = Core `v1.2.1` / `42beaff67200ca4e956378e2273b4eae440f47bc`.  
-**Preuve CI :** Core Gate #250 verte sur la PR #58 ; la gate du commit de fusion `1e47178` était encore `in_progress` à la dernière lecture. Ne pas transposer le succès de la PR à la gate post-fusion.
+**Preuve CI :** Core Gate #250 verte sur la PR #58 et [gate post-fusion](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/41309180625) vérifiée `completed/success` sur `1e47178`. Cela ne prouve pas la réussite d'un déploiement réel.
 
 ## 0. Contrainte révisée : petit budget pour un hébergement disponible (2026-11-01)
+
+**Plan de mise en œuvre :** [PRE-BETA-003 — ordre de préparation et mise en service](PRE-BETA-003-PLAN-EXECUTION.md). **Cadrage SMTP transactionnel dédié :** [PRE-BETA-003 — SMTP, domaine, sécurité et recette](PRE-BETA-003-SMTP-CADRAGE.md). Les deux documents sont des propositions de travail, non des procédures déjà exécutées.
 
 **Dernier arbitrage du propriétaire :** une petite dépense récurrente est acceptable pour un hébergement effectivement disponible. **OVHcloud est désormais retenu comme fournisseur VPS de principe**, avec sauvegarde quotidienne incluse et **copie indépendante de MongoDB + fichiers hors VPS** ; voir décision DEP-02 / DEP-04 ci-dessous. Cela remplace la consigne antérieure de 0 € absolu. Cette décision **n'autorise pas l'achat**, ne fixe aucun plafond chiffré et ne valide ni la configuration exacte ni le stockage externe. Pour MongoDB, SMTP, certificats et outils, rechercher d'abord des solutions gratuites, **sans compromettre les conditions techniques et la récupération des données**.
 
@@ -69,7 +71,7 @@ HTTPS / domaine ou sous-domaine réellement contrôlé
 
 **ClamAV :** l'exécutable `clamscan` doit être installé **dans le système/conteneur qui exécute Node**, avec signatures actualisées. Aucun correctif du pipeline Core n'est nécessaire à ce stade, mais les scans réels en panne/timeout doivent être validés.
 
-**SMTP et domaine :** Brevo Free ou autre SMTP gratuit peut être évalué sans changement API ; l'adresse expéditrice, le contrôle DNS DKIM/SPF/DMARC et l'envoi de liens réels sont à prouver. Un sous-domaine gratuit de test ne garantit pas le contrôle DNS de l'expéditeur. Un achat de domaine éventuel est **un coût séparé nécessitant accord**.
+**SMTP et domaine :** le [cadrage SMTP](PRE-BETA-003-SMTP-CADRAGE.md) fixe la **piste Brevo Free** (0 €, 300 emails/jour), l'alternative Resend, la priorité au **SMTP port 465/TLS implicite** si l'accès réseau OVHcloud le permet, les prérequis de domaine DNS authentifié (DKIM/DMARC, SPF selon fournisseur), les tests d'invitations/réinitialisation, la surveillance des erreurs et les conditions de NO-GO. Aucun fournisseur ni expéditeur n'est encore validé ; un domaine acheté est un coût à approuver séparément.
 
 **Sauvegardes — décision validée :** conserver la sauvegarde OVHcloud Standard quotidienne incluse **et** construire un deuxième mécanisme automatique de sauvegarde MongoDB + fichiers vers un stockage hors VPS, avec historique de plusieurs jours. Un test de restauration isolé des deux types de ressources et une alerte d'échec sont bloquants avant ouverture. L'emplacement externe, son coût, la rétention exacte et le RPO/RTO restent à arbitrer.
 
@@ -222,7 +224,7 @@ Le choix de la cadence des jobs et de rétention dépend des usages et contrats.
 | DEP-03 | Administration du serveur | Décider si l'exploitation Linux/Docker et ses correctifs peuvent être assurés. |
 | DEP-04 | **VALIDÉ — double protection : backup OVHcloud + copies automatiques MongoDB/fichiers hors VPS avec historique de plusieurs jours** | **À ARBITRER** : service de stockage externe, chiffrement/accès, rythme et rétention exacts, RPO/RTO, outil, coût ; effectuer restauration isolée et alerte sur échec avant GO. |
 | DEP-05 | **VALIDÉ pour une seule instance : fichiers persistants sur VPS + copie indépendante hors VPS** | Emplacement du volume (disque système ou additionnel), capacité, droits et restauration à confirmer ; S3 Core seulement si le besoin multi-instance est démontré. |
-| DEP-06 | SMTP et domaine | Comparer offres transactionnelles, domaine d'envoi, DNS et limites. |
+| DEP-06 | **À CADRER — SMTP externe et domaine d'expédition** | [Proposition complète](PRE-BETA-003-SMTP-CADRAGE.md) : Brevo Free candidat principal, domaine contrôlé/DKIM/DMARC, port 465 TLS proposé, test des flux et alertes. Aucune identité SMTP, adresse expéditrice ni fournisseur définitivement choisis. |
 | DEP-07 | Confiance proxy/IP et health | Exiger preuve derrière proxy ; ouvrir changement Core isolé si primitive générique incorrecte. |
 | DEP-08 | Protocole RGPD et hébergement | Région effective, sous-traitants, DPA, finalités, durées, documents d'information et droits. |
 | DEP-09 | Version et modalités de bêta | Définir le canal/version produit et protocole d'invitation et de support ; aucune release forcée ici. |
