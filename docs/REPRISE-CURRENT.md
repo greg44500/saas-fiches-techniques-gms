@@ -6,6 +6,8 @@
 
 **Décision hébergement/sauvegarde la plus récente (2026-11-01) :** **OVHcloud VPS** retenu pour la bêta privée avec sauvegarde Standard quotidienne incluse (24 heures, disque système seulement), complétée par **sauvegardes automatisées MongoDB et fichiers persistants hors VPS**, avec historique de plusieurs jours. **OVHcloud VPS-2 8 Go reste une proposition à confirmer** ; aucun contrat ni paiement n'est validé. Préférer Atlas Free M0 et un SMTP gratuit si viables. La destination indépendante, le chiffrement, la conservation exacte et la restauration isolée du couple DB/fichiers constituent des exigences à compléter et tester avant GO. ClamAV, cookies HTTPS, proxy, SMTP et coûts restent à éprouver.
 
+**Cadrage SMTP et plan d'exécution ajoutés (2026-11-01) :** [SMTP transactionnel](deployment/PRE-BETA-003-SMTP-CADRAGE.md) (Brevo Free candidat, domaine authentifié, port 465/TLS implicite proposé, tests d'invitation et reset, supervision des rejets et des échecs ; fournisseur et domaine **non validés**) et [plan de mise en service P0–P7](deployment/PRE-BETA-003-PLAN-EXECUTION.md). Aucun serveur mail à installer sur le VPS ; le code utilise déjà Nodemailer et `SMTP_*`. Avant commande, arbitrer domaine, VPS exact, région compatible SMTP, stockage et politique de sauvegarde, MongoDB cible, responsable d'exploitation. Les points génériques proxy/IP et health éventuels relèvent du Core.
+
 **Suite :** revoir et valider l'architecture avant toute PR de code d'infrastructure, compte ou facture de prestataire, migration sur base distante ou ouverture de bêta. Aucune donnée `_dev` n'a été touchée. Les sections PRE-BETA-002 ci-dessous restent des états historiques.
 
 ---
