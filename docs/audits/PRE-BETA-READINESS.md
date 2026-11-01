@@ -1,10 +1,10 @@
 # PRE-BETA-001 — Audit initial de préparation à la bêta privée
 
-**Établi le :** 2026-11-01  
-**Statut :** AUDIT INITIAL DOCUMENTAIRE ET STATIQUE — aucune autorisation de déploiement  
-**Périmètre :** `greg44500/saas-fiches-techniques-gms`, futur environnement de bêta privée, Core intégré `v1.2.1`  
-**Référence produit :** `main` = `70d3e22d9f158a9582e5e80a4ee11f014e06ab93`  
-**Core intégré :** `core-origin.json` = `42beaff67200ca4e956378e2273b4eae440f47bc`  
+**Établi le :** 2026-11-01
+**Statut :** AUDIT INITIAL DOCUMENTAIRE ET STATIQUE — aucune autorisation de déploiement
+**Périmètre :** `greg44500/saas-fiches-techniques-gms`, futur environnement de bêta privée, Core intégré `v1.2.1`
+**Référence produit :** `main` = `70d3e22d9f158a9582e5e80a4ee11f014e06ab93`
+**Core intégré :** `core-origin.json` = `42beaff67200ca4e956378e2273b4eae440f47bc`
 **Version du produit :** `product-release.json` = `0.1.0`, canal `development`
 
 > Ce dossier est un premier constat vérifié à distance, pas un audit de pénétration ni un certificat de conformité ou un GO de déploiement. Il ne présuppose ni prestataire d'hébergement, ni données de production, ni migrations appliquées à la future base, ni passage de tests locaux sur le poste Windows.
