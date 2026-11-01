@@ -16,7 +16,7 @@
 
 **VALIDÉ — architecture de principe :** retenir **un VPS OVHcloud pour la bêta privée**, avec la **sauvegarde automatique Standard quotidienne incluse**, **ET** un mécanisme distinct de **sauvegarde automatique de MongoDB et des fichiers applicatifs**, transmis vers un stockage hors VPS et conservé sur **plusieurs points de restauration datés**. Ce second mécanisme fait partie du périmètre obligatoire de préparation à la bêta, et non d'une option future facultative.
 
-**Non encore décidés :** souscription et région du VPS ; offre exacte (**VPS-2 8 Go reste la configuration recommandée à valider**), prix au panier, domaine ; emplacement/prestataire et éventuel coût du stockage externe ; durée de rétention exacte ; fréquence et plage de sauvegarde ; RPO/RTO ; automatisation/outil de sauvegarde ; MongoDB Atlas Free vs autre offre après essais. **Aucun serveur n'est commandé ou provisionné.**
+**Non encore décidés :** souscription et région du VPS ; offre exacte (**VPS-2 8 Go reste la configuration recommandée à valider**), prix au panier, domaine ; **destination de sauvegarde gratuite à tester (Backblaze B2 10 Go / Amsterdam proposé, pas encore choisi)** ; durée de rétention exacte ; fréquence et plage de sauvegarde ; RPO/RTO ; automatisation/outil de sauvegarde ; MongoDB Atlas Free vs autre offre après essais. **Aucun serveur ni stockage distant n'est commandé ou provisionné.**
 
 #### Deux couches de protection indépendantes
 
@@ -36,6 +36,33 @@
 - OVHcloud. *Comment utiliser les sauvegardes automatisées sur un VPS*. s.d. https://docs.ovhcloud.com/fr/guides/bare-metal-cloud/virtual-private-servers/using-automated-backups-on-a-vps
 - MongoDB. *mongodump Behavior, Access, and Usage*. s.d. https://www.mongodb.com/docs/database-tools/mongodump/mongodump-behavior/
 - CNIL. *Sécurité : Sauvegarder*. 2024-03-14. https://www.cnil.fr/fr/securite-sauvegarder
+
+### Contrainte complémentaire confirmée — sauvegardes hors VPS sans abonnement (2026-11-01)
+
+**Décision du propriétaire : 0 € de coût supplémentaire pour le stockage des sauvegardes indépendantes.** Le seul budget récurrent accepté à ce stade concerne l'hébergement VPS OVHcloud. **Ne pas activer un volume de sauvegarde payant, une offre Premium OVHcloud ou un abonnement de stockage sans nouveau consentement explicite.** L'exigence de sauvegarde hors VPS et de restauration réelle reste inchangée.
+
+**Candidat prioritaire à éprouver, non encore souscrit ni validé : Backblaze B2, région EU Central (Amsterdam)**. La documentation officielle annonce :
+- **10 Go de stockage inclus gratuitement de façon permanente** et des transactions API gratuites dans les limites du service ;
+- **création de compte sans carte bancaire requise** selon la page officielle d'inscription ;
+- zone **EU Central** conservant les fichiers à Amsterdam, sélectionnée **au moment de créer le compte** et non modifiable sur ce compte ;
+- compatibilité avec **restic** via API S3, pour sauvegardes **chiffrées avant transfert**, incrémentales/dédupliquées, snapshots datés et restauration.
+
+**Architecture candidate :** `mongodump` (seulement la base bêta) + répertoire persistant `LOCAL_STORAGE_ROOT_DIR` -> **restic** sur le VPS -> bucket B2 **privé** en région EU Central. Clé de déchiffrement conservée **aussi hors du VPS** dans un emplacement sécurisé ; accès B2 à droits minimaux, MFA, surveillance des erreurs, test de restauration isolé. Les fichiers temporaires/quarantaine ne sont pas inclus comme fichiers applicatifs restaurables.
+
+**Règle budgétaire bloquante :** ne pas interpréter « 10 Go gratuits » comme une garantie que sept sauvegardes quotidiennes et quatre hebdomadaires y tiendront. **Mesurer** le volume initial, puis la croissance réelle après rétention/déduplication. Prévoir un seuil d'alerte **avant 10 Go**, une surveillance des quotas et éventuellement des plafonds de dépenses ; la documentation Backblaze prévient que sans plafonds un compte autorisé à facturer peut engendrer des coûts non limités. Ne pas enregistrer de moyen de paiement ni activer d'utilisation facturable sans autorisation. **Si l'espace est insuffisant, alerter et revoir le périmètre/retention ou utiliser une destination gratuite alternative approuvée — ne pas facturer silencieusement, ne pas supprimer toutes les copies pour libérer de l'espace, ne pas présenter des sauvegardes échouées comme réussies.**
+
+**Risques à vérifier avant GO** : limites réelles du compte gratuit ; possibilité de conserver plusieurs jours dans les 10 Go ; DPA Backblaze, sous-traitants et transferts éventuels malgré une région EU ; restauration MongoDB/fichiers cohérente ; comportement si stockage distant saturé ou indisponible ; récupération des clés, protection contre suppression malveillante et contrôle d'intégrité. La gratuité n'exonère pas des tests et du RGPD.
+
+**Alternative sans abonnement :** un ordinateur ou NAS **déjà possédé**, hébergé physiquement hors du VPS, accessible de manière sécurisée pour recevoir des sauvegardes chiffrées. Cette solution dépend de sa disponibilité permanente, de sa connexion, de l'énergie et de sa propre fiabilité ; aucune telle ressource n'est confirmée. Un stockage sur une autre partition du même VPS **n'est pas** indépendant.
+
+**Sources officielles consultées le 2026-11-01 :**
+- Backblaze. *B2 Cloud Storage Pricing*. s.d. https://www.backblaze.com/fr/cloud-storage/pricing
+- Backblaze. *Get Started With Backblaze B2*. s.d. https://www.backblaze.com/sign-up/s3
+- Backblaze. *Where are the Backblaze Cloud Storage Data Centers*. 2025-02-27. https://www.backblaze.com/docs/en/cloud-storage-data-regions
+- Backblaze. *Understand Backblaze B2 Data Caps and Alerts*. 2026-05-22. https://www.backblaze.com/docs/en/cloud-storage-data-caps-and-alerts
+- Backblaze. *How to Use Restic for Backups with Backblaze B2 Cloud Storage*. 2026-08-27. https://www.backblaze.com/docs/cloud-storage-integrate-restic-with-backblaze-b2
+- Backblaze. *Data Processing Addendum*. 2023-02-07. https://help.backblaze.com/hc/en-us/articles/360004146953-Data-Processing-Addendum
+- restic. *Removing backup snapshots*. s.d. https://restic.readthedocs.io/en/stable/060_forget.html
 
 ### Comparaison officielle des VPS adaptés à l'application
 
@@ -222,7 +249,7 @@ Le choix de la cadence des jobs et de rétention dépend des usages et contrats.
 | DEP-01 | Population et exposition | Bêta privée nominative, sans inscriptions publiques ouvertes par défaut, à valider contre le fonctionnement actuel. |
 | DEP-02 | **VALIDÉ — hébergeur OVHcloud VPS + backup Standard inclus** | Configuration VPS-2 8 Go proposée mais **non commandée** ; confirmer région, prix réel, taxes, durée et disponibilité au panier avant achat. |
 | DEP-03 | Administration du serveur | Décider si l'exploitation Linux/Docker et ses correctifs peuvent être assurés. |
-| DEP-04 | **VALIDÉ — double protection : backup OVHcloud + copies automatiques MongoDB/fichiers hors VPS avec historique de plusieurs jours** | **À ARBITRER** : service de stockage externe, chiffrement/accès, rythme et rétention exacts, RPO/RTO, outil, coût ; effectuer restauration isolée et alerte sur échec avant GO. |
+| DEP-04 | **VALIDÉ — double protection et 0 € de frais supplémentaires pour stockage externe** | **À ÉPROUVER :** Backblaze B2 gratuit (10 Go, EU Central/Amsterdam) + restic, sans carte ni dépassement facturable ; mesure du volume, quotas, chiffrement, rétention, restauration isolée et alerte sur échec avant GO. |
 | DEP-05 | **VALIDÉ pour une seule instance : fichiers persistants sur VPS + copie indépendante hors VPS** | Emplacement du volume (disque système ou additionnel), capacité, droits et restauration à confirmer ; S3 Core seulement si le besoin multi-instance est démontré. |
 | DEP-06 | **À CADRER — SMTP externe et domaine d'expédition** | [Proposition complète](PRE-BETA-003-SMTP-CADRAGE.md) : Brevo Free candidat principal, domaine contrôlé/DKIM/DMARC, port 465 TLS proposé, test des flux et alertes. Aucune identité SMTP, adresse expéditrice ni fournisseur définitivement choisis. |
 | DEP-07 | Confiance proxy/IP et health | Exiger preuve derrière proxy ; ouvrir changement Core isolé si primitive générique incorrecte. |
