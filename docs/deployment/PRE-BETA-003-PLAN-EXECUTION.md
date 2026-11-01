@@ -14,7 +14,7 @@
 - **Bêta privée** avec utilisateurs pilotes autorisés, non assimilée à une ouverture publique.
 - **Coûts maîtrisés :** petit budget d'hébergement possible, services externes gratuits privilégiés lorsque techniquement et juridiquement acceptables.
 
-**Ne sont pas encore décidés :** commande de VPS-2 8 Go (modèle recommandé seulement), région de datacenter, disponibilité et prix au panier, domaine DNS, prestataire SMTP (Brevo Free candidat), MongoDB Atlas M0 après essais, stockage externe de sauvegarde, calendrier/rétention et RPO/RTO, conformité, stratégie de supervision. Ne rien activer implicitement.
+**Ne sont pas encore décidés :** commande de VPS-2 8 Go (modèle recommandé seulement), région de datacenter, disponibilité et prix au panier, domaine DNS, prestataire SMTP (Brevo Free candidat), MongoDB Atlas M0 après essais, **stockage externe gratuit Backblaze B2 (10 Go, région EU Central/Amsterdam), candidat à tester**, calendrier/rétention et RPO/RTO, conformité, stratégie de supervision. **Contrainte supplémentaire validée : zéro coût de stockage de sauvegarde au-delà du prix du VPS.** Pas de carte/plan payant ni dépassement facturable sans consentement, aucun provisionnement implicite.
 
 ## 2. Phases et critères de validation
 
@@ -34,7 +34,7 @@
 1. Vérifier l'existence d'un **nom de domaine déjà contrôlé**, sinon chiffrer un achat optionnel. Le domaine doit pouvoir héberger le site et fournir des enregistrements DNS destinés au SMTP.
 2. **Valider Brevo Free ou un concurrent** : créer/configurer le compte uniquement sur décision, vérifier l'expéditeur et l'envoi test. Sans domaine authentifié, l'activation des invitations réelles n'est pas considérée opérationnelle.
 3. Choisir la cible **MongoDB Atlas Free vs alternative** par essais d'une base isolée, dont la prise en charge des transactions, les contraintes d'indexes et l'espace libre sont réellement vérifiés.
-4. Choisir le **stockage de sauvegarde hors VPS**, l'outil, son chiffrement et son coût, puis définir le nombre de copies et le niveau de perte acceptable ; le besoin « plusieurs jours » est validé mais aucune rétention chiffrée finale ne l'est.
+4. Vérifier **Backblaze B2 gratuit (10 Go, EU Central/Amsterdam), avec restic et chiffrement avant transfert**, ou une alternative gratuite acceptée ; définir les contrôles de volume, les alertes et le nombre de copies et le niveau de perte acceptable ; le besoin « plusieurs jours » est validé mais aucune rétention chiffrée finale ne l'est.
 5. Vérifier **l'offre OVHcloud exacte**, la disponibilité, région datacenter **hors Local Zones bloquant le SMTP**, 8 Go recommandés, facturation mensuelle, sauvegarde Standard, prix TTC et renouvellement.
 6. Établir les exigences d'exploitation (accès SSH, supervision, incidents, maintenance) et de conformité (DPA, RGPD, informations destinataires).
 
@@ -45,7 +45,7 @@
 - **SMTP** : relais externe Brevo Free candidat, port 465/TLS implicite si vérifié ; pas de serveur SMTP autohébergé.
 - **MongoDB** : URI sécurisée vers base de bêta exclusivement, migration-manifest et runners, pas de `autoIndex` implicite en production.
 - **Fichiers** : racine persistante séparée de la quarantaine temporaire, accès minimum, aucune supposition de stockage cloud disponible sans Core.
-- **Sauvegarde** : exécuteur planifié à exécution unique, journaux sans secrets, copie chiffrée hors VPS, versions datées et restauration sur cible isolée.
+- **Sauvegarde** : exécuteur planifié à exécution unique, journaux sans secrets, copie chiffrée hors VPS, versions datées et restauration sur cible isolée. **Stockage distant : coût additionnel interdit, quota gratuit vérifié et alerte avant épuisement.**
 - **Déploiement** : au départ, **validation humaine** après Core Gate, images/artefacts immuables, migrations explicites puis tests de fumée ; pas de `git pull` arbitraire en production.
 
 ## 5. Risques Core et limites non résolues
