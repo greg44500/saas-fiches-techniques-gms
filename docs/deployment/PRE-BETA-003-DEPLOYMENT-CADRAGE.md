@@ -16,7 +16,7 @@
 
 **VALIDÉ — architecture de principe :** retenir **un VPS OVHcloud pour la bêta privée**, avec la **sauvegarde automatique Standard quotidienne incluse**, **ET** un mécanisme distinct de **sauvegarde automatique de MongoDB et des fichiers applicatifs**, transmis vers un stockage hors VPS et conservé sur **plusieurs points de restauration datés**. Ce second mécanisme fait partie du périmètre obligatoire de préparation à la bêta, et non d'une option future facultative.
 
-**Non encore décidés :** souscription et région du VPS ; offre exacte (**VPS-2 8 Go reste la configuration recommandée à valider**), prix au panier, domaine ; **destination de sauvegarde gratuite à tester (Backblaze B2 10 Go / Amsterdam proposé, pas encore choisi)** ; durée de rétention exacte ; fréquence et plage de sauvegarde ; RPO/RTO ; automatisation/outil de sauvegarde ; MongoDB Atlas Free vs autre offre après essais. **Aucun serveur ni stockage distant n'est commandé ou provisionné.**
+**Non encore décidés :** souscription et région du VPS ; offre exacte (**VPS-2 8 Go reste la configuration recommandée à valider**), prix au panier et domaine ; **le disque externe personnel est retenu pour les copies**, mais son automatisation, sa disponibilité et sa protection restent à éprouver ; durée de rétention et cadence exactes, RPO/RTO ; **Atlas Free dans un nouveau projet** recommandé mais non créé, après vérification des conditions du compte existant. **Aucun serveur, cluster ni transfert n'est provisionné ou exécuté.**
 
 #### Deux couches de protection indépendantes
 
@@ -41,7 +41,7 @@
 
 **Décision du propriétaire : 0 € de coût supplémentaire pour le stockage des sauvegardes indépendantes.** Le seul budget récurrent accepté à ce stade concerne l'hébergement VPS OVHcloud. **Ne pas activer un volume de sauvegarde payant, une offre Premium OVHcloud ou un abonnement de stockage sans nouveau consentement explicite.** L'exigence de sauvegarde hors VPS et de restauration réelle reste inchangée.
 
-**Candidat prioritaire à éprouver, non encore souscrit ni validé : Backblaze B2, région EU Central (Amsterdam)**. La documentation officielle annonce :
+**OPTION HISTORIQUE NON RETENUE EN PRIORITÉ : Backblaze B2, région EU Central (Amsterdam)**. Le propriétaire a ensuite retenu son **disque externe personnel** ; les éléments Backblaze ci-dessous ne constituent plus le plan actif. La documentation officielle annonce :
 - **10 Go de stockage inclus gratuitement de façon permanente** et des transactions API gratuites dans les limites du service ;
 - **création de compte sans carte bancaire requise** selon la page officielle d'inscription ;
 - zone **EU Central** conservant les fichiers à Amsterdam, sélectionnée **au moment de créer le compte** et non modifiable sur ce compte ;
@@ -63,6 +63,43 @@
 - Backblaze. *How to Use Restic for Backups with Backblaze B2 Cloud Storage*. 2026-08-27. https://www.backblaze.com/docs/cloud-storage-integrate-restic-with-backblaze-b2
 - Backblaze. *Data Processing Addendum*. 2023-02-07. https://help.backblaze.com/hc/en-us/articles/360004146953-Data-Processing-Addendum
 - restic. *Removing backup snapshots*. s.d. https://restic.readthedocs.io/en/stable/060_forget.html
+
+### Décision de destination des sauvegardes — disque externe personnel (2026-11-01)
+
+**Choix de principe du propriétaire :** il possède un **disque externe** et souhaite y conserver les sauvegardes indépendantes, **sans abonnement supplémentaire**. Cette destination remplace **Backblaze B2 comme candidat prioritaire** : B2 reste uniquement une alternative historique si la solution domestique s'avère irréalisable. **Aucun transfert ni configuration de sauvegarde n'a été effectué.**
+
+**Architecture à éprouver** (hypothèse Windows, conforme au poste de développement décrit) :
+1. Le backend reste sur le **VPS OVHcloud**, les données sur **Atlas Free dans un projet et un cluster séparés** si les contraintes sont validées ; les bases Atlas de développement existantes sont intégralement préservées.
+2. Produire un **`mongodump`** de la base bêta uniquement, sans copier une base de développement. Le tier Atlas Free ne prend pas en charge `mongodump --oplog` ni `mongorestore --oplogReplay` : le dump ne constitue **pas** une photographie cohérente du trafic concurrent par défaut. Privilégier une fenêtre sans écritures (ou procédure plus robuste validée) et effectuer une restauration complète à blanc.
+3. Préparer également une copie contrôlée des **fichiers persistants** (`LOCAL_STORAGE_ROOT_DIR`), non des temporaires de quarantaine. **Chiffrer les archives** et éviter toute fuite de secret ou de lien d'invitation.
+4. **Le PC Windows récupère les archives via une connexion sortante sécurisée vers le VPS**, sans ouvrir de port entrant sur la box domestique, et les écrit sur le **disque externe chiffré** ; utiliser des identifiants en lecture restreinte. Une sauvegarde ne devient indépendante qu'après présence physique sur le disque externe.
+5. Configurer un déclenchement Windows contrôlé et **surveiller la date de la dernière copie réussie**. Si le PC est éteint ou le disque débranché, la copie ne s'exécute pas : prévoir notification d'échec, rattrapage au prochain démarrage et/ou une copie tampon temporaire sur le VPS **sans la considérer comme une sauvegarde hors site**.
+6. Conserver **trois copies quotidiennes glissantes** comme **proposition simplifiée** compte tenu des 2 à 3 personnes pilotes (Super administrateur Platform compris) ; effectuer une copie supplémentaire avant une migration à risque si nécessaire. **La fréquence, le rythme d'utilisation du PC et la tolérance aux pertes (RPO/RTO) restent à valider**. Aucune purge automatique avant qu'une copie saine ne soit vérifiée.
+7. Tester réellement `mongorestore` vers une **base isolée** et la récupération des fichiers avec la version applicative compatible. Conserver la **clé de chiffrement hors du disque**, protégée contre la perte et consultable uniquement par le propriétaire autorisé.
+
+**Limites explicites :** disponibilité du PC/disque, vol, panne, incendie du domicile, ransomware, rétention insuffisante en cas d'incident détecté tardivement ; le disque doit être **déconnecté** après la copie si possible. La sauvegarde OVHcloud Standard constitue la protection supplémentaire du serveur, pas la sauvegarde Atlas. La conservation locale de données personnelles doit recevoir des protections adaptées à la sensibilité, conforme au RGPD.
+
+**Aucune copie Atlas existante de développement** ne doit être exportée ou écrasée au nom du déploiement bêta. La destination locale est validée **en principe**, sous réserve d'une procédure automatisée techniquement viable, de chiffrement et de restauration éprouvée.
+
+### MongoDB Atlas existant — coût et séparation de la bêta (2026-11-01)
+
+**Le propriétaire dispose déjà d'un compte MongoDB avec des bases de développement. Leur projet/cluster/tier exacts ne sont pas connus et ne sont pas modifiés.**
+
+- **Compte Atlas existant à réutiliser** ; nouveau **projet Atlas dédié à la bêta** recommandé pour isoler les droits, utilisateurs DB, listes IP et alertes des environnements de développement. Un **nouveau cluster Atlas Free** peut être créé dans ce projet, **sous réserve des limites de compte et de l'interface réelle** ; MongoDB autorise **un cluster Free par projet**.
+- **Prix MongoDB Atlas Free : 0 € par mois** pour l'hébergement du cluster ; quota **512 Mo documents BSON non compressés + indexes**, 100 opérations/s, maximum 500 connexions, 100 bases/500 collections par cluster. Aucune option payante, sauvegarde Atlas en souscription ni cluster Flex ne sont à activer sans demande spécifique.
+- **Atlas Flex : 8 à 30 USD/mois** suivant les opérations, avec **5 Go inclus** ; **Dedicated M10+ : dès 60 USD/mois** selon MongoDB. Ce sont des alternatives **hors budget bêta à ce stade**, pas des commandes.
+- Vérifier sur le cluster M0 cible **transactions Mongoose, indexes et migrations réelles**, taille du schéma/jeu de données, import catalogue et performances ; la présence de 2–3 utilisateurs n'est **pas une preuve suffisante** de capacité. L'utilisation des fichiers sur VPS n'entre pas automatiquement dans les 512 Mo Mongo.
+- Isoler les droits applicatifs avec un utilisateur DB propre à la bêta et autoriser **l'IP publique fixe du VPS uniquement**, plus l'accès d'administration temporaire strictement nécessaire. Éviter `0.0.0.0/0`, ne jamais mettre URI/identifiants dans Git.
+- Les options de **sauvegarde automatique Atlas Free peuvent être facturées jusqu'à 3 USD/mois** en préversion selon l'offre, elles ne sont **pas retenues**. La sauvegarde indépendante sur disque externe et la restauration testée sont les prérequis choisis.
+
+**Sources officielles consultées le 2026-11-01 :**
+- MongoDB. *Deploy a Free Cluster*. s.d. https://www.mongodb.com/docs/atlas/tutorial/deploy-free-tier-cluster/
+- MongoDB. *Atlas Free Cluster Limits*. s.d. https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/
+- MongoDB. *Configure Access to the Atlas UI*. s.d. https://www.mongodb.com/docs/atlas/organizations-projects/
+- MongoDB. *Atlas Flex Costs*. s.d. https://www.mongodb.com/docs/atlas/billing/atlas-flex-costs/
+- MongoDB. *Free Cluster Backups*. s.d. https://www.mongodb.com/docs/atlas/backup/cloud-backup/free-cluster-backup/
+- MongoDB. *Manage the IP Access List*. s.d. https://www.mongodb.com/docs/atlas/security/add-ip-address-to-list/
+- CNIL. *Sécurité : Sauvegarder*. 2024-03-14. https://www.cnil.fr/fr/securite-sauvegarder
 
 ### Comparaison officielle des VPS adaptés à l'application
 
@@ -249,7 +286,7 @@ Le choix de la cadence des jobs et de rétention dépend des usages et contrats.
 | DEP-01 | Population et exposition | Bêta privée nominative, sans inscriptions publiques ouvertes par défaut, à valider contre le fonctionnement actuel. |
 | DEP-02 | **VALIDÉ — hébergeur OVHcloud VPS + backup Standard inclus** | Configuration VPS-2 8 Go proposée mais **non commandée** ; confirmer région, prix réel, taxes, durée et disponibilité au panier avant achat. |
 | DEP-03 | Administration du serveur | Décider si l'exploitation Linux/Docker et ses correctifs peuvent être assurés. |
-| DEP-04 | **VALIDÉ — double protection et 0 € de frais supplémentaires pour stockage externe** | **À ÉPROUVER :** Backblaze B2 gratuit (10 Go, EU Central/Amsterdam) + restic, sans carte ni dépassement facturable ; mesure du volume, quotas, chiffrement, rétention, restauration isolée et alerte sur échec avant GO. |
+| DEP-04 | **VALIDÉ — double protection et 0 € de frais supplémentaires de stockage** | **Destination de principe validée : disque externe personnel** ; protocole PC Windows (chiffrement, copie sécurisée, PC disponible, rétention courte, alerte d'échec, restauration isolée) à éprouver. Backblaze seulement historique/alternative. |
 | DEP-05 | **VALIDÉ pour une seule instance : fichiers persistants sur VPS + copie indépendante hors VPS** | Emplacement du volume (disque système ou additionnel), capacité, droits et restauration à confirmer ; S3 Core seulement si le besoin multi-instance est démontré. |
 | DEP-06 | **À CADRER — SMTP externe et domaine d'expédition** | [Proposition complète](PRE-BETA-003-SMTP-CADRAGE.md) : Brevo Free candidat principal, domaine contrôlé/DKIM/DMARC, port 465 TLS proposé, test des flux et alertes. Aucune identité SMTP, adresse expéditrice ni fournisseur définitivement choisis. |
 | DEP-07 | Confiance proxy/IP et health | Exiger preuve derrière proxy ; ouvrir changement Core isolé si primitive générique incorrecte. |
