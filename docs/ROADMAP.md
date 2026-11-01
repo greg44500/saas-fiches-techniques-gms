@@ -1,3 +1,11 @@
+## PRE-BETA-003 — Cadrage du déploiement de la bêta privée (2026-11-01, proposition)
+
+La PR [#58](https://github.com/greg44500/saas-fiches-techniques-gms/pull/58) (PRE-BETA-002) est fusionnée sur `main` au commit `1e47178`. La Core Gate #250 de PR était verte ; le résultat du contrôle post-fusion doit être suivi séparément. Les vérifications visuelles PDF et la recette opérationnelle restent distinctes des E2E.
+
+**Lot actif de cadrage uniquement :** [PRE-BETA-003 — Architecture et prérequis du déploiement](deployment/PRE-BETA-003-DEPLOYMENT-CADRAGE.md) sur `docs/pre-beta-003-deployment-cadrage`. Aucune infrastructure, décision de fournisseur, secret ou migration de production n'est créée ou validée. Les prochaines étapes sont l'arbitrage de l'hébergement, de MongoDB, des sauvegardes, de ClamAV, du SMTP et des paramètres réseau/sessions ; seulement ensuite l'implémentation reproductible et la recette.
+
+---
+
 ## PRE-BETA-002 — Consolidation QA métier pré-bêta (2026-11-01, état de branche)
 
 **Décision courante :** PRE-BETA-002 couvre la non-régression critique **M-001 à M-006 et D-020**, et non deux seuls tests E2E M-006. [Matrice, scénarios et critères de clôture](audits/PRE-BETA-002-QUALITY-COVERAGE.md). Conserver **une seule branche et une seule PR produit** pour les contrôles cohérents, sans modification du Core, des données de développement ni de l'infrastructure.
