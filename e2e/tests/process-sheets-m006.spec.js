@@ -48,6 +48,8 @@ async function expectDownloadedPdf(page) {
 }
 
 test('M-006 propriétaire : brouillon, validation, PDF, suppression et recréation sans perte M-004', async ({ page }) => {
+  // Parcours long : création, deux téléchargements PDF, suppression et recréation.
+  test.slow();
   const context = await provisionValidatedProcessParent();
   const token = await loginWithIdentity(page, context.identity);
   const title = 'Process recette E2E ' + randomUUID().slice(0, 8);
