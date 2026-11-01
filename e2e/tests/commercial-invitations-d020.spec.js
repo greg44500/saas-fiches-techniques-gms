@@ -60,7 +60,7 @@ test('D-020 : mauvais bénéficiaire refusé, offre privée acceptée une fois v
   await page.getByRole('button', { name: 'Utiliser un autre compte' }).click();
   await expect(page).toHaveURL(/\/login$/);
   await page.getByLabel('Email').fill(context.identity.email);
-  await page.getByLabel('Mot de passe').fill(context.identity.password);
+  await page.getByLabel('Mot de passe', { exact: true }).fill(context.identity.password);
 
   const loginResponsePromise = page.waitForResponse((response) => (
     response.request().method() === 'POST'
