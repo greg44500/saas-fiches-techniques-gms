@@ -152,6 +152,14 @@ test('M-006 droits : lecture seule autorisée, export/suppression refusés, Work
     workspaceId: context.workspaceId,
     permissions: ['workspace:read', 'dossier:read', 'process-sheet:read'],
   });
+  const memberToken = await loginWithIdentity(page, member.identity);
+
+  // Une permission Workspace process-sheet:read ne donne pas accès à un
+  // Dossier sans affectation : refuser avant le grant, puis autoriser après.
+  expect((await page.request.get(processApiBase(context) + '/' + id, {
+    headers: bearer(memberToken),
+  })).status()).toBe(403);
+
   await withE2eDatabase(async () => {
     const workspace = await Workspace.findById(context.workspaceId);
     await grantDossierAccess({
@@ -162,7 +170,6 @@ test('M-006 droits : lecture seule autorisée, export/suppression refusés, Work
     });
   });
 
-  const memberToken = await loginWithIdentity(page, member.identity);
   expect((await page.request.get(processApiBase(context) + '/' + id, {
     headers: bearer(memberToken),
   })).status()).toBe(200);
