@@ -1,3 +1,11 @@
+## PRE-BETA-002 — État de D-012 / assurance qualité métier (2026-11-01)
+
+[Plan consolidé de vérification](audits/PRE-BETA-002-QUALITY-COVERAGE.md) : les E2E déjà présents couvrent M-001 à M-005, deux tests M-006 ont été préparés, et un scénario D-020 d'acceptation commerciale avec identité incorrecte a été ajouté. Les protections backend (tenant, rôles, capabilities, quotas, conflits) et les tests de rendu PDF existants sont inventoriés avant tout ajout. Cette démarche ne rouvre pas les anciennes fonctionnalités livrées.
+
+**État : EN COURS sur la branche `test/pre-beta-002-m006-e2e`.** Le propriétaire a confirmé `release:check` verte sur un HEAD antérieur aux nouveaux E2E, **pas encore sur le HEAD final du lot**. D-012 ne peut être clôturée avant cette vérification, une PR unique fusionnée et une preuve de recette complémentaire. Les dettes d'exploitation, sauvegardes, conformité, migrations de bases cibles et qualité visuelle PDF demeurent distinctes.
+
+---
+
 ## PRE-BETA-001 — Requalification au 2026-11-01
 
 Le registre est maintenant accompagné de l'[audit initial de préparation à la bêta](audits/PRE-BETA-READINESS.md), qui classe chaque point selon preuve, risque et critère de sortie. **Statut technique vérifié :** PR M-006 [#56](https://github.com/greg44500/saas-fiches-techniques-gms/pull/56) fusionnée dans `main` au SHA `70d3e22d9f158a9582e5e80a4ee11f014e06ab93` ; [gate post-merge](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/40902305191) réussie le 2026-10-29.
