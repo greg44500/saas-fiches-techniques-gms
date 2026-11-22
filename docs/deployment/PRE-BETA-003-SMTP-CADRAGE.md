@@ -5,6 +5,12 @@
 **Hébergement de principe validé :** VPS OVHcloud ; le serveur SMTP sera **externe** et ne fera pas partie des services Linux autohébergés.  
 **Référence :** [cadrage du déploiement](PRE-BETA-003-DEPLOYMENT-CADRAGE.md).
 
+## Actualisation SMTP du 2026-11-22
+
+Le **relais SMTP transactionnel externe** est validé ; Brevo Free reste un **candidat**, et non un compte opérationnel. Sa documentation actuelle indique **300 courriels/jour** sur l'offre gratuite ([Brevo, offres d'abonnement](https://help.brevo.com/hc/fr/articles/208589409-%C3%80-propos-des-offres-d-abonnement-de-Brevo), consulté le 2026-11-22). Le **domaine contrôlé, les DNS, l'expéditeur, le support et les essais de réception** restent ouverts. Le compte et les secrets SMTP ne sont pas confirmés.
+
+**Préparer hors VPS :** identité d'envoi et adresse de réponse validées ; contrôle DNS, enregistrements fournis par le prestataire uniquement ; matrice des variables `SMTP_*` sans secrets ; plan de test invitation D-020/reset et preuves de réception. Port 465/`SMTP_SECURE=true` candidat. Si 587 exige TLS strict, analyser d'abord la configuration et soumettre une éventuelle correction générique au protocole d'arbitrage Core. La sortie réelle depuis un VPS OVHcloud hors Local Zone devra être éprouvée **après achat autorisé**, jamais considérée démontrée.
+
 ## 1. Objectif et périmètre
 
 Assurer la livraison fiable des **emails transactionnels** du SaaS de bêta privée : invitations commerciales D-020, invitations d'équipe, invitations Platform, réinitialisation du mot de passe et notifications de sécurité existantes. Le marketing, les newsletters, la réception de boîtes mail, les campagnes de masse et la construction d'un serveur mail ne sont **pas** au périmètre.

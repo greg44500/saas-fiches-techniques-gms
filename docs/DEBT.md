@@ -1,3 +1,13 @@
+## PRE-BETA-003 — Dette de préparation préachat (2026-11-22)
+
+**Production (D-005/D-007/D-013, toujours ouverte).** Le cluster Atlas bêta est **créé selon les captures du propriétaire** ; ne plus traiter sa création comme action restante. Le compte DB `gms_beta_app` est déclaré créé, mais l'état final de ses privilèges et sa connexion ne sont pas vérifiés. Aucun VPS, SMTP reçu, migration bêta, copie indépendante ou restauration prouvés.
+
+**Avant GO préachat :** domaine et SMTP, modèle de proxy/runtime, secrets et volumes, séquence de migrations/seeds/jobs, sécurité réseau, restauration MongoDB+fichiers à partir du disque externe Windows, disponibilité du poste, rétention/RPO/RTO, monitoring/RGPD, devis TTC et tests P2. **Ne pas toucher aux bases dev ni aux IP Atlas avant le provisionnement autorisé.**
+
+**Candidats Core sans correction autorisée :** absence de `trust proxy` dans `backend/app.js` alors que les rate limits utilisent `req.ip` ; `/api/health` renvoie 200 sans contrôle de dépendances ; TLS strict SMTP sur 587 si ce port s'impose. Une anomalie générique doit être reproduite et ses points d'extension étudiés, puis le propriétaire choisira explicitement entre (A) correctif Core versionné + upgrade et (B) exception temporaire GMS documentée avec dette et réconciliation. Aucun patch par anticipation. Les notes plus anciennes sont conservées pour traçabilité.
+
+---
+
 ## PRE-BETA-003 — Décision d'exploitation OVHcloud et sauvegardes (2026-11-01)
 
 **Décision validée, dette d'implémentation toujours ouverte (Production / D-007 et D-013).** Pour la bêta privée : un VPS **OVHcloud** avec sa sauvegarde automatique Standard quotidienne incluse et un **second mécanisme automatique indépendant** exportant MongoDB et les fichiers persistants vers un emplacement **hors VPS**, avec conservation sur plusieurs dates. L'offre VPS-2 / 8 Go est proposée mais non commandée ; la sauvegarde OVHcloud (rétention de 24 h et disque système uniquement) ne couvre pas MongoDB Atlas externe ni un disque additionnel. Voir [PRE-BETA-003 — architecture et sauvegardes](deployment/PRE-BETA-003-DEPLOYMENT-CADRAGE.md).

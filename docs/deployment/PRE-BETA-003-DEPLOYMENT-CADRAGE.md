@@ -6,6 +6,36 @@
 **Base Git vérifiée :** `main` au commit `1e47178ffd9abfa67011ba075bcc13a6a607b481` (PR #58 fusionnée) ; `core-origin.json` = Core `v1.2.1` / `42beaff67200ca4e956378e2273b4eae440f47bc`.  
 **Preuve CI :** Core Gate #250 verte sur la PR #58 et [gate post-fusion](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/41309180625) vérifiée `completed/success` sur `1e47178`. Cela ne prouve pas la réussite d'un déploiement réel.
 
+## Réconciliation du 2026-11-22 — Préparer avant de payer
+
+**Les décisions validées sont reprises sans les rouvrir.** Les sections du 2026-11-01 ci-dessous restent des traces historiques. Le code GitHub est vérifié sur le commit produit `1e47178` et Core `42beaff6` ; aucune infrastructure du lot n'a été testée.
+
+| Sujet | Statut | Preuve et traitement |
+| --- | --- | --- |
+| OVHcloud | **Validé en principe, non commandé** | VPS-2 / 8 Go, OS, zone, prix TTC, reconduction et Standard à vérifier plus tard sur devis |
+| Bêta | **Validée : 2–3 personnes, Super administrateur compris** | Pas de registre public ni de données de développement migrées automatiquement |
+| MongoDB | **Créé selon captures utilisateur** : projet `saas-fiches-techniques-gms-beta`, cluster Free `gms-beta`, AWS Paris | Network Access vide au dernier écran, `gms_beta_app` créé selon déclaration ; rôles finaux, index, transactions et connexion **non prouvés** |
+| Stockage de sauvegardes | **Validé en principe** : disque externe personnel Windows, sans abonnement | Retrait par connexion sortante sécurisée, archives chiffrées ; 3 copies quotidiennes **proposées**, disponibilité PC, RPO/RTO et restauration non validés |
+| Emails | **Validé** : relais transactionnel externe | Brevo Free candidat, aucune configuration/domaine/expéditeur confirmés |
+| Web/runtime | **Ouvert** : Caddy ou Nginx ; Compose ou services natifs | Une origine HTTPS, assets `frontend/dist` et `/api` inchangé, aucun port Express public |
+| Core | **Aucun changement autorisé** | Toute correction générique doit être démontrée, classée et soumise à arbitrage A Core/release/upgrade vs B exception GMS tracée |
+
+### P1 — Constats de lecture du code et risques à éprouver
+
+- `frontend/src/services/api/base-query.js` appelle `/api` avec `credentials: 'include'` ; `frontend/vite.config.js` ne fournit qu'un proxy **de développement**. Un frontal réel devra conserver le préfixe `/api`, servir le build statique et gérer explicitement le fallback SPA.
+- `backend/app.js` n'active pas `trust proxy`; les limiteurs dans `backend/config/rateLimit.config.js` reposent sur `req.ip`. **Risque Core concret à tester** : IP proxy vue comme IP de tous les clients et compteurs anti-abus partagés ; aucune modification avant arbitrage.
+- `backend/routes/health.routes.js` retourne 200 sans tester Atlas, SMTP ou ClamAV : indicateur de vie seulement, pas de readiness prouvée.
+- `backend/config/smtp.config.js` expose `secure` à Nodemailer sans `requireTLS` explicite. Port 465/`SMTP_SECURE=true` reste candidat ; 587/STARTTLS strict sera diagnostiqué si nécessaire, et non corrigé préventivement.
+- `backend/server.js` utilise `app.listen(env.PORT)` sans adresse d'écoute explicitement restreinte. L'isolation doit donc être garantie par le packaging/pare-feu et vérifiée.
+- Stockage local persistant et temporaire distincts (`backend/config/storage.config.js`), scan `clamscan` via `execFile` ; le volume persistant doit survivre au redeploy, la quarantaine ne doit pas être traitée comme archive métier.
+- Migrations explicites dans `docs/releases/migration-manifest.json`, jobs `job:*` distincts ; `npm run release:check` comprend les E2E destructifs sur environnement dédié : **jamais sur Atlas bêta**.
+
+### Critères de sortie avant P3
+
+P0 : domaine sous contrôle DNS, fournisseur SMTP/identité et enveloppe budgétaire validés ; arbitrages Caddy/Nginx, Compose/natif, sauvegardes, PC/disque, RPO/RTO, responsabilités et conformité. P1 : diagnostic et solutions possibles Core/Produit/Infra documentés et arbitrés seulement si un changement générique est réellement nécessaire. P2 : fichiers d'infrastructure versionnés et testés hors VPS (y compris contrôles de secrets, volumes, jobs, migrations en base isolée, copie Windows et simulation de restauration), gate locale puis CI, PR de code cohérente fusionnée. GO préachat : panier OVH TTC et essais reportés sur serveur listés, puis **accord explicite**.
+
+**Ne pas** créer de nouvel Atlas, autoriser `0.0.0.0/0` ou l'IP du PC sans nécessité, lancer de migration ni insérer d'identifiant sensible dans Git. Le VPS n'a pas de preuve d'achat ni d'exploitation. Sources techniques : [Caddy / SPA et API](https://caddyserver.com/docs/caddyfile/patterns), [OVH / FAQ VPS](https://docs.ovhcloud.com/en/guides/bare-metal-cloud/virtual-private-servers/vps-faq), [Atlas / limites Free](https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/).
+
 ## 0. Contrainte révisée : petit budget pour un hébergement disponible (2026-11-01)
 
 **Plan de mise en œuvre :** [PRE-BETA-003 — ordre de préparation et mise en service](PRE-BETA-003-PLAN-EXECUTION.md). **Cadrage SMTP transactionnel dédié :** [PRE-BETA-003 — SMTP, domaine, sécurité et recette](PRE-BETA-003-SMTP-CADRAGE.md). Les deux documents sont des propositions de travail, non des procédures déjà exécutées.

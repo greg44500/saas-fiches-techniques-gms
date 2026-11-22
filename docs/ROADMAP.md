@@ -1,3 +1,13 @@
+## PRE-BETA-003 — Priorité préachat (actualisation du 2026-11-22)
+
+**Ordre retenu :** finaliser P0 (décisions et exigences), qualifier P1 (analyse Core/Produit), préparer et tester P2 sur une branche d'infrastructure distincte **avant** tout achat de VPS. Une seule PR documentaire sera ouverte après validation des arbitrages ; le lot d'infrastructure aura sa propre PR. P3 et les frais d'hébergement restent subordonnés à un GO préachat explicite.
+
+**État réconcilié :** GitHub produit `main` = `1e47178`, Core intégré `v1.2.1` = `42beaff6`, gate post-fusion PRE-BETA-002 réussie. Cluster Atlas Free **déjà créé par le propriétaire**, projet `saas-fiches-techniques-gms-beta`, cluster `gms-beta` AWS Paris ; Network Access vide à la dernière capture, droits et connexion `gms_beta_app` non vérifiés techniquement. Bêta : **2–3 pilotes au total, Super administrateur inclus** ; copie indépendante sur disque externe personnel Windows. Ne pas recréer Atlas, ne pas exécuter de migrations distantes.
+
+**Ouvert :** domaine, relais SMTP/expéditeur, reverse proxy Caddy ou Nginx, runtime Compose ou natif, budget TTC, disponibilité du PC/disque, fréquence et rétention des copies, RPO/RTO, recette et déploiement. L'arbitrage sur une modification générique du Core reste différé **au cas par cas**. Voir [plan PRE-BETA-003](deployment/PRE-BETA-003-PLAN-EXECUTION.md). Les notes datées ci-dessous demeurent historiques.
+
+---
+
 ## PRE-BETA-003 — Cadrage du déploiement de la bêta privée (2026-11-01, proposition)
 
 La PR [#58](https://github.com/greg44500/saas-fiches-techniques-gms/pull/58) (PRE-BETA-002) est fusionnée sur `main` au commit `1e47178`. La Core Gate #250 de PR était verte ; le résultat du contrôle post-fusion doit être suivi séparément. Les vérifications visuelles PDF et la recette opérationnelle restent distinctes des E2E.

@@ -1,3 +1,17 @@
+# Reprise courante — PRE-BETA-003 avant achat VPS (2026-11-22)
+
+**Git vérifié :** produit `main` protégé au commit `1e47178ffd9abfa67011ba075bcc13a6a607b481`, branche documentaire PRE-BETA-003 au SHA `90d7804853abc172c58b8b21994e0ca91e8f37fb` avant cette actualisation (28 commits d'avance, aucun retard, six fichiers Markdown, aucune PR ouverte). Core intégré et `main` du Core = `v1.2.1`/`42beaff67200ca4e956378e2273b4eae440f47bc` ; produit `0.1.0/development`. La gate post-merge PRE-BETA-002 `41309180625` est `completed/success`, sans test d'infrastructure réelle.
+
+**Décisions conservées :** OVHcloud VPS de principe **non commandé** ; frontend compilé et Express `/api` sous une origine HTTPS ; SMTP transactionnel **externe** ; Standard VPS prévue et sauvegardes indépendantes chiffrées de MongoDB+fichiers vers le **disque externe personnel via Windows**, sans abonnement supplémentaire ; bêta nominative **2–3 personnes au total dont Super administrateur Platform**. Atlas Free `gms-beta` AWS Paris dans `saas-fiches-techniques-gms-beta` déjà créé selon captures ; Network Access vide sur dernier écran ; compte technique `gms_beta_app` déclaré créé, privilèges effectifs et connexion non testés.
+
+**Travail désormais prioritaire :** P0 cadrage domaine/SMTP, proxy, runtime, volumes, secrets, stratégie de sauvegarde, RPO/RTO ; P1 diagnostic `trust proxy`/IP, health, TLS SMTP, ClamAV/jobs/indexes ; P2 packaging, scripts et tests locaux sans connexion à Atlas bêta. Finaliser **une PR documentaire**, puis **une PR infrastructure** séparée et testée. Les modifications génériques Core sont arbitrées **individuellement** avant tout patch, en comparant Core normal et exception GMS documentée. P3 achat seulement après GO préachat explicite. Aucun achat, ajout IP Atlas, migration ou test E2E distant entrepris ici.
+
+---
+
+
+
+---
+
 # Reprise — PRE-BETA-003 / cadrage déploiement (2026-11-01)
 
 **Code source contrôlé :** produit `main` = `1e47178ffd9abfa67011ba075bcc13a6a607b481` (PR #58 PRE-BETA-002 fusionnée), Core `v1.2.1` au commit `42beaff67200ca4e956378e2273b4eae440f47bc` ; `main` est protégé. La Core Gate #250 de PR a réussi ; la [Core Gate post-fusion](https://github.com/greg44500/saas-fiches-techniques-gms/actions/runs/41309180625) a été vérifiée `completed/success` sur le merge `1e47178`.

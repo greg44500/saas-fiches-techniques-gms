@@ -6,6 +6,21 @@
 **Base autoritaire :** dépôt Produit `main` au merge `1e47178` de PRE-BETA-002, Core intégré `v1.2.1` ; CI post-merge confirmée verte.  
 **Règle :** une PR de documentation pour finaliser PRE-BETA-003, puis **un lot cohérent et distinct** de code/configuration infrastructure. Toute primitive générique Core à modifier exige un chantier Core séparé avant intégration produit.
 
+## Actualisation P0–P2 du 2026-11-22 — Hors VPS et sans frais
+
+**Ordre prioritaire : P0 + P1 → PR documentaire unique → P2 packaging/tests locaux sur branche et PR distinctes → GO préachat explicite → P3 à P7.** Les références anciennes demandant d'inspecter le panier immédiatement ne valent pas autorisation d'achat.
+
+| Lot | Action possible gratuitement | Critère de preuve |
+| --- | --- | --- |
+| A — P0 | Domaine possédé ou non ; DNS ; fournisseur/identité SMTP ; budget TTC ; Caddy vs Nginx ; Compose vs natif ; disponibilité du PC et du disque ; fréquence/rétention, RPO/RTO et responsabilité d'exploitation | Décisions écrites et validées, zéro dépense |
+| B — P1 | Audit Core/Produit de `req.ip`, rate limiting/proxy, health/readiness, SMTP TLS, écoute Express, antivirus, volumes, jobs, migrations et variables | Risques classés, tests/reproduction et contournements évalués ; **aucun patch générique sans arbitrage** |
+| C — P2 | Préparer build Vite, image/runners Node 24, frontal HTTPS, volumes, secrets modèles, ClamAV/signatures, jobs non chevauchants, `mongodump` ciblé, collecte Windows chiffrée/SSH, rollback au commit | Tests locaux/CI sur cibles fictives et base `_e2e_test` uniquement, release:check, PR infrastructure distincte |
+| D — Préachat | Devis OVH réel incluant options/renouvellement, zone SMTP, standard, prérequis satisfaits et liste des essais encore impossibles sans VPS | Décision de GO et accord de paiement explicites |
+
+**Atlas n'est plus à créer :** le propriétaire a déjà créé `gms-beta` Free AWS Paris. `Network Access` était vide à la dernière capture. Vérifier le compte `gms_beta_app`, sa connexion et les migrations sur environnement ciblé **seulement après provisionnement autorisé**. Bêta = 2–3 utilisateurs, Super administrateur compris. Le stockage indépendant est le disque externe personnel ; 3 versions glissantes restent à valider. Brevo, Caddy, VPS-2 et Compose ne sont que des candidats.
+
+**Frontière Core :** si le besoin générique est confirmé, comparer (A) modification `saas-core-api` avec version/upgrade et (B) exception temporaire GMS tracée/réconciliable ; accord explicite du propriétaire requis avant code.
+
 ## 1. Décisions déjà prises
 
 - **Fournisseur d'hébergement VPS : OVHcloud**, sans achat à ce stade.
@@ -34,7 +49,7 @@
 1. Vérifier l'existence d'un **nom de domaine déjà contrôlé**, sinon chiffrer un achat optionnel. Le domaine doit pouvoir héberger le site et fournir des enregistrements DNS destinés au SMTP.
 2. **Valider Brevo Free ou un concurrent** : créer/configurer le compte uniquement sur décision, vérifier l'expéditeur et l'envoi test. Sans domaine authentifié, l'activation des invitations réelles n'est pas considérée opérationnelle.
 3. Choisir la cible **MongoDB Atlas Free vs alternative** par essais d'une base isolée, dont la prise en charge des transactions, les contraintes d'indexes et l'espace libre sont réellement vérifiés.
-4. Éprouver **la sauvegarde sur disque externe personnel via PC Windows**, chiffrée, sans port domestique entrant, contrôlée par date/alerte ; définir la disponibilité du PC, le nombre de copies et la restauration isolée. et le niveau de perte acceptable ; le besoin « plusieurs jours » est validé mais aucune rétention chiffrée finale ne l'est.
+4. Éprouver **la sauvegarde sur disque externe personnel via PC Windows**, chiffrée, sans port domestique entrant, contrôlée par date/alerte ; définir la disponibilité du PC, le nombre de copies et la restauration isolée ; préciser le niveau de perte acceptable ; le besoin « plusieurs jours » est validé mais aucune rétention chiffrée finale ne l'est.
 5. Vérifier **l'offre OVHcloud exacte**, la disponibilité, région datacenter **hors Local Zones bloquant le SMTP**, 8 Go recommandés, facturation mensuelle, sauvegarde Standard, prix TTC et renouvellement.
 6. Établir les exigences d'exploitation (accès SSH, supervision, incidents, maintenance) et de conformité (DPA, RGPD, informations destinataires).
 
