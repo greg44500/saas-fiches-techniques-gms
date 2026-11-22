@@ -11,6 +11,10 @@ Le **relais SMTP transactionnel externe** est validé ; Brevo Free reste un **ca
 
 **Préparer hors VPS :** identité d'envoi et adresse de réponse validées ; contrôle DNS, enregistrements fournis par le prestataire uniquement ; matrice des variables `SMTP_*` sans secrets ; plan de test invitation D-020/reset et preuves de réception. Port 465/`SMTP_SECURE=true` candidat. Si 587 exige TLS strict, analyser d'abord la configuration et soumettre une éventuelle correction générique au protocole d'arbitrage Core. La sortie réelle depuis un VPS OVHcloud hors Local Zone devra être éprouvée **après achat autorisé**, jamais considérée démontrée.
 
+### Domaine choisi — décision du 2026-11-22
+
+Le propriétaire retient **`fichepilot.fr`**. Cela ne signifie **pas** que ce domaine a été acheté, réservé ou que ses DNS sont administrables. La disponibilité et le contrôle DNS restent des prérequis. Après contrôle et choix du prestataire SMTP, on envisagera l'envoi depuis une adresse sur `fichepilot.fr` (nom local, Reply-To et support **non décidés**) ; aucune adresse telle que `no-reply@fichepilot.fr` ne doit être présentée comme créée. Les enregistrements SPF/DKIM/DMARC devront provenir du fournisseur retenu et être testés avant envoi réel.
+
 ## 1. Objectif et périmètre
 
 Assurer la livraison fiable des **emails transactionnels** du SaaS de bêta privée : invitations commerciales D-020, invitations d'équipe, invitations Platform, réinitialisation du mot de passe et notifications de sécurité existantes. Le marketing, les newsletters, la réception de boîtes mail, les campagnes de masse et la construction d'un serveur mail ne sont **pas** au périmètre.

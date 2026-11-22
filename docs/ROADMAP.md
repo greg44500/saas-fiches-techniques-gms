@@ -4,7 +4,9 @@
 
 **État réconcilié :** GitHub produit `main` = `1e47178`, Core intégré `v1.2.1` = `42beaff6`, gate post-fusion PRE-BETA-002 réussie. Cluster Atlas Free **déjà créé par le propriétaire**, projet `saas-fiches-techniques-gms-beta`, cluster `gms-beta` AWS Paris ; Network Access vide à la dernière capture, droits et connexion `gms_beta_app` non vérifiés techniquement. Bêta : **2–3 pilotes au total, Super administrateur inclus** ; copie indépendante sur disque externe personnel Windows. Ne pas recréer Atlas, ne pas exécuter de migrations distantes.
 
-**Ouvert :** domaine, relais SMTP/expéditeur, reverse proxy Caddy ou Nginx, runtime Compose ou natif, budget TTC, disponibilité du PC/disque, fréquence et rétention des copies, RPO/RTO, recette et déploiement. L'arbitrage sur une modification générique du Core reste différé **au cas par cas**. Voir [plan PRE-BETA-003](deployment/PRE-BETA-003-PLAN-EXECUTION.md). Les notes datées ci-dessous demeurent historiques.
+**Nom de domaine retenu (décision propriétaire du 2026-11-22) :** `fichepilot.fr`. Ce choix ne prouve ni sa disponibilité, ni son achat, ni le contrôle de ses DNS ; ces vérifications précèdent tout provisionnement ou envoi transactionnel. Le sous-domaine `app.fichepilot.fr` est uniquement une proposition d'adresse publique.
+
+**Ouvert :** acquisition/vérification DNS de `fichepilot.fr`, relais SMTP/expéditeur, reverse proxy Caddy ou Nginx, runtime Compose ou natif, budget TTC, disponibilité du PC/disque, fréquence et rétention des copies, RPO/RTO, recette et déploiement. L'arbitrage sur une modification générique du Core reste différé **au cas par cas**. Voir [plan PRE-BETA-003](deployment/PRE-BETA-003-PLAN-EXECUTION.md). Les notes datées ci-dessous demeurent historiques.
 
 ---
 

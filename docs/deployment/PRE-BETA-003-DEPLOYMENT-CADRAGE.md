@@ -20,6 +20,10 @@
 | Web/runtime | **Ouvert** : Caddy ou Nginx ; Compose ou services natifs | Une origine HTTPS, assets `frontend/dist` et `/api` inchangé, aucun port Express public |
 | Core | **Aucun changement autorisé** | Toute correction générique doit être démontrée, classée et soumise à arbitrage A Core/release/upgrade vs B exception GMS tracée |
 
+### Arbitrage P0 — Domaine retenu (2026-11-22)
+
+**Décision utilisateur :** le nom de domaine choisi pour ce SaaS est **`fichepilot.fr`**. Il reste **à vérifier auprès d'un bureau d'enregistrement** (disponibilité et prix définitif), puis à acquérir ou à prouver sous contrôle du propriétaire avant toute configuration DNS. Aucun achat, droit de propriété sur le nom, zone DNS ni certificat n'est confirmé. L'URL `https://app.fichepilot.fr` est une **proposition d'organisation** cohérente avec une origine HTTPS unique ; elle n'est pas encore l'URL officielle configurée. Les adresses d'expédition et de support seront décidées séparément dans le cadrage SMTP.
+
 ### P1 — Constats de lecture du code et risques à éprouver
 
 - `frontend/src/services/api/base-query.js` appelle `/api` avec `credentials: 'include'` ; `frontend/vite.config.js` ne fournit qu'un proxy **de développement**. Un frontal réel devra conserver le préfixe `/api`, servir le build statique et gérer explicitement le fallback SPA.
