@@ -1,0 +1,25 @@
+# Modèle natif : site public unique, API locale uniquement.
+app.fichepilot.fr {
+    encode zstd gzip
+
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+        Strict-Transport-Security "max-age=31536000"
+    }
+
+    @api path /api /api/*
+    handle @api {
+        reverse_proxy 127.0.0.1:5000 {
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Host {host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    handle {
+        root * /srv/fichepilot/current
+        try_files {path} /index.html
+        file_server
+    }
+}

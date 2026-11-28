@@ -1,3 +1,15 @@
+## PRE-BETA-003 — validation locale et choix Linux natif (2026-11-28)
+
+Décision explicite du propriétaire : installation native Linux sans Docker (Caddy, Node 24, systemd, ClamAV). Les fichiers Compose historiques sont conservés à titre de référence et ne sont plus le chemin de mise en service. Le modèle natif dans `deployment/native/` est une première proposition versionnée, non validée sur Linux.
+
+Preuves fournies par le propriétaire le 2026-11-28 : Brevo SMTP 465/TLS connecté et authentifié, mail réel de réinitialisation reçu, mot de passe modifié et compte récupéré ; diagnostic local rs0 sur `saas_fiches_techniques_gms_dev` réussi ; 19 tests Node de déploiement sur 19 réussis (0 échec) ; plan de lecture de 36 migrations généré sans exécution. Ce plan ne prouve ni leur nécessité sur une base vierge ni les droits Atlas. Aucun test global, accès Atlas, achat ou déploiement distant nouveau n'est revendiqué.
+
+Le chantier est consolidé dans le même projet ChatGPT : branche Core `hardening/pre-beta-003-runtime` (premier bloc réseau/SMTP, HEAD `5f2da06b09c4147b485d0b7875794823c635b278` à cette date), branche produit `deploy/pre-beta-003-ovh-ready`. Aucune PR ni release Core intermédiaire ; poursuivre audit et tests puis une seule release Core si nécessaire et intégration explicite dans le produit. `core-origin.json` reste inchangé jusqu'à l'intégration réelle. Pas de correctif générique silencieux dans le produit.
+
+Avant achat : finir l'audit runtime, qualification tests SMTP, health/readiness, arrêt propre, stockage/antivirus, config production, initialisation Atlas vierge, procédure Linux, tests et gates. Les sauvegardes indépendantes restent reportées après première connexion technique fictive, avant vraie bêta. Pas de migrations, seeds ou tâches destructives à ce stade.
+
+---
+
 ## Décision opérationnelle du 2026-11-28 — premier déploiement technique avant sauvegardes
 
 **Objectif prioritaire :** rendre le dépôt testable et installable sur OVHcloud, puis effectuer la première connexion à FichePilot avec des données fictives, avant d'activer les sauvegardes. L'achat du VPS et de `fichepilot.fr` reste différé jusqu'à la validation des tests préparatoires et au GO explicite du propriétaire. **Ne pas inviter de bêta-testeurs réels ni enregistrer de données importantes sans dispositif de sauvegarde et restauration prouvé.**
