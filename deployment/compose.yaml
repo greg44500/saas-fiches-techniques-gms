@@ -6,8 +6,11 @@ services:
       context: ..
       dockerfile: deployment/Dockerfile.web
     restart: unless-stopped
-    env_file:
-      - ../.env.production
+    # Le proxy ne reçoit PAS les identifiants MongoDB, JWT ou SMTP.
+    # --env-file .env.production est requis pour ACME_EMAIL.
+    environment:
+      - APP_DOMAIN=app.fichepilot.fr
+      - ACME_EMAIL
     ports:
       - "80:80"
       - "443:443"
