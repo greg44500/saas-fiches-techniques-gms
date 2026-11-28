@@ -20,7 +20,7 @@ mkdir "$stage/source" "$stage/bundle"
 git -C "$git_root" archive "$sha" | tar -xf - -C "$stage/source"
 cd "$stage/source"
 # Reject tracked environment files other than non-executable example templates.
-if find . -type f \( -name '.env' -o -name '.env.*' \) ! -name '.env.example' -print -quit | grep -q .; then
+if find . \( -name '.env' -o -name '.env.*' \) ! -name '.env.example' -print -quit | grep -q .; then
     echo 'Fichier environnement interdit dans le commit.' >&2; exit 1
 fi
 clean_npm run release:verify

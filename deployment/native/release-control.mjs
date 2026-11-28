@@ -148,6 +148,8 @@ async function main() {
     // Fixed trusted paths; do not use an operator-supplied directory as root.
     await assertRootOwned(root, true);
     if (await realpath(root) !== root) throw new Error('Racine de publication indirecte');
+    await assertRootOwned('/srv/fichepilot', true);
+    if (await realpath('/srv/fichepilot') !== '/srv/fichepilot') throw new Error('Racine frontend indirecte');
     const webPointer = '/srv/fichepilot/current';
     if (await readlink(webPointer) !== '/opt/fichepilot/current/frontend/dist') {
         throw new Error('Pointeur frontend incohérent');

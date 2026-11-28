@@ -92,8 +92,7 @@ l'approbation du SHA sont obligatoires.
 Créer le fichier de configuration depuis le modèle natif en mode 0600 root,
 sans écraser un fichier existant. Par exemple, après contrôle de son absence :
 
-    sudo test ! -e /etc/fichepilot/fichepilot.env
-    sudo install -o root -g root -m 0600 deployment/native/production.env.example /etc/fichepilot/fichepilot.env
+    sudo test ! -e /etc/fichepilot/fichepilot.env && sudo test ! -L /etc/fichepilot/fichepilot.env && sudo install -o root -g root -m 0600 deployment/native/production.env.example /etc/fichepilot/fichepilot.env
     sudoedit /etc/fichepilot/fichepilot.env
     sudo /usr/bin/node deployment/native/preflight.mjs /etc/fichepilot/fichepilot.env
 
@@ -119,7 +118,9 @@ hors du répertoire de releases (ne pas écraser un service existant sans revue)
 Le contrôleur d'activation root est installé hors du pointeur current, depuis
 le commit revu. Ne pas exécuter de scripts modifiables par fichepilot en root.
 Le Caddyfile utilise l'adresse prévue app.fichepilot.fr ; ACME et DNS restent
-à vérifier. Le compte système est sans accès interactif et les scripts Node
+à vérifier. ACME_EMAIL dans le profil API est contrôlé mais n'est pas injecté
+au service Caddy : configurer le contact ACME séparément dans Caddy, sans lui
+transmettre le fichier de secrets de l'API. Le compte système est sans accès interactif et les scripts Node
 de l'API tournent uniquement sous ce compte. Les services ne sont pas activés
 au démarrage de l'OS avant la première recette réussie.
 
