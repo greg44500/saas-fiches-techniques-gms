@@ -1,3 +1,9 @@
+## PRE-BETA-003 — diagnostic MongoDB préachat (2026-11-28)
+
+Vérification GitHub à la reprise : `main` produit `1e47178ffd9abfa67011ba075bcc13a6a607b481`, branche de déploiement antérieure au présent lot `0cbd2352b1b3b0c9a7f2a500bb0e5d43c65c8a2c`, Core intégré v1.2.1 / `42beaff67200ca4e956378e2273b4eae440f47bc`. Le lot ajoute seulement le diagnostic MongoDB non destructif, ses tests, la gate de packaging et la documentation. La connexion locale `rs0` sur le PC et Atlas bêta **ne sont pas encore prouvées** : ne pas confondre tests simulés avec accès DB réel.
+
+Le mode d'installation reste à arbitrer (native Linux recommandée, non encore approuvée ; Docker non supprimé). Les risques génériques Core `trust proxy` / `req.ip` et binding réseau sont ouverts, sans modification Core dans le produit. Aucun VPS ni domaine acheté, aucun secret, aucune migration, aucun seed, aucune ouverture Atlas/SMTP, ni sauvegarde planifiée. Première connexion technique fictive seulement après prérequis ; sauvegardes et restauration avant la vraie bêta.
+
 ## Arbitrage courant — première connexion FichePilot d'abord (2026-11-28)
 
 **Décision explicite utilisateur :** le premier déploiement technique doit permettre une connexion fonctionnelle à FichePilot **avec uniquement des données fictives**, sans activer immédiatement la sauvegarde indépendante MongoDB/fichiers. Le chantier de sauvegardes est reporté **après** ce déploiement technique et avant toute exploitation de données importantes ou ouverture de la bêta privée. Les scripts déjà présents restent non programmés et non exécutés. Les tâches de purge/maintenance restent non planifiées avant qualification des règles et risques. L'absence de backup ne vaut **pas** autorisation d'une bêta publique ou réelle.

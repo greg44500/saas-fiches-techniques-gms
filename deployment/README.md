@@ -70,6 +70,53 @@ node deployment/preflight.mjs .env.production
 Le modèle d'exemple doit échouer à cette vérification : c'est intentionnel.
 Cette vérification ne prouve ni l'existence des DNS ni l'accès Atlas/Brevo.
 
+## 2 bis. Diagnostic MongoDB non destructif (rs0 local, puis Atlas bêta)
+
+Le local \`rs0\` est le replica set du PC de développement. Le cluster Atlas
+\`gms-beta\` est une infrastructure distincte, non reliée à ce replica set.
+Il ne faut ni initialiser un autre rs0 sur Atlas, ni copier automatiquement
+les données locales. Le nom de base Atlas de production reste à confirmer
+depuis l'URI réelle hors Git.
+
+Le contrôle \`deployment/mongo-verify.mjs\` utilise Mongoose en lecture seule :
+il valide strictement la cible et le nom de base **avant connexion**, exécute
+\`ping\` et \`hello\`, puis lit au plus un \`_id\` de la collection \`plans\`
+dans une transaction explicitement **avortée**. Il désactive \`autoIndex\` et
+ne lance ni migration, ni seed, ni écriture. Il ne constitue **pas** une
+preuve des droits d'écriture, des index ou du fonctionnement métier.
+
+Depuis la racine, sur Windows PowerShell, vérifier d'abord que le
+fichier \`.env\` local existe et qu'il cible bien le développement GMS
+sans afficher son contenu. **Ne pas utiliser \`.env.production\` ici.**
+
+~~~~powershell
+node -v
+node --test deployment/mongo-verify.test.mjs
+Test-Path .env
+$env:DB_VERIFY_TARGET = 'local'
+$env:DB_VERIFY_EXPECTED_NAME = 'saas_fiches_techniques_gms_dev'
+node --env-file=.env deployment/mongo-verify.mjs
+Remove-Item Env:DB_VERIFY_TARGET
+Remove-Item Env:DB_VERIFY_EXPECTED_NAME
+~~~~
+
+En cas de \`Test-Path .env\` faux, ne pas lancer le diagnostic ; utiliser
+seulement une configuration locale de développement déjà maîtrisée.
+Le script doit refuser toute URI ne correspondant pas au rs0 local attendu.
+Ne jamais publier une URI MongoDB, même en cas d'erreur.
+
+**Atlas bêta : phase post-achat.** Autoriser uniquement l'IP publique
+réelle du VPS dans Atlas Network Access, puis exécuter le même script
+sur le VPS avec \`DB_VERIFY_TARGET=atlas\`, le nom **exact** de la
+base prévu dans l'URI, et les secrets injectés depuis le fichier sécurisé
+d'exploitation. Ne jamais utiliser l'IP ouverte \`0.0.0.0/0\`, l'URI
+de développement ou la base E2E pour cette vérification.
+
+Après succès du contrôle de lecture, classifier les 36 migrations et les
+seeds ; la validation des écritures/transactions/indexes se fera avec une
+procédure distincte, approuvée pour la cible précise et des données fictives.
+Aucun test de connexion distante n'est revendiqué à ce stade.
+
 ## 3. Brevo — préparation immédiate sans domaine ni VPS
 
 1. Créer le compte via https://app.brevo.com/ ; vérifier la disponibilité de

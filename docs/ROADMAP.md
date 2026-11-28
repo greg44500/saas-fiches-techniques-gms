@@ -1,3 +1,9 @@
+## PRE-BETA-003 — contrôle MongoDB en lecture seule ajouté (2026-11-28)
+
+Lot cohérent sur `deploy/pre-beta-003-ovh-ready` : script `deployment/mongo-verify.mjs` et tests pour distinguer `rs0` local et Atlas bêta, refuser une mauvaise cible/une base de tests, puis contrôler ping, topologie et lecture transactionnelle avortée **sans écriture ni index**. Tests Node isolés préparés ; leur exécution sous Node 24 par l'utilisateur et la gate de déploiement restent à confirmer. Aucun accès Atlas réel ni migration/seed réalisé. Guide : `deployment/README.md`.
+
+**Arbitrage infrastructure maintenu ouvert :** installation Linux native Node 24 + Caddy + systemd recommandée sous réserve de validation ; le packaging Docker existant est conservé tant que ce choix n'est pas formellement arrêté. `trust proxy` / `req.ip` et liaison réseau du serveur relèvent d'une revue et éventuelle évolution Core versionnée avant la première connexion externe ; aucun patch Core dans le produit. Brevo attend toujours une preuve d'envoi et de réception.
+
 ## PRE-BETA-003 — séquencement validé du premier déploiement technique (2026-11-28)
 
 **Avant achat :** (1) créer/vérifier le compte Brevo Free et l'activation de SMTP transactionnel ; (2) valider localement le profil production et les cookies ; (3) soumettre à arbitrage la correction générique Core `trust proxy`/rate limits, la tester et l'intégrer sans patch Core clandestin ; (4) exécuter tests Node, Docker, Vite, lint, E2E locaux et gates ; (5) réaliser la PR cohérente de déploiement. **Après GO d'achat** : commander OVHcloud VPS et `fichepilot.fr`, configurer DNS/HTTPS, Atlas/SMTP, initialisations vérifiées, puis **première connexion avec données fictives seulement**.
