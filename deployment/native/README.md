@@ -68,3 +68,7 @@ https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html.
 
 Core : réduction des journaux de maintenance des temporaires aux compteurs et codes système autorisés, sans chemins, noms de fichiers ni erreurs brutes. Tests associés non exécutés ; HEAD de la branche Core `33f142166537183746ec60b2e92e497d496ff2ad`, version intégrée inchangée.
 
+
+## Initialisation MongoDB
+
+Voir [BOOTSTRAP-DATABASE.md](BOOTSTRAP-DATABASE.md) ; classification candidate uniquement, sans exécution. Ne pas lancer les 36 migrations en série.

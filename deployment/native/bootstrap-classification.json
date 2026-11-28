@@ -1,0 +1,197 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate-not-qualified",
+  "migrations": [
+    {
+      "id": "subscription-kind",
+      "category": "historical",
+      "reason": "Reprise de documents historiques ; vérifier les invariants de création sur base vierge."
+    },
+    {
+      "id": "subscription-term-type",
+      "category": "historical",
+      "reason": "Reprise de documents historiques ; vérifier les invariants de création sur base vierge."
+    },
+    {
+      "id": "subscription-lifecycle-indexes",
+      "category": "additive-index",
+      "reason": "Index opérationnels explicites : conserver les helpers additifs après création des collections et index de schéma."
+    },
+    {
+      "id": "operational-indexes",
+      "category": "additive-index",
+      "reason": "Index opérationnels explicites : conserver les helpers additifs après création des collections et index de schéma."
+    },
+    {
+      "id": "application-global-authorization-indexes",
+      "category": "schema-index",
+      "reason": "Index portés par les schémas actuels ; comparer les spécifications et noms avant validation."
+    },
+    {
+      "id": "subscription-read-permission",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    },
+    {
+      "id": "audit-read-permission",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    },
+    {
+      "id": "workspace-member-usage",
+      "category": "historical",
+      "reason": "Reprise de documents historiques ; vérifier les invariants de création sur base vierge."
+    },
+    {
+      "id": "workspace-member-usage-reconcile",
+      "category": "historical",
+      "reason": "Reprise de documents historiques ; vérifier les invariants de création sur base vierge."
+    },
+    {
+      "id": "member-invite-permission",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    },
+    {
+      "id": "file-read-permission",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    },
+    {
+      "id": "file-delete-permission",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    },
+    {
+      "id": "file-trash-permissions",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    },
+    {
+      "id": "file-storage-usage-reconcile",
+      "category": "historical",
+      "reason": "Reprise de documents historiques ; vérifier les invariants de création sur base vierge."
+    },
+    {
+      "id": "workspace-ownership-transfer-permission",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    },
+    {
+      "id": "baseline-plan-system-role",
+      "category": "plan-seed",
+      "reason": "Le seedPlans actuel crée la baseline avec systemRole, features vides et limites M-004 ; ne pas rejouer le backfill sur un plan neuf."
+    },
+    {
+      "id": "baseline-remove-file-upload",
+      "category": "plan-seed",
+      "reason": "Le seedPlans actuel crée la baseline avec systemRole, features vides et limites M-004 ; ne pas rejouer le backfill sur un plan neuf."
+    },
+    {
+      "id": "m001-indexes",
+      "category": "schema-index",
+      "reason": "Index portés par les schémas actuels ; comparer les spécifications et noms avant validation."
+    },
+    {
+      "id": "m002-catalog",
+      "category": "mixed-index",
+      "reason": "Installer les index actuels sans exécuter les transformations et backfills historiques ; vérifier tous les index attendus des helpers."
+    },
+    {
+      "id": "m003-supplier-catalog",
+      "category": "mixed-index",
+      "reason": "Installer les index actuels sans exécuter les transformations et backfills historiques ; vérifier tous les index attendus des helpers."
+    },
+    {
+      "id": "m003-indicative-pricing",
+      "category": "reference-seed",
+      "reason": "Le runner mélange index, permissions, réconciliation et seed V3 ; le seed canonique seul est candidat après le référentiel V9 et le Fondateur."
+    },
+    {
+      "id": "m004-technical-sheets",
+      "category": "mixed-index",
+      "reason": "Installer les index actuels sans exécuter les transformations et backfills historiques ; vérifier tous les index attendus des helpers."
+    },
+    {
+      "id": "m004-ranges",
+      "category": "mixed-index",
+      "reason": "Installer les index actuels sans exécuter les transformations et backfills historiques ; vérifier tous les index attendus des helpers."
+    },
+    {
+      "id": "m004-production-quantity",
+      "category": "historical",
+      "reason": "Reprise de documents historiques ; vérifier les invariants de création sur base vierge."
+    },
+    {
+      "id": "m004-plan-limit",
+      "category": "plan-seed",
+      "reason": "Le seedPlans actuel crée la baseline avec systemRole, features vides et limites M-004 ; ne pas rejouer le backfill sur un plan neuf."
+    },
+    {
+      "id": "m004-export-plan-limit",
+      "category": "plan-seed",
+      "reason": "Le seedPlans actuel crée la baseline avec systemRole, features vides et limites M-004 ; ne pas rejouer le backfill sur un plan neuf."
+    },
+    {
+      "id": "m004-export-permission",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    },
+    {
+      "id": "m004-workspace-business-settings",
+      "category": "schema-index",
+      "reason": "Index portés par les schémas actuels ; comparer les spécifications et noms avant validation."
+    },
+    {
+      "id": "m004-usage-reconcile",
+      "category": "historical",
+      "reason": "Reprise de documents historiques ; vérifier les invariants de création sur base vierge."
+    },
+    {
+      "id": "m006-process-library",
+      "category": "mixed-index",
+      "reason": "Installer les index actuels sans exécuter les transformations et backfills historiques ; vérifier tous les index attendus des helpers."
+    },
+    {
+      "id": "m006-process-composition-permission",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    },
+    {
+      "id": "m006-process-sheets",
+      "category": "mixed-index",
+      "reason": "Installer les index actuels sans exécuter les transformations et backfills historiques ; vérifier tous les index attendus des helpers."
+    },
+    {
+      "id": "m006-default-phase-titles",
+      "category": "workspace-seed",
+      "reason": "Le runner parcourt les workspaces existants ; aucun workspace au bootstrap. Vérifier la création des phases pour un nouveau workspace."
+    },
+    {
+      "id": "m006-process-editor-permission",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    },
+    {
+      "id": "m006-process-validate-permission",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    },
+    {
+      "id": "m006-process-finalization-permissions",
+      "category": "role-backfill",
+      "reason": "Permissions sur rôles déjà persistés ; vérifier la création des rôles système via le registre actuel et les parcours d’onboarding."
+    }
+  ],
+  "seedCandidates": [
+    "seed:plans",
+    "seed:platform-roles",
+    "seed:super-admin",
+    "seed:m003-governance",
+    "seed:m002-reference",
+    "seed:m003-global-indicative-prices"
+  ],
+  "historicalSeed": [
+    "seed:m002-governance"
+  ]
+}

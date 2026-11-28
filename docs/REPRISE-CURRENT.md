@@ -1,3 +1,9 @@
+## PRE-BETA-003 — classification du bootstrap MongoDB vierge (2026-11-28)
+
+Les 36 runners et sept seeds sont classés dans deployment/native/bootstrap-classification.json ; analyse et limites dans BOOTSTRAP-DATABASE.md. Le plan candidat distingue index de schéma, index opérationnels additifs, reprises historiques et seeds canoniques. Aucun script d'écriture n'est lancé. Tests de cohérence préparés ; les tests de publication du lot précédent n'ont pas été confirmés. Prochain bloc : inventaire exhaustif des modèles/index et répétition sur base locale dédiée _bootstrap_test avant toute initialisation Atlas. Core intégré inchangé, aucun achat ni PR.
+
+---
+
 ## PRE-BETA-003 — livraison Linux native et rollback de code (2026-11-28)
 
 Le propriétaire a confirmé la conformité de la campagne locale des tests natifs (packaging, préflight, contrôle hôte ; test POSIX prévu ignoré sous Windows). Résumé détaillé du terminal non transmis : ne pas inventer de résultat Linux. Le lot ajoute bootstrap-layout.sh, stage-release.sh, publish-release.sh, release-control.mjs, tests d'activation et le guide deployment/native/INSTALLATION.md. Livraison par SHA complet approuvé, compilation sans root et sans secrets, publication root séparée, pointeur unique frontend/backend, verrou, arrêt des deux services, readiness avant retour du trafic, rollback de code explicite uniquement si base compatible. Pas de migrations, seed, purge ou sauvegarde lancés. Les scripts et nouveaux tests ne sont pas encore validés par le propriétaire ; essais système Linux à prévoir. Prochain lot : qualification d'une base Atlas vierge, 36 migrations et seeds/index. Core durci toujours en branche, aucune release ni PR intermédiaire.
