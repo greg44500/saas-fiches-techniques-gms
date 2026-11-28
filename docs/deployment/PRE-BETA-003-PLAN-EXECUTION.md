@@ -1,3 +1,9 @@
+## P2 — premiers fichiers livrés sur branche d'infrastructure (2026-11-28)
+
+**Branche distincte** : `deploy/pre-beta-003-ovh-ready` (base : dernier commit du cadrage PRE-BETA-003), sans achat ni modification du Core/main. Répertoire exécutable `deployment/` : `Dockerfile.api`, `Dockerfile.web`, `compose.yaml`, `Caddyfile`, `production.env.example`, `preflight.mjs` et test, `smtp-verify.mjs`, `migration-plan.mjs` et test, scripts `run-jobs.sh`, `create-backup.sh`, `pull-backups.ps1` et guide `deployment/README.md`. Le frontend buildé est servi par Caddy ; API Express interne ; stockage permanent/temporaires séparé ; Brevo via Nodemailer existant. **Aucune réussite d'exécution n'est annoncée** : le développeur doit exécuter les vérifications locales avant la PR, puis les essais d'infrastructure après un GO de commande. La correction générique Core du proxy/ratelimit n'est pas effectuée : arbitrage et tests nécessaires avant bêta. Les scripts de purge et de backup ne sont ni activés ni planifiés.
+
+---
+
 # PRE-BETA-003 — Ordre de préparation et de mise en service de la bêta privée
 
 **Date :** 2026-11-01  

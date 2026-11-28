@@ -1,3 +1,9 @@
+## PRE-BETA-003 — réalisation technique P2, état du 2026-11-28
+
+Sur une branche d'infrastructure dédiée `deploy/pre-beta-003-ovh-ready`, préparatifs concrets versionnés sans dépenses : Caddy/Compose, Node 24, Vite compilé, montage de volumes, ClamAV/freshclam, profil Brevo SMTP 465 TLS, préflight production, lectures migrations, jobs et sauvegarde chiffrée avec collecte Windows. Les commandes et conditions de mise en route sont dans `deployment/README.md`. **Travaux non validés en exécution** : Node24, Docker, gate, tests de restauration, SMTP réel, Atlas et DNS. `fichepilot.fr` est choisi mais pas déclaré acquis. Le point générique Core `trust proxy`/IP doit être tranché et testé AVANT connexion des pilotes. P3 achat OVH reste après approbation explicite ; ne pas changer `main`.
+
+---
+
 ## PRE-BETA-003 — Priorité préachat (actualisation du 2026-11-22)
 
 **Ordre retenu :** finaliser P0 (décisions et exigences), qualifier P1 (analyse Core/Produit), préparer et tester P2 sur une branche d'infrastructure distincte **avant** tout achat de VPS. Une seule PR documentaire sera ouverte après validation des arbitrages ; le lot d'infrastructure aura sa propre PR. P3 et les frais d'hébergement restent subordonnés à un GO préachat explicite.

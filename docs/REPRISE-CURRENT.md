@@ -1,3 +1,9 @@
+## P2 — préparation concrète du déploiement (2026-11-28)
+
+**Travail sur la branche** `deploy/pre-beta-003-ovh-ready` : packaging Docker Compose et Caddy pour `app.fichepilot.fr`, frontend Vite statique, API Node 24 interne non publiée, ClamAV + freshclam, modèle `.env.production` Brevo 465/TLS, préflight hors réseau et tests Node, plan de lecture des migrations, runner de maintenance sous verrou, création de copies MongoDB/fichiers chiffrées et collecte SSH vers Windows. Manuel détaillé : `deployment/README.md`. Le code de cette branche est **en attente de tests locaux Docker/Node24/E2E, de revue et de PR** ; aucun VPS, domaine, Brevo ou Atlas n'a été activé. Les cookies Core sont déjà `httpOnly`, `secure` en production, `sameSite=lax`, `path=/api/auth` ; ne pas les dupliquer. Le défaut probable d'adresse IP derrière Caddy (`trust proxy` absent du Core) est un **NO-GO avant bêta**, soumis à arbitrage explicite Core vs exception produit.
+
+---
+
 # Reprise courante — PRE-BETA-003 avant achat VPS (2026-11-22)
 
 **Git vérifié :** produit `main` protégé au commit `1e47178ffd9abfa67011ba075bcc13a6a607b481`, branche documentaire PRE-BETA-003 au SHA `90d7804853abc172c58b8b21994e0ca91e8f37fb` avant cette actualisation (28 commits d'avance, aucun retard, six fichiers Markdown, aucune PR ouverte). Core intégré et `main` du Core = `v1.2.1`/`42beaff67200ca4e956378e2273b4eae440f47bc` ; produit `0.1.0/development`. La gate post-merge PRE-BETA-002 `41309180625` est `completed/success`, sans test d'infrastructure réelle.
