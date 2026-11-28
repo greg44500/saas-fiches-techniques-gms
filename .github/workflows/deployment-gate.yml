@@ -1,0 +1,33 @@
+name: PRE-BETA-003 Deployment Gate
+
+on:
+  pull_request:
+    paths:
+      - 'deployment/**'
+      - '.dockerignore'
+      - '.github/workflows/deployment-gate.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  offline-package-and-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Tests hors réseau du packaging
+        run: node --test deployment/preflight.test.mjs deployment/migration-plan.test.mjs deployment/packaging.test.mjs
+
+      - name: Validation syntaxique Docker Compose
+        run: docker compose --env-file deployment/production.env.example -f deployment/compose.yaml config --quiet
+
+      - name: Images Node et Caddy compilables
+        run: docker compose --env-file deployment/production.env.example -f deployment/compose.yaml build
