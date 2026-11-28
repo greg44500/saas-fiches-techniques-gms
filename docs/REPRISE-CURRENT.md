@@ -1,3 +1,9 @@
+## PRE-BETA-003 — préflight natif et contrôle de l'hôte (2026-11-28)
+
+Sur la branche produit : préflight natif hors réseau, garde de démarrage systemd, sonde de stockage limitée à des fichiers de contrôle temporaires et scan bénin ClamAV avec seuil proposé de fraîcheur des signatures (2 jours). Le nom de base proposé fichepilot_beta est désormais vérifié explicitement par ce profil ; confirmer avant création. Les tests natifs supplémentaires sont préparés, non exécutés par le propriétaire. Linux, signatures, DNS, Atlas et SMTP distant restent non validés. Pas d'achat, d'initialisation DB ou de purge. Prochaine étape : installation/release/rollback natifs, puis qualification des migrations/seeds.
+
+---
+
 ## PRE-BETA-003 — structure native validée, fiabilité runtime en branche (2026-11-28)
 
 Preuve locale communiquée par le propriétaire : **4/4 tests structurels du packaging natif réussis**, en complément des 19/19 précédents (23 tests au total sur deux exécutions). Aucun essai Linux réel, aucune gate globale nouvelle et aucun déploiement distant. La gate de déploiement dédiée est réorientée vers les tests hors réseau du packaging natif et le build frontend, sans Docker Compose. La Core Gate peut toujours utiliser un conteneur MongoDB éphémère pour ses tests CI ; ce n'est pas le mode de déploiement de FichePilot.

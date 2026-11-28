@@ -34,3 +34,10 @@ test('unité non privilégiée et environnement séparé', () => {
     assert.match(service, /^ProtectSystem=strict$/m);
     assert.match(service, /^ReadWritePaths=\/var\/lib\/fichepilot\/files \/var\/lib\/fichepilot\/tmp$/m);
 });
+
+test('systemd applique les contrôles avant le démarrage du backend', () => {
+    assert.match(service, /^ExecStartPre=\/usr\/bin\/node deployment\/native\/preflight\.mjs --environment$/m);
+    assert.match(service, /^ExecStartPre=\/usr\/bin\/node deployment\/native\/host-check\.mjs$/m);
+    assert.match(service, /^Environment=PATH=\/usr\/bin:\/bin$/m);
+    assert.match(service, /^TimeoutStartSec=150s$/m);
+});

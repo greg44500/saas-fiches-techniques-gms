@@ -20,3 +20,48 @@ Les fichiers Caddyfile, fichepilot.service et production.env.example sont des mo
 À compléter dans le même lot : procédure Linux idempotente, contrôle des versions, permissions et propriétaires, publication cohérente des releases et rollback couplé frontend/backend, tests Caddy (y compris en-têtes falsifiés), systemd-analyze verify, port interne, ClamAV/freshclam, readiness et arrêt propre, qualification d'une base vierge et des migrations/index/seeds. Les sauvegardes indépendantes et purges restent non activées avant la première recette technique fictive ; sauvegarde et restauration exigées avant la bêta réelle.
 
 Références : https://expressjs.com/en/guide/behind-proxies/ ; https://caddyserver.com/docs/caddyfile/directives/reverse_proxy.
+
+
+## Contrôles natifs avant démarrage
+
+Le préflight natif réutilise les protections du préflight historique et impose
+le port 5000, l'écoute 127.0.0.1, le proxy loopback, la base proposée
+fichepilot_beta, les options Atlas autorisées et les bornes de configuration.
+Le nom exact est une décision de préparation à confirmer avant création de la
+base ; tout changement devra modifier explicitement le contrat et les tests.
+Le contrôle hors réseau ne prouve ni l'authentification Atlas/Brevo ni le DNS.
+
+Sur Linux, l'unité exécute d'abord le préflight sur les variables réellement
+injectées par systemd, puis le contrôle hôte sous le compte fichepilot.
+Les deux répertoires persistants doivent être de vrais répertoires (pas de
+symlink), détenus par fichepilot:fichepilot et en mode 0700. Le répertoire
+parent est à créer par root et doit rester non modifiable par l'API.
+Chaque sonde crée un répertoire de contrôle unique, écrit/lit un fichier
+fictif puis supprime uniquement ses propres éléments. Aucun fichier utilisateur
+n'est ouvert, déplacé ou effacé. Le contrôle de ClamAV exige /usr/bin/clamscan
+et un scan réel du fichier bénin, avec la durée limite du profil et une
+base de signatures de moins de deux jours selon l'option ClamAV. Ce seuil
+est proposé pour la mise en service, à confirmer en exploitation. Un refus
+bloque le démarrage ; les signatures sont entretenues par clamav-freshclam.
+La fraîcheur pendant que le service tourne devra être surveillée séparément.
+Un scan bénin réussi ne prouve pas la détection : recette EICAR contrôlée à
+effectuer avant trafic, ainsi que le cas antivirus indisponible.
+
+Ubuntu : prévoir clamav et clamav-freshclam, attendre une mise à jour réussie
+et contrôler systemctl status clamav-freshclam (sans lancer deux freshclam
+concurrents). Ne jamais désactiver l'antivirus pour passer une recette.
+La préparation des comptes/répertoires et les vérifications de permissions
+root, Caddy et systemd seront intégrées à la procédure d'installation.
+Le fichier EnvironmentFile est un premier choix compatible avec le Core
+actuel ; accès root uniquement, processus dédié, pas de journalisation des
+variables. Une migration vers LoadCredential requerrait un contrat Core
+distinct ; l'environnement du processus reste accessible aux acteurs
+privilégiés. Ne jamais afficher systemctl show ... Environment.
+
+Tests hors réseau Windows : node --test deployment/native/packaging.test.mjs
+deployment/native/preflight.test.mjs deployment/native/host-check.test.mjs
+(la sonde de fichiers POSIX est ignorée sous Windows). Sur Linux elle doit
+également passer. Le contrôle hôte réel n'est pas lancé par ces tests.
+Sources : https://manpages.ubuntu.com/manpages/noble/man1/clamscan.1.html ;
+https://docs.clamav.net/manual/Usage/Scanning.html ;
+https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html.

@@ -9,9 +9,13 @@ User=fichepilot
 Group=fichepilot
 WorkingDirectory=/opt/fichepilot/current
 EnvironmentFile=/etc/fichepilot/fichepilot.env
+Environment=PATH=/usr/bin:/bin
+ExecStartPre=/usr/bin/node deployment/native/preflight.mjs --environment
+ExecStartPre=/usr/bin/node deployment/native/host-check.mjs
 ExecStart=/usr/bin/node backend/server.js
 Restart=on-failure
 RestartSec=5s
+TimeoutStartSec=150s
 TimeoutStopSec=30s
 UMask=0077
 NoNewPrivileges=true

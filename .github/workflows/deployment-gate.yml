@@ -24,7 +24,7 @@ jobs:
           node-version: '24'
 
       - name: Tests hors réseau du packaging
-        run: node --test deployment/preflight.test.mjs deployment/migration-plan.test.mjs deployment/mongo-verify.test.mjs deployment/native/packaging.test.mjs
+        run: node --test deployment/preflight.test.mjs deployment/migration-plan.test.mjs deployment/mongo-verify.test.mjs deployment/native/packaging.test.mjs deployment/native/preflight.test.mjs deployment/native/host-check.test.mjs
 
       - name: Install frontend dependencies
         run: npm --prefix frontend ci
