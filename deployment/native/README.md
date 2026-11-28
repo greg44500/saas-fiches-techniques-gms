@@ -2,6 +2,8 @@
 
 Statut : **modèles préparés, non exécutés sur Linux, non déployables avant intégration et validation du Core durci**. Aucun achat, secret ou connexion externe. Ce dossier est la nouvelle cible ; les fichiers Docker précédents sont historiques.
 
+Le 2026-11-28, les 4 tests structurels natifs ont été déclarés réussis localement par le propriétaire. Le Core en branche ajoute une readiness MongoDB et un arrêt SIGINT/SIGTERM borné à 25 s ; ces changements ne sont pas encore intégrés ni testés dans FichePilot. Le délai systemd de 30 s est conservé. La vérification effective sur Linux reste indispensable.
+
 ## Contrat d'architecture
 
 - Un seul VPS Linux (Ubuntu 24.04 LTS proposé), Caddy sur 80/443, API Node 24 sur 127.0.0.1:5000 uniquement.

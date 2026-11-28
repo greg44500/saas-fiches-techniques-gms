@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - 'deployment/**'
-      - '.dockerignore'
+      - 'frontend/**'
       - '.github/workflows/deployment-gate.yml'
 
 permissions:
@@ -24,13 +24,10 @@ jobs:
           node-version: '24'
 
       - name: Tests hors réseau du packaging
-        run: node --test deployment/preflight.test.mjs deployment/migration-plan.test.mjs deployment/packaging.test.mjs deployment/mongo-verify.test.mjs
+        run: node --test deployment/preflight.test.mjs deployment/migration-plan.test.mjs deployment/mongo-verify.test.mjs deployment/native/packaging.test.mjs
 
-      - name: Préparer un fichier d'environnement fictif sans secrets
-        run: cp deployment/production.env.example .env.production
+      - name: Install frontend dependencies
+        run: npm --prefix frontend ci
 
-      - name: Validation syntaxique Docker Compose
-        run: docker compose --env-file .env.production -f deployment/compose.yaml config --quiet
-
-      - name: Images Node et Caddy compilables
-        run: docker compose --env-file .env.production -f deployment/compose.yaml build
+      - name: Build frontend natif
+        run: npm --prefix frontend run build

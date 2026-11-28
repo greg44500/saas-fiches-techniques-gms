@@ -1,3 +1,11 @@
+## PRE-BETA-003 — structure native validée, fiabilité runtime en branche (2026-11-28)
+
+Preuve locale communiquée par le propriétaire : **4/4 tests structurels du packaging natif réussis**, en complément des 19/19 précédents (23 tests au total sur deux exécutions). Aucun essai Linux réel, aucune gate globale nouvelle et aucun déploiement distant. La gate de déploiement dédiée est réorientée vers les tests hors réseau du packaging natif et le build frontend, sans Docker Compose. La Core Gate peut toujours utiliser un conteneur MongoDB éphémère pour ses tests CI ; ce n'est pas le mode de déploiement de FichePilot.
+
+Core `hardening/pre-beta-003-runtime` : HEAD `3148fa6b048842e749b12942766990e53e53b07d`, ajoute le cycle de vie HTTP/MongoDB (SIGINT/SIGTERM, délai maximal 25 s, journaux de démarrage/arrêt sans erreur brute) et la sonde `GET /api/health/ready` (MongoDB ping borné, 503 en cas d'échec ou arrêt), sans modifier le contrat de liveness `GET /api/health`. Tests ciblés préparés mais non exécutés. Pas de PR ni de nouvelle release Core ; le produit référence toujours Core v1.2.1. Prochain bloc : durcir le préflight natif, la procédure de stockage/ClamAV et les journaux, puis qualifier les migrations/seeds de base vierge. Aucun achat ou seed autorisé.
+
+---
+
 ## PRE-BETA-003 — validation locale et choix Linux natif (2026-11-28)
 
 Décision explicite du propriétaire : installation native Linux sans Docker (Caddy, Node 24, systemd, ClamAV). Les fichiers Compose historiques sont conservés à titre de référence et ne sont plus le chemin de mise en service. Le modèle natif dans `deployment/native/` est une première proposition versionnée, non validée sur Linux.
