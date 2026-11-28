@@ -26,7 +26,7 @@ des digests maintenus avant déploiement, puis éprouver ClamAV et la mémoire.
 ~~~~powershell
 git status -sb
 node -v
-node --test deployment/preflight.test.mjs deployment/migration-plan.test.mjs
+node --test deployment/preflight.test.mjs deployment/migration-plan.test.mjs deployment/packaging.test.mjs
 node deployment/migration-plan.mjs
 npm run release:verify
 npm run lint
