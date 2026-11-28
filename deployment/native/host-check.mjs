@@ -1,8 +1,7 @@
 import { execFile } from 'node:child_process';
-import { lstat, realpath, mkdtemp, writeFile, readFile, unlink, rmdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { lstat, realpath, mkdtemp, open, readFile, unlink, rmdir } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
 import { promisify } from 'node:util';
-import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { inspectNativeConfig } from './preflight.mjs';
 
@@ -21,8 +20,13 @@ export async function withStorageProbe(directory, uid, gid, action) {
     const probe = join(scratch, 'probe.txt');
     let created = false;
     try {
-        await writeFile(probe, probeContent, { flag: 'wx', mode: 0o600 });
+        const handle = await open(probe, 'wx', 0o600);
         created = true;
+        try {
+            await handle.writeFile(probeContent);
+        } finally {
+            await handle.close();
+        }
         if (await readFile(probe, 'utf8') !== probeContent) throw new Error('Lecture incohérente');
         await action(probe);
     } finally {

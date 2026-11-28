@@ -2,6 +2,8 @@
 
 Sur la branche produit : préflight natif hors réseau, garde de démarrage systemd, sonde de stockage limitée à des fichiers de contrôle temporaires et scan bénin ClamAV avec seuil proposé de fraîcheur des signatures (2 jours). Le nom de base proposé fichepilot_beta est désormais vérifié explicitement par ce profil ; confirmer avant création. Les tests natifs supplémentaires sont préparés, non exécutés par le propriétaire. Linux, signatures, DNS, Atlas et SMTP distant restent non validés. Pas d'achat, d'initialisation DB ou de purge. Prochaine étape : installation/release/rollback natifs, puis qualification des migrations/seeds.
 
+Core : réduction des journaux de maintenance des temporaires aux compteurs et codes système autorisés, sans chemins, noms de fichiers ni erreurs brutes. Tests associés non exécutés ; HEAD de la branche Core `33f142166537183746ec60b2e92e497d496ff2ad`, version intégrée inchangée.
+
 ---
 
 ## PRE-BETA-003 — structure native validée, fiabilité runtime en branche (2026-11-28)

@@ -65,3 +65,6 @@ deployment/native/preflight.test.mjs deployment/native/host-check.test.mjs
 Sources : https://manpages.ubuntu.com/manpages/noble/man1/clamscan.1.html ;
 https://docs.clamav.net/manual/Usage/Scanning.html ;
 https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html.
+
+Core : réduction des journaux de maintenance des temporaires aux compteurs et codes système autorisés, sans chemins, noms de fichiers ni erreurs brutes. Tests associés non exécutés ; HEAD de la branche Core `33f142166537183746ec60b2e92e497d496ff2ad`, version intégrée inchangée.
+
