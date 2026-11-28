@@ -166,3 +166,18 @@ Les sauvegardes sont exigées avant bêta réelle, pas de restauration implicite
 
 La preuve actuelle est une analyse de code et un inventaire. Aucun test réel
 de bootstrap, de création d'index ou d'écriture MongoDB n'est revendiqué.
+
+
+## 6. Inventaire hors connexion des modèles
+
+`node deployment/native/model-inventory.mjs` importe les modèles de
+`backend/modules/**/*.model.js` dans un processus dédié avec configuration
+fictive issue du modèle .env.example, autoCreate et autoIndex désactivés.
+Il ne connecte pas MongoDB et ne crée aucun index. Le rapport JSON contient
+les collections, noms, clés et options déclarés par les schémas. Le périmètre
+est celui de la convention *.model.js ; il faudra contrôler qu'aucun modèle
+hors convention ni index exclusivement opérationnel n'est oublié. L'inventaire
+ne remplace pas la comparaison effective des index de la base vierge.
+Les deux tests unitaires vérifient la découverte et la conservation des
+contraintes, sans nécessiter Mongoose ni connexion. L'exécution réelle
+du rapport exige les dépendances npm installées, et reste à confirmer.

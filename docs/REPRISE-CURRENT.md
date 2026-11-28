@@ -1,6 +1,6 @@
 ## PRE-BETA-003 — classification du bootstrap MongoDB vierge (2026-11-28)
 
-Les 36 runners et sept seeds sont classés dans deployment/native/bootstrap-classification.json ; analyse et limites dans BOOTSTRAP-DATABASE.md. Le plan candidat distingue index de schéma, index opérationnels additifs, reprises historiques et seeds canoniques. Aucun script d'écriture n'est lancé. Tests de cohérence préparés ; les tests de publication du lot précédent n'ont pas été confirmés. Prochain bloc : inventaire exhaustif des modèles/index et répétition sur base locale dédiée _bootstrap_test avant toute initialisation Atlas. Core intégré inchangé, aucun achat ni PR.
+Les 36 runners et sept seeds sont classés dans deployment/native/bootstrap-classification.json ; analyse et limites dans BOOTSTRAP-DATABASE.md. Le plan candidat distingue index de schéma, index opérationnels additifs, reprises historiques et seeds canoniques. Aucun script d'écriture n'est lancé. Tests de cohérence préparés ; les tests de publication du lot précédent n'ont pas été confirmés. Inventaire de schéma hors connexion préparé dans model-inventory.mjs, à exécuter et comparer aux helpers. Prochain bloc : qualification des contraintes et répétition sur base locale dédiée _bootstrap_test avant toute initialisation Atlas. Core intégré inchangé, aucun achat ni PR.
 
 ---
 
