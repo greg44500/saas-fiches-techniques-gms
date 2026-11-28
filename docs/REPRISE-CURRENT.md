@@ -1,3 +1,11 @@
+## Arbitrage courant — première connexion FichePilot d'abord (2026-11-28)
+
+**Décision explicite utilisateur :** le premier déploiement technique doit permettre une connexion fonctionnelle à FichePilot **avec uniquement des données fictives**, sans activer immédiatement la sauvegarde indépendante MongoDB/fichiers. Le chantier de sauvegardes est reporté **après** ce déploiement technique et avant toute exploitation de données importantes ou ouverture de la bêta privée. Les scripts déjà présents restent non programmés et non exécutés. Les tâches de purge/maintenance restent non planifiées avant qualification des règles et risques. L'absence de backup ne vaut **pas** autorisation d'une bêta publique ou réelle.
+
+**Action immédiate :** préparation manuelle du compte Brevo Free, contrôle de l'accès SMTP et de l'activation transactionnelle, sans achat de domaine, sans clé copiée dans Git ou la conversation. Le dépôt est préconfiguré pour `smtp-relay.brevo.com:465` et `SMTP_SECURE=true`, mais **aucune authentification ni livraison réelle n'est prouvée**. Les tests locaux, le défaut générique de proxy IP et les vérifications Docker restent les prochaines conditions préachat. Guide : `deployment/README.md`.
+
+---
+
 ## P2 — préparation concrète du déploiement (2026-11-28)
 
 **Travail sur la branche** `deploy/pre-beta-003-ovh-ready` : packaging Docker Compose et Caddy pour `app.fichepilot.fr`, frontend Vite statique, API Node 24 interne non publiée, ClamAV + freshclam, modèle `.env.production` Brevo 465/TLS, préflight hors réseau et tests Node, plan de lecture des migrations, runner de maintenance sous verrou, création de copies MongoDB/fichiers chiffrées et collecte SSH vers Windows. Manuel détaillé : `deployment/README.md`. Le code de cette branche est **en attente de tests locaux Docker/Node24/E2E, de revue et de PR** ; aucun VPS, domaine, Brevo ou Atlas n'a été activé. Les cookies Core sont déjà `httpOnly`, `secure` en production, `sameSite=lax`, `path=/api/auth` ; ne pas les dupliquer. Le défaut probable d'adresse IP derrière Caddy (`trust proxy` absent du Core) est un **NO-GO avant bêta**, soumis à arbitrage explicite Core vs exception produit.

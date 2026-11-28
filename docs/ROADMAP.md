@@ -1,3 +1,11 @@
+## PRE-BETA-003 — séquencement validé du premier déploiement technique (2026-11-28)
+
+**Avant achat :** (1) créer/vérifier le compte Brevo Free et l'activation de SMTP transactionnel ; (2) valider localement le profil production et les cookies ; (3) soumettre à arbitrage la correction générique Core `trust proxy`/rate limits, la tester et l'intégrer sans patch Core clandestin ; (4) exécuter tests Node, Docker, Vite, lint, E2E locaux et gates ; (5) réaliser la PR cohérente de déploiement. **Après GO d'achat** : commander OVHcloud VPS et `fichepilot.fr`, configurer DNS/HTTPS, Atlas/SMTP, initialisations vérifiées, puis **première connexion avec données fictives seulement**.
+
+**Décision de report :** pas de sauvegarde indépendante ni de purge planifiée au premier déploiement technique. Ce report n'autorise aucune ouverture de bêta réelle ; sauvegarde indépendante vérifiée et restauration réussie restent un critère avant données importantes et invitation des 2–3 pilotes. Scripts préparés mais non exécutés. Les anciens passages qui placent les backups AVANT la simple première connexion décrivent le plan historique antérieur ; ils restent valables AVANT ouverture de bêta.
+
+---
+
 ## PRE-BETA-003 — réalisation technique P2, état du 2026-11-28
 
 Sur une branche d'infrastructure dédiée `deploy/pre-beta-003-ovh-ready`, préparatifs concrets versionnés sans dépenses : Caddy/Compose, Node 24, Vite compilé, montage de volumes, ClamAV/freshclam, profil Brevo SMTP 465 TLS, préflight production, lectures migrations, jobs et sauvegarde chiffrée avec collecte Windows. Les commandes et conditions de mise en route sont dans `deployment/README.md`. **Travaux non validés en exécution** : Node24, Docker, gate, tests de restauration, SMTP réel, Atlas et DNS. `fichepilot.fr` est choisi mais pas déclaré acquis. Le point générique Core `trust proxy`/IP doit être tranché et testé AVANT connexion des pilotes. P3 achat OVH reste après approbation explicite ; ne pas changer `main`.

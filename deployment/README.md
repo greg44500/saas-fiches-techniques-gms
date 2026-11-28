@@ -1,3 +1,13 @@
+## Décision opérationnelle du 2026-11-28 — premier déploiement technique avant sauvegardes
+
+**Objectif prioritaire :** rendre le dépôt testable et installable sur OVHcloud, puis effectuer la première connexion à FichePilot avec des données fictives, avant d'activer les sauvegardes. L'achat du VPS et de `fichepilot.fr` reste différé jusqu'à la validation des tests préparatoires et au GO explicite du propriétaire. **Ne pas inviter de bêta-testeurs réels ni enregistrer de données importantes sans dispositif de sauvegarde et restauration prouvé.**
+
+Les scripts `deployment/scripts/create-backup.sh` et `pull-backups.ps1` restent disponibles mais **ne sont pas activés ni planifiés** au premier démarrage. Les jobs de maintenance comportent des suppressions définitives : ils restent également non planifiés jusqu'à qualification des politiques de rétention. La recette technique doit être distinguée de l'ouverture de la bêta privée.
+
+**Brevo à faire sans VPS :** créer/confirmer le compte gratuit et vérifier l'accès SMTP dans **Paramètres > SMTP et API** ; vérifier si l'envoi transactionnel nécessite l'activation par le support. Ne pas créer de modèles marketing ni de templates transactionnels Brevo : le Core fabrique déjà les messages via Nodemailer. Le domaine d'envoi `fichepilot.fr` sera authentifié après achat et contrôle DNS. Les clés SMTP non utilisées expirent après 90 jours selon Brevo : créer une clé standard dédiée à FichePilot au moment des essais, la stocker hors Git et hors conversation.
+
+Documentation fournisseur : https://help.brevo.com/hc/fr/articles/115000188150-R%C3%A9solution-des-probl%C3%A8mes-li%C3%A9s-%C3%A0-Brevo-SMTP ; https://help.brevo.com/hc/fr/articles/7959631848850-Cr%C3%A9er-et-g%C3%A9rer-vos-cl%C3%A9s-SMTP
+
 # FichePilot — préparation de la bêta OVHcloud (PRE-BETA-003)
 
 Statut : proposition technique, non validée sur VPS, Docker ou Atlas bêta.

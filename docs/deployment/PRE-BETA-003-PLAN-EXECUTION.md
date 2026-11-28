@@ -1,3 +1,13 @@
+## Priorité exécution — décision du 2026-11-28
+
+**Réorganisation décidée par le propriétaire :** la première étape de mise en service visée est une **connexion technique fonctionnelle avec données fictives**, sans activer les scripts de sauvegarde. Préparer le dépôt complet et sa sécurité avant achat ; après accord, installer le VPS et le domaine, configurer SMTP/Atlas/TLS, puis effectuer la recette technique. Les sauvegardes indépendantes et leur optimisation seront mises en œuvre ensuite, **avant** l'ouverture de bêta réelle ou la conservation de données importantes. Les purges destructives ne sont pas programmées au premier démarrage.
+
+**Brevo en premier :** compte gratuit à ouvrir/vérifier, disponibilité de l'accès SMTP, activation transactionnelle éventuelle à demander au support ; identifiant SMTP à relever mais aucune clé à partager. Domaine `fichepilot.fr` et expéditeur à authentifier une fois le domaine acquis. Le code Nodemailer du Core et les templates transactionnels existants sont conservés. Pour le détail d'exécution, suivre `deployment/README.md`.
+
+**Les NO-GO du vrai pilote restent inchangés :** test de restauration, gestion des incidents, RGPD, autorisations, sécurité proxy et SMTP réel. Le report des backups autorise uniquement une recette technique initiale isolée.
+
+---
+
 ## P2 — premiers fichiers livrés sur branche d'infrastructure (2026-11-28)
 
 **Branche distincte** : `deploy/pre-beta-003-ovh-ready` (base : dernier commit du cadrage PRE-BETA-003), sans achat ni modification du Core/main. Répertoire exécutable `deployment/` : `Dockerfile.api`, `Dockerfile.web`, `compose.yaml`, `Caddyfile`, `production.env.example`, `preflight.mjs` et test, `smtp-verify.mjs`, `migration-plan.mjs` et test, scripts `run-jobs.sh`, `create-backup.sh`, `pull-backups.ps1` et guide `deployment/README.md`. Le frontend buildé est servi par Caddy ; API Express interne ; stockage permanent/temporaires séparé ; Brevo via Nodemailer existant. **Aucune réussite d'exécution n'est annoncée** : le développeur doit exécuter les vérifications locales avant la PR, puis les essais d'infrastructure après un GO de commande. La correction générique Core du proxy/ratelimit n'est pas effectuée : arbitrage et tests nécessaires avant bêta. Les scripts de purge et de backup ne sont ni activés ni planifiés.
