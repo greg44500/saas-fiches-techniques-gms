@@ -168,7 +168,7 @@ async function main() {
         startWeb: () => systemctl('start', 'caddy.service'),
     }));
     console.log('Activation locale : ' + result.active);
-    console.log('SHA précédent : ' + (result.previous || 'aucun'));
+    console.log('SHA avant activation : ' + (result.previous || 'aucun'));
     console.log('Recette HTTPS publique et métier encore requise.');
 }
 

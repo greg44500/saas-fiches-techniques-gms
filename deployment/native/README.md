@@ -17,7 +17,7 @@ Le 2026-11-28, les 4 tests structurels natifs ont été déclarés réussis loca
 
 Les fichiers Caddyfile, fichepilot.service et production.env.example sont des modèles. Ne pas les installer tels quels sur un VPS avant revue. Le profil actuel nécessite le futur Core ; le préflight historique ne valide pas encore la totalité des contraintes natives.
 
-À compléter dans le même lot : procédure Linux idempotente, contrôle des versions, permissions et propriétaires, publication cohérente des releases et rollback couplé frontend/backend, tests Caddy (y compris en-têtes falsifiés), systemd-analyze verify, port interne, ClamAV/freshclam, readiness et arrêt propre, qualification d'une base vierge et des migrations/index/seeds. Les sauvegardes indépendantes et purges restent non activées avant la première recette technique fictive ; sauvegarde et restauration exigées avant la bêta réelle.
+Le mécanisme de publication et d’activation est préparé dans [INSTALLATION.md](INSTALLATION.md). Restent les essais Linux, tests Caddy (y compris en-têtes falsifiés), systemd-analyze verify, port interne, ClamAV/freshclam, readiness et arrêt propre, qualification d'une base vierge et des migrations/index/seeds. Les sauvegardes indépendantes et purges restent non activées avant la première recette technique fictive ; sauvegarde et restauration exigées avant la bêta réelle.
 
 Références : https://expressjs.com/en/guide/behind-proxies/ ; https://caddyserver.com/docs/caddyfile/directives/reverse_proxy.
 

@@ -1,3 +1,9 @@
+## PRE-BETA-003 — livraison Linux native et rollback de code (2026-11-28)
+
+Le propriétaire a confirmé la conformité de la campagne locale des tests natifs (packaging, préflight, contrôle hôte ; test POSIX prévu ignoré sous Windows). Résumé détaillé du terminal non transmis : ne pas inventer de résultat Linux. Le lot ajoute bootstrap-layout.sh, stage-release.sh, publish-release.sh, release-control.mjs, tests d'activation et le guide deployment/native/INSTALLATION.md. Livraison par SHA complet approuvé, compilation sans root et sans secrets, publication root séparée, pointeur unique frontend/backend, verrou, arrêt des deux services, readiness avant retour du trafic, rollback de code explicite uniquement si base compatible. Pas de migrations, seed, purge ou sauvegarde lancés. Les scripts et nouveaux tests ne sont pas encore validés par le propriétaire ; essais système Linux à prévoir. Prochain lot : qualification d'une base Atlas vierge, 36 migrations et seeds/index. Core durci toujours en branche, aucune release ni PR intermédiaire.
+
+---
+
 ## PRE-BETA-003 — préflight natif et contrôle de l'hôte (2026-11-28)
 
 Sur la branche produit : préflight natif hors réseau, garde de démarrage systemd, sonde de stockage limitée à des fichiers de contrôle temporaires et scan bénin ClamAV avec seuil proposé de fraîcheur des signatures (2 jours). Le nom de base proposé fichepilot_beta est désormais vérifié explicitement par ce profil ; confirmer avant création. Les tests natifs supplémentaires sont préparés, non exécutés par le propriétaire. Linux, signatures, DNS, Atlas et SMTP distant restent non validés. Pas d'achat, d'initialisation DB ou de purge. Prochaine étape : installation/release/rollback natifs, puis qualification des migrations/seeds.

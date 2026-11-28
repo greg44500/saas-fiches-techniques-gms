@@ -1,3 +1,9 @@
+## PRE-BETA-003 — livraison Linux native et rollback de code (2026-11-28)
+
+Le propriétaire a confirmé la conformité de la campagne locale des tests natifs (packaging, préflight, contrôle hôte ; test POSIX prévu ignoré sous Windows). Résumé détaillé du terminal non transmis : ne pas inventer de résultat Linux. Le lot ajoute bootstrap-layout.sh, stage-release.sh, publish-release.sh, release-control.mjs, tests d'activation et le guide deployment/native/INSTALLATION.md. Livraison par SHA complet approuvé, compilation sans root et sans secrets, publication root séparée, pointeur unique frontend/backend, verrou, arrêt des deux services, readiness avant retour du trafic, rollback de code explicite uniquement si base compatible. Pas de migrations, seed, purge ou sauvegarde lancés. Les scripts et nouveaux tests ne sont pas encore validés par le propriétaire ; essais système Linux à prévoir. Prochain lot : qualification d'une base Atlas vierge, 36 migrations et seeds/index. Core durci toujours en branche, aucune release ni PR intermédiaire.
+
+---
+
 ## PRE-BETA-003 — structure native validée, fiabilité runtime en branche (2026-11-28)
 
 Preuve locale communiquée par le propriétaire : **4/4 tests structurels du packaging natif réussis**, en complément des 19/19 précédents (23 tests au total sur deux exécutions). Aucun essai Linux réel, aucune gate globale nouvelle et aucun déploiement distant. La gate de déploiement dédiée est réorientée vers les tests hors réseau du packaging natif et le build frontend, sans Docker Compose. La Core Gate peut toujours utiliser un conteneur MongoDB éphémère pour ses tests CI ; ce n'est pas le mode de déploiement de FichePilot.

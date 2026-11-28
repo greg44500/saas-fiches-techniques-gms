@@ -41,3 +41,16 @@ test('systemd applique les contrôles avant le démarrage du backend', () => {
     assert.match(service, /^Environment=PATH=\/usr\/bin:\/bin$/m);
     assert.match(service, /^TimeoutStartSec=150s$/m);
 });
+
+test('les scripts de livraison n’embarquent pas de configuration réelle et ne lancent pas de migrations', () => {
+    const stage = read('./stage-release.sh');
+    const publish = read('./publish-release.sh');
+    const layout = read('./bootstrap-layout.sh');
+    assert.match(stage, /git -C "\$git_root" archive "\$sha"/);
+    assert.match(stage, /env -i PATH=\/usr\/bin:\/bin/);
+    assert.match(stage, /ci --omit=dev/);
+    assert.match(publish, /chown -hR root:fichepilot/);
+    assert.match(publish, /chmod -R g\+rX,go-w,o-rwx/);
+    assert.match(layout, /ln -s \/opt\/fichepilot\/current\/frontend\/dist/);
+    for (const script of [stage, publish, layout]) assert.doesNotMatch(script, /npm run (?:migration|seed):/);
+});

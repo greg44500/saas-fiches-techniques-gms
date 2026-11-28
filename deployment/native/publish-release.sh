@@ -25,13 +25,13 @@ done
 if find "$temporary/backend" "$temporary/deployment" "$temporary/frontend" -type l -print -quit | grep -q .; then
     echo 'Lien symbolique inattendu dans les fichiers publiés.' >&2; exit 1
 fi
-if find "$temporary" -name '.env' -o -name '.env.production' -o -name '.env.local' | grep -q .; then
+if find "$temporary" -type f \( -name '.env' -o -name '.env.*' \) ! -name '.env.example' -print -quit | grep -q .; then
     echo 'Fichier environnement interdit dans la publication.' >&2; exit 1
 fi
 test -s "$temporary/backend/server.js"
 test -s "$temporary/frontend/dist/index.html"
 chown -hR root:fichepilot "$temporary"
-chmod -R go-w "$temporary"
+chmod -R g+rX,go-w,o-rwx "$temporary"
 # Runtime account can read code; Caddy can traverse to the public dist only.
 chmod 0711 "$temporary" "$temporary/frontend"
 chmod 0750 "$temporary/backend" "$temporary/deployment" "$temporary/docs" "$temporary/scripts" "$temporary/node_modules"
