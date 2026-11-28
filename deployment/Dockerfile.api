@@ -1,0 +1,19 @@
+# Runtime Node.js 24 + clamscan local (Core v1.2.1).
+# Images de base à figer par digest avant le premier déploiement réel.
+FROM node:24-bookworm-slim
+ENV NODE_ENV=production
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates clamav clamav-freshclam \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+COPY backend ./backend
+COPY deployment/smtp-verify.mjs ./deployment/smtp-verify.mjs
+
+# L'exploitant prépare et attribue les chemins persistants à l'UID 1000.
+USER node
+EXPOSE 5000
+CMD ["node", "backend/server.js"]

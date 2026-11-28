@@ -1,0 +1,24 @@
+{
+    email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+    encode zstd gzip
+
+    # L'API conserve impérativement /api. Les en-têtes transmis sont réécrits.
+    @api path /api /api/*
+    handle @api {
+        reverse_proxy api:5000 {
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Host {host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Le frontend est une SPA : les routes métier renvoient vers index.html.
+    handle {
+        root * /srv
+        try_files {path} /index.html
+        file_server
+    }
+}

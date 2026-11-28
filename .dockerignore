@@ -1,0 +1,16 @@
+# Exclure les données et les secrets des contextes de build.
+.git
+.github
+**/node_modules
+**/.env
+**/.env.*
+uploads
+coverage
+e2e
+docs
+*.log
+**/dist
+**/test-results
+**/playwright-report
+backend/tests
+backend/operations/development
